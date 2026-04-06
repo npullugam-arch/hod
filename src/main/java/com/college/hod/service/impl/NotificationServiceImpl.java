@@ -13,11 +13,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 
+import java.net.ConnectException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -47,6 +50,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Value("${spring.mail.username:}")
     private String fromEmail;
+
+    @Value("${spring.mail.password:}")
+    private String mailPassword;
 
     @Override
     public void sendNotification(User user, String message) {
@@ -211,15 +217,20 @@ public class NotificationServiceImpl implements NotificationService {
             throw new RuntimeException("MAIL_USERNAME is missing in environment variables");
         }
 
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail.trim());
-            message.setTo(toEmail.trim());
-            message.setSubject(subject);
-            message.setText(body);
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail.trim());
+        message.setTo(toEmail.trim());
+        message.setSubject(subject);
+        message.setText(body);
 
+        try {
             mailSender.send(message);
         } catch (MailException e) {
+            if (shouldRetryWithSslFallback(e)) {
+                sendEmailUsingSslFallback(message);
+                return;
+            }
+
             Throwable root = e;
             while (root.getCause() != null) {
                 root = root.getCause();
@@ -231,6 +242,11 @@ public class NotificationServiceImpl implements NotificationService {
                             + " - " + root.getMessage()
             );
         } catch (Exception e) {
+            if (shouldRetryWithSslFallback(e)) {
+                sendEmailUsingSslFallback(message);
+                return;
+            }
+
             Throwable root = e;
             while (root.getCause() != null) {
                 root = root.getCause();
@@ -242,6 +258,67 @@ public class NotificationServiceImpl implements NotificationService {
                             + " - " + root.getMessage()
             );
         }
+    }
+
+    private void sendEmailUsingSslFallback(SimpleMailMessage message) {
+        if (mailPassword == null || mailPassword.isBlank()) {
+            throw new RuntimeException("MAIL_PASSWORD is missing in environment variables");
+        }
+
+        try {
+            JavaMailSenderImpl fallbackSender = new JavaMailSenderImpl();
+            fallbackSender.setHost("smtp.gmail.com");
+            fallbackSender.setPort(465);
+            fallbackSender.setUsername(fromEmail.trim());
+            fallbackSender.setPassword(mailPassword);
+            fallbackSender.setProtocol("smtp");
+            fallbackSender.setDefaultEncoding("UTF-8");
+
+            Properties properties = fallbackSender.getJavaMailProperties();
+            properties.put("mail.smtp.auth", "true");
+            properties.put("mail.smtp.ssl.enable", "true");
+            properties.put("mail.smtp.starttls.enable", "false");
+            properties.put("mail.smtp.connectiontimeout", "60000");
+            properties.put("mail.smtp.timeout", "60000");
+            properties.put("mail.smtp.writetimeout", "60000");
+            properties.put("mail.smtp.ssl.trust", "smtp.gmail.com");
+            properties.put("mail.smtp.quitwait", "false");
+
+            fallbackSender.send(message);
+        } catch (MailException e) {
+            Throwable root = e;
+            while (root.getCause() != null) {
+                root = root.getCause();
+            }
+
+            throw new RuntimeException(
+                    "Failed to send reminder email: " + e.getMessage()
+                            + " | Root cause: " + root.getClass().getSimpleName()
+                            + " - " + root.getMessage()
+            );
+        }
+    }
+
+    private boolean shouldRetryWithSslFallback(Throwable throwable) {
+        Throwable current = throwable;
+
+        while (current != null) {
+            if (current instanceof java.net.SocketTimeoutException || current instanceof ConnectException) {
+                return true;
+            }
+
+            String message = current.getMessage();
+            String className = current.getClass().getName();
+
+            if ((message != null && message.contains("Couldn't connect to host, port: smtp.gmail.com, 587"))
+                    || className.contains("MailConnectException")) {
+                return true;
+            }
+
+            current = current.getCause();
+        }
+
+        return false;
     }
 
     private boolean isCertificateRequired(String reason) {
