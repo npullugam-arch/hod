@@ -10,6 +10,7 @@ import com.college.hod.repository.RequestRepository;
 import com.college.hod.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -44,7 +45,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Autowired
     private JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.username:}")
     private String fromEmail;
 
     @Override
@@ -206,16 +207,40 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private void sendEmail(String toEmail, String subject, String body) {
+        if (fromEmail == null || fromEmail.isBlank()) {
+            throw new RuntimeException("MAIL_USERNAME is missing in environment variables");
+        }
+
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(toEmail);
+            message.setFrom(fromEmail.trim());
+            message.setTo(toEmail.trim());
             message.setSubject(subject);
             message.setText(body);
 
             mailSender.send(message);
+        } catch (MailException e) {
+            Throwable root = e;
+            while (root.getCause() != null) {
+                root = root.getCause();
+            }
+
+            throw new RuntimeException(
+                    "Failed to send reminder email: " + e.getMessage()
+                            + " | Root cause: " + root.getClass().getSimpleName()
+                            + " - " + root.getMessage()
+            );
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send reminder email: " + e.getMessage());
+            Throwable root = e;
+            while (root.getCause() != null) {
+                root = root.getCause();
+            }
+
+            throw new RuntimeException(
+                    "Failed to send reminder email: " + e.getMessage()
+                            + " | Root cause: " + root.getClass().getSimpleName()
+                            + " - " + root.getMessage()
+            );
         }
     }
 
