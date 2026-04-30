@@ -17,4 +17,9 @@ public class StudentController {
     public Student getStudent(@PathVariable Long id) {
         return studentService.getStudentById(id);
     }
+
+    @GetMapping("/user/{userId}")
+    public Student getStudentByUserId(@PathVariable Long userId) {
+        return studentService.getStudentByUserId(userId);
+    }
 }

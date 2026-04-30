@@ -9,6 +9,8 @@ const CERTIFICATE_REQUIRED_REASONS = [
     "INTERNSHIP"
 ];
 
+const STUDENT_PHOTO_BASE_URL = "https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS";
+
 if (!user) {
     window.top.location.href = "index.html";
 }
@@ -24,6 +26,63 @@ function getStudentName(req) {
     return "Student";
 }
 
+function getStudentIdentifier(req) {
+    if (!req.student) {
+        return "N/A";
+    }
+
+    return req.student.rollNo
+        || req.student.rollNumber
+        || (req.student.user && req.student.user.username)
+        || (req.student.user && req.student.user.id)
+        || req.student.id
+        || "N/A";
+}
+
+function getStudentPhoto(req) {
+    if (!req.student) {
+        return "";
+    }
+
+    const rollNo = req.student.rollNo
+        || req.student.rollNumber
+        || (req.student.user && req.student.user.username)
+        || "";
+
+    const customPhoto = req.student.photoUrl
+        || req.student.photo
+        || req.student.imageUrl
+        || req.student.profilePhoto
+        || req.student.profileImage
+        || "";
+
+    if (customPhoto && customPhoto.trim() !== "") {
+        return customPhoto;
+    }
+
+    if (rollNo && rollNo.trim() !== "") {
+        const cleanRollNo = rollNo.trim();
+        return `${STUDENT_PHOTO_BASE_URL}/${encodeURIComponent(cleanRollNo)}/${encodeURIComponent(cleanRollNo)}.jpg`;
+    }
+
+    return "";
+}
+
+function getStudentInitial(req) {
+    const name = getStudentName(req);
+    if (!name || name === "N/A") {
+        return "S";
+    }
+    return name.trim().charAt(0).toUpperCase();
+}
+
+function getDisplayValue(value) {
+    if (value === null || value === undefined || String(value).trim() === "") {
+        return "-";
+    }
+    return String(value);
+}
+
 function normalizeDate(dateValue) {
     if (!dateValue) return null;
 
@@ -32,6 +91,19 @@ function normalizeDate(dateValue) {
 
     date.setHours(0, 0, 0, 0);
     return date;
+}
+
+function formatDate(value) {
+    if (!value) {
+        return "-";
+    }
+
+    const date = new Date(value);
+    if (isNaN(date.getTime())) {
+        return escapeHtml(value);
+    }
+
+    return date.toLocaleDateString("en-GB");
 }
 
 function normalizeReason(reason) {
@@ -58,13 +130,8 @@ function getCertificateStatus(req) {
     if (req.certificate) {
         const certStatus = (req.certificate.status || "").toUpperCase();
 
-        if (certStatus === "VERIFIED") {
-            return "VERIFIED";
-        }
-
-        if (certStatus === "REJECTED") {
-            return "REJECTED";
-        }
+        if (certStatus === "VERIFIED") return "VERIFIED";
+        if (certStatus === "REJECTED") return "REJECTED";
 
         return "SUBMITTED";
     }
@@ -123,7 +190,7 @@ function getActionButtons(req) {
         if (certificateStatus === "REJECTED") {
             return `
                 <div class="action-btn-group">
-                    <a href="${filePath}" target="_blank" class="view-btn">View</a>
+                    <a href="${escapeAttribute(filePath)}" target="_blank" class="view-btn">View</a>
                     <button class="reject-btn" onclick="rejectCertificate(${certificateId})">Update Remark</button>
                 </div>
             `;
@@ -131,7 +198,7 @@ function getActionButtons(req) {
 
         return `
             <div class="action-btn-group">
-                <a href="${filePath}" target="_blank" class="view-btn">View</a>
+                <a href="${escapeAttribute(filePath)}" target="_blank" class="view-btn">View</a>
                 <button class="verify-btn" onclick="verifyCertificate(${certificateId})">Verify</button>
                 <button class="reject-btn" onclick="rejectCertificate(${certificateId})">Reject</button>
             </div>
@@ -149,7 +216,7 @@ function getActionButtons(req) {
             <button
                 class="remind-btn"
                 title="Send Reminder"
-                onclick="sendReminder(${req.id}, '${escapeText(getStudentName(req))}')"
+                onclick="sendReminder(${req.id}, '${escapeJsString(getStudentName(req))}')"
             >
                 Remind
             </button>
@@ -171,7 +238,7 @@ function loadCertificateTracking() {
             const table = document.getElementById("trackingTable");
             table.innerHTML = "";
 
-            if (!data || data.length === 0) {
+            if (!Array.isArray(data) || data.length === 0) {
                 table.innerHTML = `
                     <tr>
                         <td colspan="6" class="empty-row">No requests found.</td>
@@ -198,12 +265,55 @@ function loadCertificateTracking() {
                 const status = getCertificateStatus(req);
                 const action = getActionButtons(req);
 
+                const studentName = getStudentName(req);
+                const studentId = getStudentIdentifier(req);
+                const studentPhoto = getStudentPhoto(req);
+                const studentInitial = getStudentInitial(req);
+                const student = req.student || {};
+
+                const studentData = {
+                    photo: studentPhoto,
+                    name: studentName,
+                    rollNo: studentId,
+                    email: getDisplayValue(student.email),
+                    branch: getDisplayValue(student.branch),
+                    section: getDisplayValue(student.section || student.sec),
+                    sem: getDisplayValue(student.sem),
+                    gender: getDisplayValue(student.gender),
+                    dob: getDisplayValue(student.dateOfBirth),
+                    studentPhone: getDisplayValue(student.studentPhoneNumber),
+                    parentPhone: getDisplayValue(student.parentPhoneNumber),
+                    fatherName: getDisplayValue(student.fatherName),
+                    admissionType: getDisplayValue(student.admissionType),
+                    caste: getDisplayValue(student.caste),
+                    initial: studentInitial
+                };
+
+                const studentPhotoHtml = studentPhoto
+                    ? `<img src="${escapeAttribute(studentPhoto)}" alt="${escapeAttribute(studentName)}" class="student-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                       <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentInitial)}</div>`
+                    : `<div class="student-avatar-fallback">${escapeHtml(studentInitial)}</div>`;
+
                 const row = `
                     <tr>
-                        <td>${escapeHtml(getStudentName(req))}</td>
+                        <td>
+                            <div
+                                class="student-cell clickable-student"
+                                onclick='openStudentDetailsModal(${JSON.stringify(studentData).replace(/'/g, "&apos;")})'
+                                title="View Student Details"
+                            >
+                                <div class="student-photo-wrap">
+                                    ${studentPhotoHtml}
+                                </div>
+                                <div class="student-meta">
+                                    <div class="student-name">${escapeHtml(studentName)}</div>
+                                    <div class="student-roll">${escapeHtml(studentId)}</div>
+                                </div>
+                            </div>
+                        </td>
                         <td>${escapeHtml(req.reason || "-")}</td>
-                        <td>${escapeHtml(req.endDate || "-")}</td>
-                        <td>${escapeHtml(req.certificateDueDate || "-")}</td>
+                        <td>${formatDate(req.endDate)}</td>
+                        <td>${formatDate(req.certificateDueDate)}</td>
                         <td>${getStatusBadge(status, req)}</td>
                         <td>${action}</td>
                     </tr>
@@ -221,6 +331,49 @@ function loadCertificateTracking() {
             `;
         });
 }
+
+function openStudentDetailsModal(student) {
+    document.getElementById("studentDetailsName").textContent = student.name || "-";
+    document.getElementById("studentDetailsRollNo").textContent = student.rollNo || "-";
+    document.getElementById("studentDetailsEmail").textContent = student.email || "-";
+    document.getElementById("studentDetailsBranch").textContent = student.branch || "-";
+    document.getElementById("studentDetailsSection").textContent = student.section || "-";
+    document.getElementById("studentDetailsSem").textContent = student.sem || "-";
+    document.getElementById("studentDetailsGender").textContent = student.gender || "-";
+    document.getElementById("studentDetailsDob").textContent = student.dob || "-";
+    document.getElementById("studentDetailsStudentPhone").textContent = student.studentPhone || "-";
+    document.getElementById("studentDetailsParentPhone").textContent = student.parentPhone || "-";
+    document.getElementById("studentDetailsFatherName").textContent = student.fatherName || "-";
+    document.getElementById("studentDetailsAdmissionType").textContent = student.admissionType || "-";
+    document.getElementById("studentDetailsCaste").textContent = student.caste || "-";
+
+    const photoEl = document.getElementById("studentDetailsPhoto");
+    photoEl.src = student.photo || "";
+    photoEl.alt = student.name || "Student Photo";
+    photoEl.onerror = function () {
+        this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.initial || "S")}&background=2563eb&color=ffffff&size=160`;
+    };
+
+    document.getElementById("studentDetailsModal").classList.remove("hidden");
+}
+
+function closeStudentDetailsModal() {
+    document.getElementById("studentDetailsModal").classList.add("hidden");
+}
+
+window.addEventListener("click", function (event) {
+    const studentDetailsModal = document.getElementById("studentDetailsModal");
+
+    if (event.target === studentDetailsModal) {
+        closeStudentDetailsModal();
+    }
+});
+
+window.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+        closeStudentDetailsModal();
+    }
+});
 
 function verifyCertificate(certificateId) {
     const confirmed = confirm("Are you sure you want to verify this certificate?");
@@ -249,9 +402,7 @@ function verifyCertificate(certificateId) {
 function rejectCertificate(certificateId) {
     const remark = prompt("Enter rejection remark:");
 
-    if (remark === null) {
-        return;
-    }
+    if (remark === null) return;
 
     if (!remark.trim()) {
         alert("Rejection remark is required.");
@@ -304,15 +455,28 @@ function sendReminder(requestId, studentName) {
         });
 }
 
-function escapeText(value) {
-    return String(value).replace(/'/g, "\\'");
-}
-
 function escapeHtml(value) {
-    return String(value)
+    return String(value ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+}
+
+function escapeAttribute(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+function escapeJsString(value) {
+    return String(value ?? "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\r/g, "")
+        .replace(/\n/g, "\\n");
 }

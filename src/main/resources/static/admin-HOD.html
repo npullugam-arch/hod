@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin HOD Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/admin-HOD.css" />
+</head>
+<body>
+    <div class="hod-admin-page">
+        <div class="toolbar">
+            <input type="text" id="searchInput" placeholder="Search by name, emp id, department, phone, email" />
+        </div>
+
+        <div id="pageStatus" class="page-status"></div>
+        <div id="hodGrid" class="hod-grid"></div>
+
+        <div id="emptyState" class="empty-state" style="display:none;">
+            No HODs found.
+        </div>
+    </div>
+
+    <div id="detailsModal" class="modal-overlay">
+        <div class="modal-card large-modal">
+            <div class="modal-header">
+                <h2>Update HOD Details</h2>
+                <button type="button" class="close-btn" id="closeDetailsModal">×</button>
+            </div>
+
+            <form id="detailsForm" class="details-form">
+                <input type="hidden" id="detailHodId" />
+                <div id="hodFieldsGrid" class="form-grid"></div>
+
+                <div id="detailsStatus" class="modal-status"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="secondary-btn" id="cancelDetailsBtn">Cancel</button>
+                    <button type="submit" class="primary-btn">Save Details</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="passwordModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Update HOD Password</h2>
+                <button type="button" class="close-btn" id="closePasswordModal">×</button>
+            </div>
+
+            <form id="passwordForm" class="details-form">
+                <input type="hidden" id="passwordHodId" />
+
+                <div class="form-field">
+                    <label>Old Password</label>
+                    <input type="text" id="oldPassword" readonly />
+                </div>
+
+                <div class="form-field">
+                    <label>New Password</label>
+                    <input type="text" id="newPassword" required />
+                </div>
+
+                <div class="form-field">
+                    <label>Confirm Password</label>
+                    <input type="text" id="confirmPassword" required />
+                </div>
+
+                <div id="passwordStatus" class="modal-status"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="secondary-btn" id="cancelPasswordBtn">Cancel</button>
+                    <button type="submit" class="primary-btn">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/admin-HOD.js"></script>
+</body>
+</html>

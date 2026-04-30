@@ -1,11 +1,14 @@
 package com.college.hod.controller;
 
+import com.college.hod.entity.Hod;
 import com.college.hod.entity.Request;
-import com.college.hod.entity.User;
+import com.college.hod.repository.HodRepository;
 import com.college.hod.service.RequestService;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -15,6 +18,9 @@ public class RequestController {
 
     @Autowired
     private RequestService requestService;
+
+    @Autowired
+    private HodRepository hodRepository;
 
     @PostMapping("/create")
     public Request createRequest(@RequestBody Request request) {
@@ -48,7 +54,49 @@ public class RequestController {
     }
 
     @GetMapping("/hods")
-    public List<User> getAllHods() {
-        return requestService.getAllHods();
+    public List<HodOptionResponse> getAllHods() {
+
+        List<Hod> hods = hodRepository.findAll();
+        List<HodOptionResponse> responseList = new ArrayList<>();
+
+        for (Hod hod : hods) {
+            if (hod.getUser() == null) {
+                continue;
+            }
+
+            HodOptionResponse response = new HodOptionResponse();
+
+            response.setId(hod.getUser().getId()); // IMPORTANT: request needs User ID
+            response.setHodId(hod.getId());
+            response.setEmployeeId(hod.getEmployeeId());
+            response.setUsername(hod.getEmployeeId());
+            response.setName(hod.getName());
+            response.setDepartment(hod.getDepartment());
+            response.setDesignation(hod.getDesignation());
+            response.setEmail(hod.getEmailId());
+
+            if (hod.getPhoto() != null && !hod.getPhoto().trim().isEmpty()) {
+                response.setPhoto(hod.getPhoto());
+            } else {
+                response.setPhoto("https://www.iare.ac.in/sites/default/files/" + hod.getEmployeeId() + "_0.png");
+            }
+
+            responseList.add(response);
+        }
+
+        return responseList;
+    }
+
+    @Data
+    public static class HodOptionResponse {
+        private Long id;
+        private Long hodId;
+        private String employeeId;
+        private String username;
+        private String name;
+        private String department;
+        private String designation;
+        private String email;
+        private String photo;
     }
 }

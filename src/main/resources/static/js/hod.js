@@ -10,6 +10,19 @@ window.onload = function () {
     showDashboard();
 };
 
+function getHodEmployeeId() {
+    return user.employeeId || user.employee_id || user.username || "IARE10033";
+}
+
+function getHodName() {
+    return user.name || user.fullName || user.username || "HOD";
+}
+
+function getHodPhotoUrl() {
+    const empId = getHodEmployeeId();
+    return `https://www.iare.ac.in/sites/default/files/${empId}_0.png`;
+}
+
 function initializeSidebar() {
     const menuToggle = document.getElementById("menuToggle");
     const mobileMenuBtn = document.getElementById("mobileMenuBtn");
@@ -30,13 +43,8 @@ function initializeSidebar() {
         });
     }
 
-    if (mobileCloseBtn) {
-        mobileCloseBtn.addEventListener("click", closeMobileSidebar);
-    }
-
-    if (sidebarOverlay) {
-        sidebarOverlay.addEventListener("click", closeMobileSidebar);
-    }
+    if (mobileCloseBtn) mobileCloseBtn.addEventListener("click", closeMobileSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener("click", closeMobileSidebar);
 
     function closeMobileSidebar() {
         sidePanel.classList.remove("mobile-open");
@@ -47,38 +55,27 @@ function initializeSidebar() {
 }
 
 function setHodInfo() {
+    const hodName = getHodName();
+    const employeeId = getHodEmployeeId();
+    const photoUrl = getHodPhotoUrl();
+
     const hodNameEl = document.getElementById("hodName");
-    const userInitialEl = document.getElementById("userInitial");
-    const profileNameEl = document.getElementById("profileName");
-    const profileUsernameEl = document.getElementById("profileUsername");
-    const profileRoleEl = document.getElementById("profileRole");
-    const hodRoleTextEl = document.getElementById("hodRoleText");
+    const hodEmployeeIdEl = document.getElementById("hodEmployeeId");
+    const hodHeaderPhotoEl = document.getElementById("hodHeaderPhoto");
+    const updatePasswordNav = document.getElementById("updatePasswordNav");
 
-    const username = user.username || "HOD";
-    const roleText = "Head of Department";
+    if (hodNameEl) hodNameEl.textContent = hodName;
+    if (hodEmployeeIdEl) hodEmployeeIdEl.textContent = employeeId;
 
-    if (hodNameEl) {
-        hodNameEl.textContent = username;
+    if (hodHeaderPhotoEl) {
+        hodHeaderPhotoEl.src = photoUrl;
+        hodHeaderPhotoEl.onerror = function () {
+            this.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(hodName) + "&background=2563eb&color=fff";
+        };
     }
 
-    if (userInitialEl) {
-        userInitialEl.textContent = username.charAt(0).toUpperCase();
-    }
-
-    if (profileNameEl) {
-        profileNameEl.textContent = username;
-    }
-
-    if (profileUsernameEl) {
-        profileUsernameEl.textContent = username;
-    }
-
-    if (profileRoleEl) {
-        profileRoleEl.textContent = roleText;
-    }
-
-    if (hodRoleTextEl) {
-        hodRoleTextEl.textContent = roleText;
+    if (updatePasswordNav && user.passwordChanged === true) {
+        updatePasswordNav.style.display = "none";
     }
 }
 
@@ -87,9 +84,7 @@ function setActiveNav(clickedItem) {
         item.classList.remove("active");
     });
 
-    if (clickedItem) {
-        clickedItem.classList.add("active");
-    }
+    if (clickedItem) clickedItem.classList.add("active");
 }
 
 function showDashboard(event) {
@@ -98,9 +93,7 @@ function showDashboard(event) {
         setActiveNav(event.currentTarget);
     } else {
         const dashboardNav = document.querySelector('.nav-link[data-page="dashboard"]');
-        if (dashboardNav) {
-            setActiveNav(dashboardNav);
-        }
+        if (dashboardNav) setActiveNav(dashboardNav);
     }
 
     document.getElementById("pageTitle").textContent = "Dashboard";
@@ -128,13 +121,7 @@ function loadPage(event, pageUrl, title) {
     document.getElementById("iframeSection").classList.remove("hidden");
 
     const frame = document.getElementById("contentFrame");
-    const resolvedPageUrl = new URL(pageUrl, window.location.href);
-
-    frame.onerror = function () {
-        alert("Unable to load " + title + " right now.");
-    };
-
-    frame.src = resolvedPageUrl.pathname + "?t=" + new Date().getTime();
+    frame.src = pageUrl + "?t=" + new Date().getTime();
 
     if (window.innerWidth <= 900 && typeof window.closeMobileSidebar === "function") {
         window.closeMobileSidebar();
@@ -156,14 +143,8 @@ function animateCount(elementId, targetValue) {
 
         element.textContent = currentValue;
 
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        } else {
-            element.textContent = finalValue;
-            element.classList.remove("pop");
-            void element.offsetWidth;
-            element.classList.add("pop");
-        }
+        if (progress < 1) requestAnimationFrame(update);
+        else element.textContent = finalValue;
     }
 
     requestAnimationFrame(update);
@@ -172,46 +153,32 @@ function animateCount(elementId, targetValue) {
 function loadDashboardCounts() {
     fetch(`/hod/${user.id}/requests`)
         .then((res) => {
-            if (!res.ok) {
-                throw new Error("Failed to load requests");
-            }
+            if (!res.ok) throw new Error("Failed to load requests");
             return res.json();
         })
         .then((data) => {
-            let totalCount = 0;
             let pendingCount = 0;
             let certificatePendingCount = 0;
             let approvedCount = 0;
             let rejectedCount = 0;
 
-            totalCount = data.length;
-
             data.forEach((req) => {
-                if (req.status === "PENDING") {
-                    pendingCount++;
-                } else if (req.status === "APPROVED") {
+                if (req.status === "PENDING") pendingCount++;
+                else if (req.status === "APPROVED") {
                     approvedCount++;
-                    if (!req.certificate) {
-                        certificatePendingCount++;
-                    }
-                } else if (req.status === "REJECTED") {
-                    rejectedCount++;
-                }
+                    if (!req.certificate) certificatePendingCount++;
+                } else if (req.status === "REJECTED") rejectedCount++;
             });
 
-            animateCount("totalCount", totalCount);
+            animateCount("totalCount", data.length);
             animateCount("pendingCount", pendingCount);
             animateCount("certificatePendingCount", certificatePendingCount);
             animateCount("approvedCount", approvedCount);
             animateCount("rejectedCount", rejectedCount);
         })
-        .catch((err) => {
-            console.error(err);
-            document.getElementById("totalCount").textContent = "0";
-            document.getElementById("pendingCount").textContent = "0";
-            document.getElementById("certificatePendingCount").textContent = "0";
-            document.getElementById("approvedCount").textContent = "0";
-            document.getElementById("rejectedCount").textContent = "0";
+        .catch(() => {
+            ["totalCount", "pendingCount", "certificatePendingCount", "approvedCount", "rejectedCount"]
+                .forEach(id => document.getElementById(id).textContent = "0");
         });
 }
 

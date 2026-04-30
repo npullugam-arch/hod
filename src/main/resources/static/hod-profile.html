@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HOD Profile</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Inter, Arial, sans-serif;
+            background: linear-gradient(135deg, #eef4ff, #f8fafc);
+            padding: 26px;
+        }
+
+        .profile-card {
+            max-width: 1050px;
+            margin: auto;
+            background: white;
+            border-radius: 26px;
+            padding: 32px;
+            box-shadow: 0 24px 55px rgba(15, 23, 42, 0.12);
+        }
+
+        .top {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+            padding-bottom: 26px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .photo {
+            width: 145px;
+            height: 145px;
+            border-radius: 24px;
+            object-fit: cover;
+            border: 4px solid #dbeafe;
+            background: #f1f5f9;
+        }
+
+        .title-box h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 31px;
+            font-weight: 800;
+        }
+
+        .role {
+            color: #2563eb;
+            font-weight: 800;
+            margin-top: 8px;
+            font-size: 16px;
+        }
+
+        .emp {
+            margin-top: 8px;
+            color: #475569;
+            font-weight: 700;
+        }
+
+        .section-title {
+            margin-top: 28px;
+            margin-bottom: 14px;
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .info {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info span {
+            display: block;
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 7px;
+            font-weight: 600;
+        }
+
+        .info strong {
+            color: #0f172a;
+            font-size: 15px;
+            word-break: break-word;
+        }
+
+        @media(max-width: 900px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media(max-width: 650px) {
+            body {
+                padding: 16px;
+            }
+
+            .top {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="profile-card">
+
+    <div class="top">
+        <img id="hodPhoto" class="photo" src="" alt="HOD Photo">
+
+        <div class="title-box">
+            <h2 id="hodName">HOD Name</h2>
+            <div class="role">Head of Department</div>
+            <div class="emp" id="employeeIdText">Employee ID</div>
+        </div>
+    </div>
+
+    <div class="section-title">Official Details</div>
+
+    <div class="grid">
+        <div class="info">
+            <span>Name</span>
+            <strong id="nameValue">-</strong>
+        </div>
+
+        <div class="info">
+            <span>Employee ID</span>
+            <strong id="employeeIdValue">-</strong>
+        </div>
+
+        <div class="info">
+            <span>Email</span>
+            <strong id="emailValue">-</strong>
+        </div>
+
+        <div class="info">
+            <span>Department</span>
+            <strong id="departmentValue">-</strong>
+        </div>
+
+        <div class="info">
+            <span>Designation</span>
+            <strong id="designationValue">Head of Department</strong>
+        </div>
+
+        <div class="info">
+            <span>Status</span>
+            <strong id="statusValue">Active</strong>
+        </div>
+    </div>
+
+    <div class="section-title">Additional Details</div>
+
+    <div class="grid">
+        <div class="info">
+            <span>Religion</span>
+            <strong id="religionValue">-</strong>
+        </div>
+
+        <div class="info">
+            <span>Present Flat No</span>
+            <strong id="presentFlatNoValue">-</strong>
+        </div>
+
+        <div class="info">
+            <span>Present Town</span>
+            <strong id="presentTownValue">-</strong>
+        </div>
+
+        <div class="info">
+            <span>Present State</span>
+            <strong id="presentStateValue">-</strong>
+        </div>
+
+        <div class="info">
+            <span>Present Pincode</span>
+            <strong id="presentPincodeValue">-</strong>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user) {
+        window.top.location.href = "index.html";
+    }
+
+    function value(...keys) {
+        for (const key of keys) {
+            if (user[key] !== undefined && user[key] !== null && String(user[key]).trim() !== "") {
+                return user[key];
+            }
+        }
+        return "-";
+    }
+
+    const employeeId = value("employeeId", "employee_id", "username");
+    const hodName = value("name", "fullName", "hodName");
+
+    const finalName = hodName === "-" ? employeeId : hodName;
+    const photoUrl = `https://www.iare.ac.in/sites/default/files/${employeeId}_0.png`;
+
+    document.getElementById("hodPhoto").src = photoUrl;
+    document.getElementById("hodPhoto").onerror = function () {
+        this.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(finalName) + "&background=2563eb&color=fff";
+    };
+
+    document.getElementById("hodName").textContent = finalName;
+    document.getElementById("employeeIdText").textContent = employeeId;
+
+    document.getElementById("nameValue").textContent = finalName;
+    document.getElementById("employeeIdValue").textContent = employeeId;
+    document.getElementById("emailValue").textContent = value("email", "emailId", "email_id");
+    document.getElementById("departmentValue").textContent = value("department", "dept", "deptName");
+    document.getElementById("designationValue").textContent = value("designation") === "-" ? "Head of Department" : value("designation");
+    document.getElementById("statusValue").textContent = value("status") === "-" ? "Active" : value("status");
+
+    document.getElementById("religionValue").textContent = value("religion");
+    document.getElementById("presentFlatNoValue").textContent = value("present_flatno", "presentFlatno", "presentFlatNo");
+    document.getElementById("presentTownValue").textContent = value("present_town", "presentTown");
+    document.getElementById("presentStateValue").textContent = value("present_state", "presentState");
+    document.getElementById("presentPincodeValue").textContent = value("present_pincode", "presentPincode");
+</script>
+
+</body>
+</html>

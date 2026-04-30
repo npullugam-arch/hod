@@ -5,6 +5,9 @@ if (!user) {
 }
 
 const hodSelect = document.getElementById("hodSelect");
+const hodSelectBtn = document.getElementById("hodSelectBtn");
+const hodOptions = document.getElementById("hodOptions");
+
 const reasonSelect = document.getElementById("reason");
 const startDateInput = document.getElementById("startDate");
 const endDateInput = document.getElementById("endDate");
@@ -18,6 +21,16 @@ window.addEventListener("DOMContentLoaded", () => {
     attachValidationListeners();
     submitBtn.addEventListener("click", createRequest);
     closeModalBtn.addEventListener("click", closeSuccessModal);
+
+    hodSelectBtn.addEventListener("click", () => {
+        hodOptions.classList.toggle("show");
+    });
+
+    document.addEventListener("click", function (event) {
+        if (!event.target.closest("#hodCustomSelect")) {
+            hodOptions.classList.remove("show");
+        }
+    });
 });
 
 function loadHods() {
@@ -29,24 +42,71 @@ function loadHods() {
             return res.json();
         })
         .then((data) => {
-            hodSelect.innerHTML = `<option value="">-- Select HOD --</option>`;
+            hodOptions.innerHTML = "";
+            hodSelect.value = "";
+            hodSelectBtn.innerHTML = `
+                <span class="hod-placeholder">-- Select HOD --</span>
+                <i class="fa-solid fa-chevron-down"></i>
+            `;
 
             if (!Array.isArray(data) || data.length === 0) {
-                hodSelect.innerHTML = `<option value="">No HODs available</option>`;
+                hodSelectBtn.innerHTML = `
+                    <span class="hod-placeholder">No HODs available</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                `;
                 return;
             }
 
             data.forEach((hod) => {
-                hodSelect.innerHTML += `
-                    <option value="${hod.id}">
-                        ${escapeHtml(hod.username)}
-                    </option>
+                const hodId = hod.id;
+                const employeeId = hod.employeeId || hod.employee_id || hod.username || "HOD";
+                const hodName = hod.name || hod.fullName || hod.hodName || hod.username || "HOD";
+                const department = hod.department || hod.dept || "Head of Department";
+                const photo = hod.photo || `https://www.iare.ac.in/sites/default/files/${employeeId}_0.png`;
+
+                const option = document.createElement("button");
+                option.type = "button";
+                option.className = "hod-option";
+                option.innerHTML = `
+                    <img src="${photo}" 
+                         onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(hodName)}&background=2563eb&color=fff'"
+                         alt="HOD" />
+                    <div class="hod-option-info">
+                        <strong>${escapeHtml(hodName)}</strong>
+                        <span>${escapeHtml(employeeId)} • ${escapeHtml(department)}</span>
+                    </div>
                 `;
+
+                option.addEventListener("click", () => {
+                    hodSelect.value = hodId;
+
+                    hodSelectBtn.innerHTML = `
+                        <span class="selected-hod">
+                            <img src="${photo}" 
+                                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(hodName)}&background=2563eb&color=fff'"
+                                 alt="HOD" />
+                            <span>
+                                <strong>${escapeHtml(hodName)}</strong>
+                                <small>${escapeHtml(employeeId)}</small>
+                            </span>
+                        </span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    `;
+
+                    hodOptions.classList.remove("show");
+                    removeWarning(hodSelect);
+                });
+
+                hodOptions.appendChild(option);
             });
         })
         .catch((err) => {
             console.error(err);
-            hodSelect.innerHTML = `<option value="">Unable to load HODs</option>`;
+            hodOptions.innerHTML = "";
+            hodSelectBtn.innerHTML = `
+                <span class="hod-placeholder">Unable to load HODs</span>
+                <i class="fa-solid fa-chevron-down"></i>
+            `;
         });
 }
 
@@ -147,6 +207,12 @@ function clearForm() {
     startDateInput.value = "";
     endDateInput.value = "";
     descriptionInput.value = "";
+
+    hodSelectBtn.innerHTML = `
+        <span class="hod-placeholder">-- Select HOD --</span>
+        <i class="fa-solid fa-chevron-down"></i>
+    `;
+
     clearAllWarnings();
 }
 
@@ -162,8 +228,6 @@ function attachValidationListeners() {
     const allInputs = document.querySelectorAll("input, select, textarea");
 
     allInputs.forEach((input) => {
-        // Removed the "focus" listener so auto-focusing on validation failure 
-        // doesn't instantly clear the warning animation.
         input.addEventListener("input", () => removeWarning(input));
         input.addEventListener("change", () => removeWarning(input));
         input.addEventListener("click", () => removeWarning(input));
@@ -209,7 +273,7 @@ function clearAllWarnings() {
 }
 
 function escapeHtml(value) {
-    return String(value)
+    return String(value || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")

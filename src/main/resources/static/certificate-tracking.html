@@ -20,7 +20,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Student Name</th>
+                            <th>Student</th>
                             <th>Event Name</th>
                             <th>Event End</th>
                             <th>Deadline</th>
@@ -32,6 +32,83 @@
                 </table>
             </div>
         </section>
+    </div>
+
+    <!-- Student Details Modal -->
+    <div id="studentDetailsModal" class="modal-overlay hidden">
+        <div class="modal-box student-modal-box">
+            <div class="modal-header">
+                <h3>Student Details</h3>
+                <button class="modal-close" onclick="closeStudentDetailsModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="student-profile-top">
+                    <img id="studentDetailsPhoto" class="student-details-photo" src="" alt="Student Photo" />
+                    <div class="student-profile-meta">
+                        <div id="studentDetailsName" class="modal-student-name">-</div>
+                        <div id="studentDetailsRollNo" class="modal-student-roll">-</div>
+                    </div>
+                </div>
+
+                <div class="student-details-grid">
+                    <div class="detail-card">
+                        <div class="detail-label">Email</div>
+                        <div id="studentDetailsEmail" class="detail-value">-</div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-label">Branch</div>
+                        <div id="studentDetailsBranch" class="detail-value">-</div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-label">Section</div>
+                        <div id="studentDetailsSection" class="detail-value">-</div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-label">Semester</div>
+                        <div id="studentDetailsSem" class="detail-value">-</div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-label">Gender</div>
+                        <div id="studentDetailsGender" class="detail-value">-</div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-label">Date of Birth</div>
+                        <div id="studentDetailsDob" class="detail-value">-</div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-label">Student Phone</div>
+                        <div id="studentDetailsStudentPhone" class="detail-value">-</div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-label">Parent Phone</div>
+                        <div id="studentDetailsParentPhone" class="detail-value">-</div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-label">Father Name</div>
+                        <div id="studentDetailsFatherName" class="detail-value">-</div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-label">Admission Type</div>
+                        <div id="studentDetailsAdmissionType" class="detail-value">-</div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-label">Caste</div>
+                        <div id="studentDetailsCaste" class="detail-value">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="js/certificate-tracking.js"></script>

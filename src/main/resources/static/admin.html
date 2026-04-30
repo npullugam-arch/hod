@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EduPermis | Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+    <div class="admin-page">
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="https://i.postimg.cc/JhLRjkbv/sanchara-logo-white-transparent.png" alt="Logo" />
+            </div>
+
+            <div class="admin-profile">
+                <div class="avatar" id="adminInitial">A</div>
+                <div>
+                    <h3 id="adminName">Admin</h3>
+                    <p id="adminRole">ADMIN</p>
+                </div>
+            </div>
+
+            <nav class="menu">
+                <button class="menu-btn active" data-section="dashboardSection">Dashboard</button>
+                <button class="menu-btn" type="button" data-section="hodPage" onclick="openHodPage()">HOD Dashboard</button>
+                <button class="menu-btn" data-section="manualSection">Manual Student Create</button>
+                <button class="menu-btn" data-section="excelSection">Student Excel Upload</button>
+                <button class="menu-btn" data-section="hodExcelSection">HOD Excel Upload</button>
+                <button class="menu-btn" data-section="studentsPage">Students</button>
+            </nav>
+
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </aside>
+
+        <main class="content">
+            <header class="topbar">
+                <div>
+                    <h1 id="pageTitle">Admin Dashboard</h1>
+                    <p id="pageSubtitle">Manage students, HODs, Excel uploads, and records.</p>
+                </div>
+            </header>
+
+            <section id="dashboardSection" class="content-card active">
+                <div class="dashboard-grid">
+                    <div class="dashboard-box">
+                        <h2>Student Management</h2>
+                        <p>Search students, update details, and change student passwords.</p>
+                        <button class="primary-btn" type="button" onclick="openStudentsPage()">Open Students</button>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <h2>HOD Dashboard</h2>
+                        <p>Open HOD records, HOD details, and HOD management page.</p>
+                        <button class="primary-btn secondary-btn" type="button" onclick="openHodPage()">Open HOD Dashboard</button>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <h2>Manual Creation</h2>
+                        <p>Create a single student account manually with HOD mapping.</p>
+                        <button class="primary-btn secondary-btn" type="button" onclick="showAdminSection('manualSection')">Open Manual Create</button>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <h2>Student Excel Upload</h2>
+                        <p>Upload bulk students and generate student usernames/passwords.</p>
+                        <button class="primary-btn secondary-btn" type="button" onclick="showAdminSection('excelSection')">Open Student Upload</button>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <h2>HOD Excel Upload</h2>
+                        <p>Upload bulk HOD details and generate HOD login accounts.</p>
+                        <button class="primary-btn secondary-btn" type="button" onclick="showAdminSection('hodExcelSection')">Open HOD Upload</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="manualSection" class="content-card">
+                <h2>Create Student Manually</h2>
+
+                <form id="manualStudentForm" class="form-grid">
+                    <input type="text" id="name" placeholder="Student Name" required />
+                    <input type="text" id="rollNo" placeholder="Roll No" />
+                    <input type="email" id="email" placeholder="Email" />
+                    <input type="text" id="section" placeholder="Section" />
+                    <input type="text" id="username" placeholder="Username" required />
+                    <input type="text" id="password" placeholder="Password" required />
+                    <input type="text" id="fatherName" placeholder="Father Name" />
+                    <input type="text" id="gender" placeholder="Gender" />
+                    <input type="text" id="branch" placeholder="Branch" />
+                    <input type="number" id="deptId" placeholder="Dept ID" />
+                    <input type="number" id="sem" placeholder="Semester" />
+                    <input type="text" id="sec" placeholder="Sec" />
+                    <input type="number" id="sectionId" placeholder="Section ID" />
+                    <input type="text" id="admissionType" placeholder="Admission Type" />
+                    <input type="text" id="caste" placeholder="Caste" />
+
+                    <select id="hodId" required>
+                        <option value="">Select HOD</option>
+                    </select>
+
+                    <button type="submit" class="primary-btn">Create Student</button>
+                </form>
+
+                <div id="manualStatus" class="status-box"></div>
+            </section>
+
+            <section id="excelSection" class="content-card">
+                <h2>Upload Student Excel</h2>
+
+                <div class="upload-info">
+                    <p><strong>Note:</strong> username and password will be set as <strong>Roll No</strong>.</p>
+                    <p>Select HOD first, then upload the student Excel sheet.</p>
+                </div>
+
+                <div class="upload-grid">
+                    <select id="excelHodId" required>
+                        <option value="">Select HOD</option>
+                    </select>
+
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" />
+                    <button type="button" class="primary-btn" id="uploadBtn">Upload Student Excel</button>
+                </div>
+
+                <div id="excelStatus" class="status-box"></div>
+                <div id="uploadSummary" class="summary-box"></div>
+            </section>
+
+            <section id="hodExcelSection" class="content-card">
+                <h2>Upload HOD Excel</h2>
+
+                <div class="upload-info hod-upload-info">
+                    <p><strong>Excel columns supported:</strong></p>
+                    <p>Photo, Emp ID, Name, Department, Designation, Ph.D Awarded, Date Of Joining, Phone Number, Email-Id, Religion, Caste Category, Blood Group, Present Address, Permanent Address, JNTU_UID, Status.</p>
+                    <p><strong>Note:</strong> HOD username and password will be set as <strong>Emp ID</strong>.</p>
+                </div>
+
+                <div class="hod-upload-card">
+                    <label for="hodExcelFile" class="file-label">Choose HOD Excel File</label>
+                    <input type="file" id="hodExcelFile" accept=".xlsx,.xls" />
+                    <button type="button" class="primary-btn" id="hodUploadBtn">Upload HOD Excel</button>
+                </div>
+
+                <div id="hodExcelStatus" class="status-box"></div>
+                <div id="hodUploadSummary" class="summary-box"></div>
+            </section>
+
+            <section id="iframeSection" class="content-card iframe-card">
+                <iframe id="adminFrame" src="" title="Admin Content"></iframe>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>

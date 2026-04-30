@@ -20,12 +20,17 @@
             </p>
 
             <div class="input-group" id="hodGroup">
-                <label for="hodSelect">Select HOD</label>
-                <div class="input-with-icon select-wrapper">
-                    <i class="fa-solid fa-user-tie"></i>
-                    <select id="hodSelect">
-                        <option value="">Loading HODs...</option>
-                    </select>
+                <label>Select HOD</label>
+
+                <input type="hidden" id="hodSelect" />
+
+                <div class="hod-custom-select" id="hodCustomSelect">
+                    <button type="button" class="hod-select-btn" id="hodSelectBtn">
+                        <span class="hod-placeholder">Loading HODs...</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+
+                    <div class="hod-options" id="hodOptions"></div>
                 </div>
             </div>
 

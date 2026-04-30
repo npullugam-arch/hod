@@ -1,0 +1,164 @@
+package com.college.hod.controller;
+
+import com.college.hod.dto.AdminHodUpdateRequest;
+import com.college.hod.dto.AdminStudentCreateRequest;
+import com.college.hod.dto.AdminStudentPasswordUpdateRequest;
+import com.college.hod.dto.AdminStudentUpdateRequest;
+import com.college.hod.dto.ExcelUploadResponse;
+import com.college.hod.entity.Hod;
+import com.college.hod.entity.Student;
+import com.college.hod.service.AdminService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+@RestController
+@RequestMapping("/admin")
+@CrossOrigin(origins = "*")
+public class AdminController {
+
+    @Autowired
+    private AdminService adminService;
+
+    @GetMapping("/hods")
+    public ResponseEntity<?> getAllHods() {
+        return ResponseEntity.ok(adminService.getAllHods());
+    }
+
+    @GetMapping("/hod/{hodId}")
+    public ResponseEntity<?> getHodById(@PathVariable Long hodId) {
+        try {
+            return ResponseEntity.ok(adminService.getHodById(hodId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/hod/{hodId}")
+    public ResponseEntity<?> updateHodDetails(
+            @PathVariable Long hodId,
+            @RequestBody AdminHodUpdateRequest request
+    ) {
+        try {
+            Hod updatedHod = adminService.updateHodDetails(hodId, request);
+            return ResponseEntity.ok(updatedHod);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/hod/{hodId}/password")
+    public ResponseEntity<?> getHodPassword(@PathVariable Long hodId) {
+        try {
+            return ResponseEntity.ok(adminService.getHodPassword(hodId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/hod/{hodId}/password")
+    public ResponseEntity<?> updateHodPassword(
+            @PathVariable Long hodId,
+            @RequestBody AdminStudentPasswordUpdateRequest request
+    ) {
+        try {
+            adminService.updateHodPassword(hodId, request);
+            return ResponseEntity.ok("HOD password updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/hod/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadHodsExcel(@RequestParam("file") MultipartFile file) {
+        try {
+            ExcelUploadResponse response = adminService.uploadHodsExcel(file);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/student/create")
+    public ResponseEntity<?> createStudent(@RequestBody AdminStudentCreateRequest request) {
+        try {
+            Student savedStudent = adminService.createStudent(request);
+            return ResponseEntity.ok(savedStudent);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/student/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadStudentsExcel(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("hodId") Long hodId
+    ) {
+        try {
+            ExcelUploadResponse response = adminService.uploadStudentsExcel(file, hodId);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/students")
+    public ResponseEntity<?> getStudents(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String branch,
+            @RequestParam(required = false) String section,
+            @RequestParam(required = false) Integer sem
+    ) {
+        try {
+            return ResponseEntity.ok(adminService.getAllStudents(search, branch, section, sem));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<?> getStudentById(@PathVariable Long studentId) {
+        try {
+            return ResponseEntity.ok(adminService.getStudentById(studentId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/student/{studentId}")
+    public ResponseEntity<?> updateStudentDetails(
+            @PathVariable Long studentId,
+            @RequestBody AdminStudentUpdateRequest request
+    ) {
+        try {
+            Student updatedStudent = adminService.updateStudentDetails(studentId, request);
+            return ResponseEntity.ok(updatedStudent);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/student/{studentId}/password")
+    public ResponseEntity<?> getStudentPassword(@PathVariable Long studentId) {
+        try {
+            return ResponseEntity.ok(adminService.getStudentPassword(studentId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/student/{studentId}/password")
+    public ResponseEntity<?> updateStudentPassword(
+            @PathVariable Long studentId,
+            @RequestBody AdminStudentPasswordUpdateRequest request
+    ) {
+        try {
+            adminService.updateStudentPassword(studentId, request);
+            return ResponseEntity.ok("Student password updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+}

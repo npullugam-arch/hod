@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login - HOD System</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/adminlogin.css" />
+</head>
+<body>
+    <main class="admin-page">
+        <section class="admin-card">
+            <div class="logo-box">
+                <img
+                    src="https://i.postimg.cc/vB9nm9tV/sanchara-logo-clean.png"
+                    alt="Portal Logo"
+                />
+            </div>
+
+            <h1>Admin Login</h1>
+            <p class="subtitle">Secure access for administrator only</p>
+
+            <form id="adminLoginForm">
+                <div class="input-group">
+                    <label for="username">Admin Username</label>
+                    <input type="text" id="username" placeholder="Enter admin username" autocomplete="off" required />
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Admin Password</label>
+                    <input type="password" id="password" placeholder="Enter admin password" autocomplete="off" required />
+                </div>
+
+                <button type="submit" id="adminLoginBtn">
+                    <span class="btn-text">Login as Admin</span>
+                    <span class="btn-icon">→</span>
+                </button>
+            </form>
+
+            <div id="statusBox" class="status-box"></div>
+
+            <a href="index.html" class="back-link">← Back to Student / HOD Login</a>
+        </section>
+    </main>
+
+    <script src="js/adminlogin.js"></script>
+</body>
+</html>

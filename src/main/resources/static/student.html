@@ -14,12 +14,11 @@
 <body>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Sidebar -->
     <aside class="side-panel" id="sidePanel">
         <div class="sidebar-top">
-           <div class="logo-section">
-    <img src="https://i.postimg.cc/JhLRjkbv/sanchara-logo-white-transparent.png" style="width: 100%; max-width: 180px;  padding: 10px; border-radius: 12px;"/>
-</div>
+            <div class="logo-section">
+                <img src="https://i.postimg.cc/JhLRjkbv/sanchara-logo-white-transparent.png" style="width: 100%; max-width: 180px; padding: 10px; border-radius: 12px;" />
+            </div>
 
             <button class="menu-toggle" id="menuToggle" type="button">☰</button>
             <button class="mobile-close-btn" id="mobileCloseBtn" type="button">✕</button>
@@ -57,7 +56,7 @@
             </div>
 
             <div class="nav-item">
-                <a href="#" class="nav-link" data-page="reminders" onclick="openReminderModal(event)">
+                <a href="#" class="nav-link" data-page="reminders" onclick="loadPage(event, 'reminders.html', 'Reminders')">
                     <i class="fa-solid fa-bell"></i>
                     <span>Reminders</span>
                 </a>
@@ -67,8 +66,15 @@
         <nav class="nav-menu nav-bottom">
             <p class="menu-label">Account</p>
 
+            <div class="nav-item" id="updatePasswordNavItem">
+                <a href="#" class="nav-link" data-page="password" onclick="loadPage(event, 'password.html', 'Update Password')">
+                    <i class="fa-solid fa-key"></i>
+                    <span>Update Password</span>
+                </a>
+            </div>
+
             <div class="nav-item">
-                <a href="#" class="nav-link" onclick="openProfileCard(event)">
+                <a href="#" class="nav-link" data-page="profile" onclick="loadPage(event, 'profile.html', 'Profile')">
                     <i class="fa-solid fa-address-book"></i>
                     <span>Profile</span>
                 </a>
@@ -83,7 +89,6 @@
         </nav>
     </aside>
 
-    <!-- Main -->
     <main class="main-wrapper">
         <div class="mobile-top-bar">
             <button class="mobile-hamburger" id="mobileMenuBtn" type="button">☰</button>
@@ -100,22 +105,28 @@
             </div>
 
             <div class="header-actions">
-                <button class="bell-btn" type="button" onclick="openReminderModal()" title="Reminders">
+                <button class="bell-btn" type="button" onclick="loadPage(event, 'reminders.html', 'Reminders')" title="Reminders">
                     <i class="fa-solid fa-bell"></i>
                     <span id="reminderBadge" class="reminder-badge">0</span>
                 </button>
 
-                <div class="user-profile-card" onclick="openProfileCard(event)">
+                <div class="user-profile-card" onclick="loadProfilePage(event)">
                     <div class="profile-info">
                         <span class="user-name" id="studentName">Student</span>
                         <span class="user-id" id="studentId">Student ID</span>
                     </div>
+
                     <div class="user-avatar" id="userInitial">S</div>
+
+                    <img
+                        id="studentProfileImage"
+                        alt="Student Profile"
+                        style="display: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;"
+                    />
                 </div>
             </div>
         </header>
 
-        <!-- Dashboard section -->
         <section id="dashboardSection">
             <div class="stats-grid">
                 <div class="stat-card card-total">
@@ -184,67 +195,17 @@
                     <h2>Student Dashboard</h2>
                 </div>
                 <p class="dashboard-note">
-                    Use the left menu to apply for permission, check your requests, upload certificates, and view reminder notifications.
+                    Use the left menu to apply for permission, check your requests, upload certificates, view reminders, and update your password for the first-time login.
                 </p>
             </section>
         </section>
 
-        <!-- iframe section -->
         <section id="iframeSection" class="iframe-section hidden">
             <div class="frame-card">
                 <iframe id="contentFrame" src="" title="Student Content"></iframe>
             </div>
         </section>
     </main>
-
-    <!-- Reminder Modal -->
-    <div id="reminderModal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <div class="modal-header">
-                <div>
-                    <h2>Reminders</h2>
-                    <p>Important notifications about pending certificate uploads.</p>
-                </div>
-                <button type="button" class="modal-close-btn" onclick="closeReminderModal()">×</button>
-            </div>
-
-            <div id="reminderList" class="modal-body">
-                <div class="empty-state">Loading reminders...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Profile Modal -->
-    <div id="profileModal" class="modal-overlay hidden">
-        <div class="profile-modal-card">
-            <div class="modal-header">
-                <div>
-                    <h2>Profile</h2>
-                    <p>Your student account information.</p>
-                </div>
-                <button type="button" class="modal-close-btn" onclick="closeProfileCard()">×</button>
-            </div>
-
-            <div class="profile-body">
-                <div class="profile-avatar-large" id="profileAvatarLarge">S</div>
-
-                <div class="profile-row">
-                    <span class="profile-label">Name</span>
-                    <span class="profile-value" id="profileName">Student</span>
-                </div>
-
-                <div class="profile-row">
-                    <span class="profile-label">User ID</span>
-                    <span class="profile-value" id="profileUserId">-</span>
-                </div>
-
-                <div class="profile-row">
-                    <span class="profile-label">Role</span>
-                    <span class="profile-value" id="profileRole">STUDENT</span>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="js/student.js"></script>
 </body>

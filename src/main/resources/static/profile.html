@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Profile</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <link rel="stylesheet" href="css/profile.css" />
+</head>
+<body>
+
+<div class="main-container">
+    <div class="profile-wrapper">
+        <div class="profile-card">
+
+            <div class="profile-top">
+                <div class="profile-image">
+                    <div class="avatar" id="profileAvatar">S</div>
+                    <img id="profileImage" alt="Student Profile" />
+                </div>
+
+                <div class="profile-head-content">
+                    <h2 class="student-name" id="profileName">Student</h2>
+                    <p class="student-role" id="profileRole">STUDENT</p>
+
+                    <div class="top-details">
+                        <div class="top-box semester">
+                            <i class="fa-solid fa-layer-group icon"></i>
+                            <span>Semester <b id="profileSemTop">-</b></span>
+                        </div>
+
+                        <div class="top-box branch">
+                            <i class="fa-solid fa-code-branch icon"></i>
+                            <span id="profileBranchTop">-</span>
+                        </div>
+
+                        <div class="top-box idbox">
+                            <i class="fa-solid fa-id-badge icon"></i>
+                            <span>ID: <b id="profileStudentIdTop">-</b></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="details-section">
+                <div class="section-title">
+                    <i class="fa-solid fa-user icon"></i>
+                    Student Details
+                </div>
+
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">User ID</div>
+                        <div class="detail-value" id="profileUserId">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Student ID</div>
+                        <div class="detail-value" id="profileStudentId">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Username</div>
+                        <div class="detail-value" id="profileUsername">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Email</div>
+                        <div class="detail-value" id="profileEmail">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Roll Number</div>
+                        <div class="detail-value" id="profileRollNumber">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Father Name</div>
+                        <div class="detail-value" id="profileFatherName">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Gender</div>
+                        <div class="detail-value" id="profileGender">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Branch</div>
+                        <div class="detail-value" id="profileBranch">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Semester</div>
+                        <div class="detail-value" id="profileSem">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Section</div>
+                        <div class="detail-value" id="profileSection">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Caste</div>
+                        <div class="detail-value" id="profileCaste">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Student Phone Number</div>
+                        <div class="detail-value" id="profileStudentPhone">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Parent Phone Number</div>
+                        <div class="detail-value" id="profileParentPhone">-</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Date of Birth</div>
+                        <div class="detail-value" id="profileDob">-</div>
+                    </div>
+                </div>
+
+                <div id="profileStatus" class="profile-status"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="js/profile.js"></script>
+</body>
+</html>

@@ -559,3 +559,118 @@ body {
         padding: 20px 16px !important;
     }
 }
+
+.hod-custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.hod-select-btn {
+    width: 100%;
+    min-height: 58px;
+    border: 1px solid #dbe3ef;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-family: Inter, sans-serif;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.hod-placeholder {
+    color: #64748b;
+    font-weight: 700;
+}
+
+.hod-options {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 24px 50px rgba(15, 23, 42, 0.16);
+    z-index: 999;
+    max-height: 310px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.hod-options.show {
+    display: block;
+}
+
+.hod-option {
+    width: 100%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 12px;
+    border-radius: 14px;
+    cursor: pointer;
+    text-align: left;
+    font-family: Inter, sans-serif;
+}
+
+.hod-option:hover {
+    background: #eff6ff;
+}
+
+.hod-option img,
+.selected-hod img {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #dbeafe;
+    background: #f1f5f9;
+}
+
+.hod-option-info strong {
+    display: block;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.hod-option-info span {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    margin-top: 3px;
+    font-weight: 600;
+}
+
+.selected-hod {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.selected-hod strong {
+    display: block;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.selected-hod small {
+    display: block;
+    color: #64748b;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#hodSelect.error-glow + .hod-custom-select .hod-select-btn,
+#hodGroup .error-glow {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14);
+}

@@ -7,47 +7,17 @@
     <link rel="stylesheet" href="css/reminders.css" />
 </head>
 <body>
-    <div class="page-wrap">
-        <section class="content-card">
-            <div class="card-header">
-                <div>
-                    <h2>Reminders</h2>
-                    <p>Send reminders to students who have not submitted certificates.</p>
-                </div>
+    <div class="reminders-page">
+        <div class="reminders-card">
+            <div class="page-head">
+                <h2>Reminders</h2>
+                <p>Important notifications about pending certificate uploads.</p>
             </div>
 
-            <div class="toolbar">
-                <button class="bulk-btn" onclick="sendBulkReminder()">Bulk Remind All</button>
+            <div id="reminderList" class="reminder-list">
+                <div class="empty-state">Loading reminders...</div>
             </div>
-
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Select</th>
-                            <th>Student Name</th>
-                            <th>Event Name</th>
-                            <th>Event End</th>
-                            <th>Deadline</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reminderTable"></tbody>
-                </table>
-            </div>
-
-            <div class="message-card">
-                <h3>Reminder Message Preview</h3>
-                <div class="message-box">
-                    Dear Student,<br><br>
-                    You have not submitted the certificate for your approved event request.<br>
-                    Please upload your certificate before the due date to avoid overdue status.<br><br>
-                    Regards,<br>
-                    Head of Department
-                </div>
-            </div>
-        </section>
+        </div>
     </div>
 
     <script src="js/reminders.js"></script>

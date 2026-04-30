@@ -18,17 +18,20 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 100)
     private String username;
 
     @Column(nullable = false)
     @JsonIgnore
     private String password;
 
-    @Column(unique = true)
+    @Column(unique = true, length = 150)
     private String email;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Role role;
+
+    @Column(name = "password_changed", nullable = false)
+    private Boolean passwordChanged = false;
 }

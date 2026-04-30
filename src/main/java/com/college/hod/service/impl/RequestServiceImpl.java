@@ -129,8 +129,8 @@ public class RequestServiceImpl implements RequestService {
     }
 
     private Student resolveStudent(Long studentOrUserId) {
-        return studentRepository.findById(studentOrUserId)
-                .or(() -> studentRepository.findByUserId(studentOrUserId))
+        return studentRepository.findByUserId(studentOrUserId)
+                .or(() -> studentRepository.findById(studentOrUserId))
                 .orElseGet(() -> createStudentFromUser(studentOrUserId));
     }
 

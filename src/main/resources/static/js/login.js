@@ -59,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 attr: { d: mouthNeutral },
                 duration: 0.25,
             });
+
             gsap.to(char.pupils, {
                 x: 0,
                 y: 0,
@@ -66,6 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const original = char.body.dataset.originalFill || char.body.getAttribute("fill");
+
             gsap.to(char.body, {
                 fill: original,
                 y: 0,
@@ -81,9 +83,10 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.toggle("active", btn.dataset.role === role);
         });
 
-        portalNote.textContent = role === "STUDENT"
-            ? "Selected Portal: Student"
-            : "Selected Portal: HOD";
+        portalNote.textContent =
+            role === "STUDENT"
+                ? "Selected Portal: Student"
+                : "Selected Portal: HOD";
 
         clearStatus();
         resetToNeutral();
@@ -95,11 +98,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 attr: { d: mouthSmile },
                 duration: 0.2,
             });
+
             gsap.to(char.pupils, {
                 x: 0,
                 y: -2,
                 duration: 0.2,
             });
+
             gsap.to(char.el, {
                 y: -50,
                 duration: 0.3,
@@ -118,11 +123,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 attr: { d: mouthSad },
                 duration: 0.25,
             });
+
             gsap.to(char.pupils, {
                 x: 0,
                 y: 3,
                 duration: 0.25,
             });
+
             gsap.to(char.el, {
                 rotation: index % 2 === 0 ? -4 : 4,
                 duration: 0.12,
@@ -163,13 +170,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("mousemove", (e) => {
         if (isPasswordFocused) return;
 
-        const x = e.clientX;
-        const y = e.clientY;
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-
-        const moveX = (x / windowWidth - 0.5) * 8;
-        const moveY = (y / windowHeight - 0.5) * 8;
+        const moveX = (e.clientX / window.innerWidth - 0.5) * 8;
+        const moveY = (e.clientY / window.innerHeight - 0.5) * 8;
 
         charactersData.forEach((char) => {
             gsap.to(char.pupils, {
@@ -213,6 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 attr: { d: mouthNeutral },
                 duration: 0.3,
             });
+
             gsap.to(char.body, {
                 y: 0,
                 duration: 0.3,
@@ -229,11 +232,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 y: 0,
                 duration: 0.1,
             });
+
             gsap.to(char.pupils, {
                 x: 0,
                 y: 5,
                 duration: 0.3,
             });
+
             gsap.to(char.mouth, {
                 attr: { d: mouthOoh },
                 duration: 0.3,
@@ -243,11 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     usernameInput.addEventListener("input", () => {
         charactersData.forEach((char) => {
-            gsap.fromTo(
-                char.body,
-                { y: 0 },
-                { y: 6, duration: 0.1, yoyo: true, repeat: 1 }
-            );
+            gsap.fromTo(char.body, { y: 0 }, { y: 6, duration: 0.1, yoyo: true, repeat: 1 });
         });
     });
 
@@ -260,6 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 y: 0,
                 duration: 0.5,
             });
+
             if (!isUsernameHovered) {
                 gsap.to(char.mouth, {
                     attr: { d: mouthNeutral },
@@ -325,10 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    username: username,
-                    password: password,
-                }),
+                body: JSON.stringify({ username, password }),
             });
 
             if (!response.ok) {
@@ -337,6 +336,14 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const data = await response.json();
+
+            if (data.role === "ADMIN") {
+                throw new Error("Admin login is allowed only from /admin page.");
+            }
+
+            if (data.role !== currentRole) {
+                throw new Error(`This account belongs to ${data.role}. Please select the correct portal.`);
+            }
 
             localStorage.setItem("user", JSON.stringify(data));
 
@@ -347,8 +354,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 setStatus("✓ Student authentication successful!", "success");
             } else if (data.role === "HOD") {
                 setStatus("✓ HOD authentication successful!", "success");
-            } else {
-                setStatus("✓ Login successful!", "success");
             }
 
             setTimeout(() => {
@@ -360,14 +365,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     setStatus("Unknown role returned from server.", "error");
                     resetButton();
                 }
-            }, 1200);
+            }, 1000);
         } catch (error) {
             playErrorAnimation();
             setButtonState("Access Denied", "✗", true, "linear-gradient(135deg, #8b1a1a, #d64545)");
 
             const message =
                 error.message === "Failed to fetch"
-                    ? "Unable to reach the server. Please check that the app is running and the URL points to this server."
+                    ? "Unable to reach the server. Please check that the app is running."
                     : error.message;
 
             setStatus(message, "error");

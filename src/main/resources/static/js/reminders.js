@@ -1,170 +1,84 @@
 const user = JSON.parse(localStorage.getItem("user"));
 
 if (!user) {
-    window.top.location.href = "index.html";
+    window.location.href = "index.html";
 }
 
-window.onload = function () {
-    loadReminderData();
-};
+window.addEventListener("DOMContentLoaded", () => {
+    loadReminderNotifications();
+});
 
-function getStudentName(req) {
-    if (req.student) {
-        return req.student.name || req.student.username || req.student.fullName || "N/A";
-    }
-    return "N/A";
-}
+function loadReminderNotifications() {
+    const reminderList = document.getElementById("reminderList");
+    if (!reminderList) return;
 
-function normalizeDate(dateValue) {
-    if (!dateValue) return null;
+    reminderList.innerHTML = `<div class="empty-state">Loading reminders...</div>`;
 
-    const date = new Date(dateValue);
-    if (Number.isNaN(date.getTime())) return null;
-
-    date.setHours(0, 0, 0, 0);
-    return date;
-}
-
-function getReminderStatus(req) {
-    const dueDate = normalizeDate(req.certificateDueDate);
-    const today = normalizeDate(new Date());
-
-    if (dueDate && today > dueDate) {
-        return "OVERDUE";
-    }
-
-    return "PENDING";
-}
-
-function isReminderAvailable(req) {
-    const today = normalizeDate(new Date());
-    const endDate = normalizeDate(req.endDate);
-    const dueDate = normalizeDate(req.certificateDueDate);
-
-    if (!today || !endDate || !dueDate) {
-        return false;
-    }
-
-    return today >= endDate && today <= dueDate;
-}
-
-function loadReminderData() {
-    fetch(`/hod/${user.id}/requests`)
+    fetch(`/notification/${user.id}`)
         .then(res => {
             if (!res.ok) {
-                throw new Error("Failed to load requests");
+                throw new Error("Failed to load reminders");
             }
             return res.json();
         })
-        .then(data => {
-            const table = document.getElementById("reminderTable");
-            table.innerHTML = "";
+        .then(async data => {
+            const notifications = Array.isArray(data) ? data : [];
 
-            const reminderRequests = data.filter(req => req.status === "APPROVED" && !req.certificate);
-
-            if (reminderRequests.length === 0) {
-                table.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="empty-row">No pending certificate reminders found.</td>
-                    </tr>
+            if (notifications.length === 0) {
+                reminderList.innerHTML = `
+                    <div class="empty-state">
+                        No reminders available right now.
+                    </div>
                 `;
                 return;
             }
 
-            reminderRequests.forEach(req => {
-                const status = getReminderStatus(req);
-                const statusBadge = status === "OVERDUE"
-                    ? `<span class="status-badge overdue">Overdue</span>`
-                    : `<span class="status-badge pending">Pending</span>`;
-                const actionHtml = isReminderAvailable(req)
-                    ? `<button class="remind-btn" onclick="sendSingleReminder(${req.id}, '${escapeText(getStudentName(req))}', '${escapeText(req.reason || "")}')">Send Reminder</button>`
-                    : `<span class="no-action-text">No action available</span>`;
+            const unreadNotifications = notifications.filter(item => item && item.read === false);
 
-                const row = `
-                    <tr>
-                        <td><input type="checkbox" class="row-check" value="${req.id}"></td>
-                        <td>${escapeHtml(getStudentName(req))}</td>
-                        <td>${escapeHtml(req.reason || "-")}</td>
-                        <td>${escapeHtml(req.endDate || "-")}</td>
-                        <td>${escapeHtml(req.certificateDueDate || "-")}</td>
-                        <td>${statusBadge}</td>
-                        <td>${actionHtml}</td>
-                    </tr>
+            await Promise.all(
+                unreadNotifications.map(item =>
+                    fetch(`/notification/read/${item.id}`, {
+                        method: "PUT"
+                    }).catch(() => null)
+                )
+            );
+
+            reminderList.innerHTML = notifications.map(item => {
+                const isRead = item.read === true;
+                const createdAt = formatDateTime(item.createdAt);
+
+                return `
+                    <div class="reminder-item ${isRead ? "read" : "unread"}">
+                        <div class="reminder-top">
+                            <div class="reminder-title">
+                                ${isRead ? "Reminder" : "New Reminder"}
+                            </div>
+                            <div class="reminder-date">${escapeHtml(createdAt)}</div>
+                        </div>
+                        <div class="reminder-message">
+                            ${escapeHtml(item.message || "No message available.")}
+                        </div>
+                    </div>
                 `;
-                table.innerHTML += row;
-            });
+            }).join("");
         })
-        .catch(err => {
-            console.error(err);
-            document.getElementById("reminderTable").innerHTML = `
-                <tr>
-                    <td colspan="7" class="empty-row">Unable to load reminders.</td>
-                </tr>
+        .catch(error => {
+            console.error(error);
+            reminderList.innerHTML = `
+                <div class="error-state">
+                    Unable to load reminders right now.
+                </div>
             `;
         });
 }
 
-function sendSingleReminder(requestId, studentName, eventName) {
-    const confirmed = confirm(`Send reminder to ${studentName} for ${eventName || "this request"} now?`);
-    if (!confirmed) return;
+function formatDateTime(dateTimeValue) {
+    if (!dateTimeValue) return "Date not available";
 
-    fetch(`/notification/send-reminder/${requestId}`, {
-        method: "POST"
-    })
-        .then(async res => {
-            const text = await res.text();
+    const date = new Date(dateTimeValue);
+    if (Number.isNaN(date.getTime())) return "Date not available";
 
-            if (!res.ok) {
-                throw new Error(text || "Failed to send reminder");
-            }
-
-            return text;
-        })
-        .then(() => {
-            alert(`Reminder sent successfully to ${studentName}.`);
-            loadReminderData();
-        })
-        .catch(err => {
-            console.error(err);
-            alert(err.message || "Error while sending reminder.");
-        });
-}
-
-function sendBulkReminder() {
-    const checked = document.querySelectorAll(".row-check:checked");
-
-    if (checked.length === 0) {
-        alert("Please select at least one student.");
-        return;
-    }
-
-    const requestIds = Array.from(checked).map(item => item.value);
-
-    Promise.all(
-        requestIds.map(requestId =>
-            fetch(`/notification/send-reminder/${requestId}`, {
-                method: "POST"
-            }).then(async res => {
-                const text = await res.text();
-                if (!res.ok) {
-                    throw new Error(text || `Failed to send reminder for request ${requestId}`);
-                }
-                return text;
-            })
-        )
-    )
-        .then(() => {
-            alert(`Bulk reminder sent to ${checked.length} student(s).`);
-            loadReminderData();
-        })
-        .catch(err => {
-            console.error(err);
-            alert(err.message || "Error while sending bulk reminders.");
-        });
-}
-
-function escapeText(value) {
-    return String(value).replace(/'/g, "\\'");
+    return date.toLocaleString();
 }
 
 function escapeHtml(value) {

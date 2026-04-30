@@ -10,7 +10,6 @@
 </head>
 <body>
     <main class="page">
-        <!-- LEFT PANEL -->
         <section class="left-panel">
             <div class="brand">
                 <img
@@ -35,15 +34,13 @@
 
                 <div class="hero-points">
                     <div class="hero-pill">Structured approval workflow</div>
-                    <div class="hero-pill">Role-based institutional access</div>
-                    <div class="hero-pill">Professional and reliable interface</div>
+                    <div class="hero-pill">Student permission management</div>
+                    <div class="hero-pill">HOD approval access</div>
                 </div>
             </div>
         </section>
 
-        <!-- RIGHT PANEL -->
         <section class="right-panel">
-            <!-- Mobile Logo -->
             <div class="mobile-logo">
                 <img
                     src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQoY5aUaumXwk8JzmsSTFe-DpjZNMMY7pF31Q&s"
@@ -53,7 +50,6 @@
             </div>
 
             <div class="login-wrapper">
-                <!-- Animated SVG characters -->
                 <div class="characters-container top-characters">
                     <svg id="character-svg-top" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
                         <g class="character" transform="translate(180, 160) scale(1.6)">
@@ -88,43 +84,9 @@
                             </g>
                             <path d="M -10 10 Q 0 15 10 10" stroke="#2b2d42" stroke-width="3" fill="none" stroke-linecap="round" class="mouth" />
                         </g>
-
-                        <g class="character" transform="translate(300, 220) scale(0.7)">
-                            <rect x="-40" y="-30" width="80" height="90" rx="40" fill="#caffbf" class="body" />
-                            <g class="eyes">
-                                <circle cx="-15" cy="-10" r="12" fill="white" />
-                                <circle cx="-15" cy="-10" r="5" fill="#2b2d42" class="pupil" />
-                                <circle cx="15" cy="-10" r="12" fill="white" />
-                                <circle cx="15" cy="-10" r="5" fill="#2b2d42" class="pupil" />
-                            </g>
-                            <path d="M -10 10 Q 0 15 10 10" stroke="#2b2d42" stroke-width="3" fill="none" stroke-linecap="round" class="mouth" />
-                        </g>
-
-                        <g class="character" transform="translate(500, 210) scale(0.65)">
-                            <rect x="-40" y="-30" width="80" height="90" rx="40" fill="#cdb4db" class="body" />
-                            <g class="eyes">
-                                <circle cx="-15" cy="-10" r="12" fill="white" />
-                                <circle cx="-15" cy="-10" r="5" fill="#2b2d42" class="pupil" />
-                                <circle cx="15" cy="-10" r="12" fill="white" />
-                                <circle cx="15" cy="-10" r="5" fill="#2b2d42" class="pupil" />
-                            </g>
-                            <path d="M -10 10 Q 0 15 10 10" stroke="#2b2d42" stroke-width="3" fill="none" stroke-linecap="round" class="mouth" />
-                        </g>
-
-                        <g class="character" transform="translate(360, 240) scale(0.4)">
-                            <rect x="-40" y="-30" width="80" height="90" rx="40" fill="#ffc8dd" class="body" />
-                            <g class="eyes">
-                                <circle cx="-15" cy="-10" r="12" fill="white" />
-                                <circle cx="-15" cy="-10" r="5" fill="#2b2d42" class="pupil" />
-                                <circle cx="15" cy="-10" r="12" fill="white" />
-                                <circle cx="15" cy="-10" r="5" fill="#2b2d42" class="pupil" />
-                            </g>
-                            <path d="M -10 10 Q 0 15 10 10" stroke="#2b2d42" stroke-width="3" fill="none" stroke-linecap="round" class="mouth" />
-                        </g>
                     </svg>
                 </div>
 
-                <!-- Login Card -->
                 <div class="login-container">
                     <div class="form-card" id="loginCard">
                         <h2>Student / HOD Login</h2>
@@ -137,24 +99,12 @@
                         <form id="loginForm">
                             <div class="input-group">
                                 <label for="username">Username</label>
-                                <input
-                                    type="text"
-                                    id="username"
-                                    placeholder="Enter username"
-                                    autocomplete="off"
-                                    required
-                                />
+                                <input type="text" id="username" placeholder="Enter username" autocomplete="off" required />
                             </div>
 
                             <div class="input-group">
                                 <label for="password">Password</label>
-                                <input
-                                    type="password"
-                                    id="password"
-                                    placeholder="Enter password"
-                                    autocomplete="off"
-                                    required
-                                />
+                                <input type="password" id="password" placeholder="Enter password" autocomplete="off" required />
                             </div>
 
                             <button type="submit" id="loginBtn">
