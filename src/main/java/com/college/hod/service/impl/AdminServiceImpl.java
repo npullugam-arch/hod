@@ -75,8 +75,156 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
+    @Transactional
     public ExcelUploadResponse uploadHodsExcel(MultipartFile file) {
-        throw new RuntimeException("HOD Excel upload is not implemented yet");
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("Please upload a valid Excel file");
+        }
+
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || (!fileName.toLowerCase().endsWith(".xlsx") && !fileName.toLowerCase().endsWith(".xls"))) {
+            throw new RuntimeException("Only .xlsx or .xls files are allowed");
+        }
+
+        ExcelUploadResponse response = new ExcelUploadResponse();
+        List<String> errors = new ArrayList<>();
+        Set<String> excelUsernames = new HashSet<>();
+        Set<String> excelEmployeeIds = new HashSet<>();
+        Set<String> excelEmails = new HashSet<>();
+
+        try (InputStream inputStream = file.getInputStream();
+             Workbook workbook = WorkbookFactory.create(inputStream)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+
+            if (sheet.getPhysicalNumberOfRows() < 2) {
+                throw new RuntimeException("Excel sheet does not contain HOD rows");
+            }
+
+            int headerRowIndex = resolveHeaderRowIndex(sheet, "emp id", "name");
+            Row headerRow = sheet.getRow(headerRowIndex);
+            Map<String, Integer> headerMap = buildHeaderMap(headerRow);
+
+            validateRequiredHeaderAliases(headerMap, List.of("Emp ID", "Employee ID"), List.of("Name", "HOD Name"));
+
+            int lastRowNum = sheet.getLastRowNum();
+            int totalDataRows = 0;
+            int successCount = 0;
+
+            for (int rowIndex = headerRowIndex + 1; rowIndex <= lastRowNum; rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+
+                if (isRowEmpty(row)) {
+                    continue;
+                }
+
+                totalDataRows++;
+
+                try {
+                    String employeeId = getCellByHeaderAliases(row, headerMap, "Emp ID", "Employee ID");
+                    String hodName = getCellByHeaderAliases(row, headerMap, "Name", "HOD Name");
+                    String username = getCellByHeaderAliases(row, headerMap, "Username", "User Name", "Login ID");
+                    String email = getCellByHeaderAliases(row, headerMap, "Email Id", "Email", "Mail ID");
+
+                    if (employeeId == null || employeeId.isBlank()) {
+                        throw new RuntimeException("Emp ID is missing");
+                    }
+
+                    if (hodName == null || hodName.isBlank()) {
+                        throw new RuntimeException("Name is missing");
+                    }
+
+                    String normalizedEmployeeId = employeeId.trim();
+                    String finalUsername = (username == null || username.isBlank())
+                            ? normalizedEmployeeId
+                            : username.trim();
+                    String finalPassword = normalizedEmployeeId;
+
+                    if (excelUsernames.contains(finalUsername.toLowerCase())) {
+                        throw new RuntimeException("Duplicate username in same Excel");
+                    }
+
+                    if (excelEmployeeIds.contains(normalizedEmployeeId.toLowerCase())) {
+                        throw new RuntimeException("Duplicate Emp ID in same Excel");
+                    }
+
+                    if (email != null && !email.isBlank() && excelEmails.contains(email.trim().toLowerCase())) {
+                        throw new RuntimeException("Duplicate email in same Excel: " + email);
+                    }
+
+                    if (userRepository.existsByUsername(finalUsername)) {
+                        throw new RuntimeException("Username already exists: " + finalUsername);
+                    }
+
+                    if (hodRepository.existsByEmployeeId(normalizedEmployeeId)) {
+                        throw new RuntimeException("Emp ID already exists: " + normalizedEmployeeId);
+                    }
+
+                    if (email != null && !email.isBlank() && userRepository.existsByEmail(email.trim())) {
+                        throw new RuntimeException("Email already exists: " + email);
+                    }
+
+                    User user = new User();
+                    user.setUsername(finalUsername);
+                    user.setPassword(finalPassword);
+                    user.setEmail(blankToNull(email));
+                    user.setRole(Role.HOD);
+                    user.setPasswordChanged(false);
+                    User savedUser = userRepository.save(user);
+
+                    Hod hod = new Hod();
+                    hod.setPhoto(blankToNull(firstNonBlank(
+                            getCellByHeaderAliases(row, headerMap, "Photo URL", "Photo", "Image URL"),
+                            buildDefaultHodPhotoUrl(normalizedEmployeeId)
+                    )));
+                    hod.setEmployeeId(normalizedEmployeeId);
+                    hod.setName(blankToNull(hodName));
+                    hod.setDepartment(blankToNull(getCellByHeaderAliases(row, headerMap, "Department", "Dept")));
+                    hod.setDesignation(blankToNull(getCellByHeaderAliases(row, headerMap, "Designation")));
+                    hod.setPhdAwarded(blankToNull(getCellByHeaderAliases(row, headerMap, "Ph.D Awarded", "Phd Awarded", "PHD Awarded")));
+                    hod.setDateOfJoining(blankToNull(getCellByHeaderAliases(row, headerMap, "Date Of Joining", "DOJ")));
+                    hod.setPhoneNumber(blankToNull(getCellByHeaderAliases(row, headerMap, "Phone Number", "Phone")));
+                    hod.setEmailId(blankToNull(email));
+                    hod.setReligion(blankToNull(getCellByHeaderAliases(row, headerMap, "Religion")));
+                    hod.setCasteCategory(blankToNull(getCellByHeaderAliases(row, headerMap, "Caste Category", "Caste")));
+                    hod.setBloodGroup(blankToNull(getCellByHeaderAliases(row, headerMap, "Blood Group")));
+                    hod.setPresentFlatno(blankToNull(getCellByHeaderAliases(row, headerMap, "Present Flat No", "Present Flatno")));
+                    hod.setPresentTown(blankToNull(getCellByHeaderAliases(row, headerMap, "Present Town")));
+                    hod.setPresentDistrict(blankToNull(getCellByHeaderAliases(row, headerMap, "Present District")));
+                    hod.setPresentState(blankToNull(getCellByHeaderAliases(row, headerMap, "Present State")));
+                    hod.setPresentPincode(blankToNull(getCellByHeaderAliases(row, headerMap, "Present Pincode")));
+                    hod.setPermanentFlatno(blankToNull(getCellByHeaderAliases(row, headerMap, "Permanent Flat No", "Permanent Flatno")));
+                    hod.setPermanentTown(blankToNull(getCellByHeaderAliases(row, headerMap, "Permanent Town")));
+                    hod.setPermanentDistrict(blankToNull(getCellByHeaderAliases(row, headerMap, "Permanent District")));
+                    hod.setPermanentState(blankToNull(getCellByHeaderAliases(row, headerMap, "Permanent State")));
+                    hod.setPermanentPincode(blankToNull(getCellByHeaderAliases(row, headerMap, "Permanent Pincode")));
+                    hod.setJntuUid(blankToNull(getCellByHeaderAliases(row, headerMap, "JNTU UID", "JNTU Id", "JNTUID")));
+                    hod.setStatus(blankToNull(getCellByHeaderAliases(row, headerMap, "Status")));
+                    hod.setUser(savedUser);
+
+                    hodRepository.save(hod);
+
+                    excelUsernames.add(finalUsername.toLowerCase());
+                    excelEmployeeIds.add(normalizedEmployeeId.toLowerCase());
+
+                    if (email != null && !email.isBlank()) {
+                        excelEmails.add(email.trim().toLowerCase());
+                    }
+
+                    successCount++;
+                } catch (Exception ex) {
+                    errors.add("Row " + (rowIndex + 1) + ": " + ex.getMessage());
+                }
+            }
+
+            response.setTotalRows(totalDataRows);
+            response.setSuccessCount(successCount);
+            response.setFailedCount(totalDataRows - successCount);
+            response.setErrors(errors);
+            return response;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process Excel file: " + e.getMessage());
+        }
     }
 
     @Override
@@ -735,6 +883,15 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    private void validateRequiredHeaderAliases(Map<String, Integer> headerMap, List<String>... headerAliases) {
+        for (List<String> aliases : headerAliases) {
+            boolean found = aliases.stream().anyMatch(alias -> headerMap.containsKey(normalizeHeader(alias)));
+            if (!found) {
+                throw new RuntimeException("Required Excel column missing: " + aliases.get(0));
+            }
+        }
+    }
+
     private String getCellByHeader(Row row, Map<String, Integer> headerMap, String headerName) {
         Integer index = headerMap.get(normalizeHeader(headerName));
         if (index == null || row == null) {
@@ -743,8 +900,39 @@ public class AdminServiceImpl implements AdminService {
         return getCellString(row.getCell(index));
     }
 
+    private String getCellByHeaderAliases(Row row, Map<String, Integer> headerMap, String... headerNames) {
+        for (String headerName : headerNames) {
+            String value = getCellByHeader(row, headerMap, headerName);
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
     private String normalizeHeader(String value) {
         return value == null ? "" : value.trim().toLowerCase().replaceAll("\\s+", " ");
+    }
+
+    private int resolveHeaderRowIndex(Sheet sheet, String... expectedHeaders) {
+        int lastRowNum = Math.min(sheet.getLastRowNum(), 4);
+
+        for (int rowIndex = 0; rowIndex <= lastRowNum; rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row == null) {
+                continue;
+            }
+
+            Map<String, Integer> headerMap = buildHeaderMap(row);
+            boolean matches = Arrays.stream(expectedHeaders)
+                    .allMatch(expected -> headerMap.containsKey(normalizeHeader(expected)));
+
+            if (matches) {
+                return rowIndex;
+            }
+        }
+
+        return 1;
     }
 
     private boolean isRowEmpty(Row row) {
@@ -831,5 +1019,21 @@ public class AdminServiceImpl implements AdminService {
 
     private String safeValue(String value) {
         return value == null ? "" : value;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private String buildDefaultHodPhotoUrl(String employeeId) {
+        if (employeeId == null || employeeId.isBlank()) {
+            return null;
+        }
+        return "https://www.iare.ac.in/sites/default/files/" + employeeId.trim() + "_0.png";
     }
 }

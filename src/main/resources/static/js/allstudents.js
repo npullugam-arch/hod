@@ -39,7 +39,7 @@ function loadAllRequests() {
             status.textContent = "";
             table.innerHTML = `
                 <tr>
-                    <td colspan="10" class="empty-row">
+                    <td colspan="6" class="empty-row">
                         Unable to load all requests. Please add backend API: GET /request/all
                     </td>
                 </tr>
@@ -54,7 +54,7 @@ function renderAllRequests() {
 
     table.innerHTML = "";
 
-    let filtered = allRequests.filter(req => {
+    const filtered = allRequests.filter(req => {
         const studentName = getStudentName(req).toLowerCase();
         const rollNo = getStudentIdentifier(req).toLowerCase();
         const reason = getDisplayValue(req.reason).toLowerCase();
@@ -76,95 +76,120 @@ function renderAllRequests() {
     if (filtered.length === 0) {
         table.innerHTML = `
             <tr>
-                <td colspan="10" class="empty-row">No requests found.</td>
+                <td colspan="6" class="empty-row">No requests found.</td>
             </tr>
         `;
         return;
     }
 
     filtered.forEach(req => {
-        const student = req.student || {};
+        const mainRow = buildRequestMainRow(req);
+        const remarkRow = buildRemarkRow(req);
 
-        const studentName = getStudentName(req);
-        const studentId = getStudentIdentifier(req);
-        const studentPhoto = getStudentPhoto(req);
-        const studentInitial = getStudentInitial(req);
-        const description = req.description || "No description provided.";
-        const remark = req.rejectionRemark || "No remark provided.";
-
-        const studentData = {
-            photo: studentPhoto,
-            name: studentName,
-            rollNo: studentId,
-            email: getDisplayValue(student.email),
-            branch: getDisplayValue(student.branch),
-            section: getDisplayValue(student.section || student.sec),
-            sem: getDisplayValue(student.sem),
-            gender: getDisplayValue(student.gender),
-            dob: getDisplayValue(student.dateOfBirth),
-            studentPhone: getDisplayValue(student.studentPhoneNumber),
-            parentPhone: getDisplayValue(student.parentPhoneNumber),
-            fatherName: getDisplayValue(student.fatherName),
-            admissionType: getDisplayValue(student.admissionType),
-            caste: getDisplayValue(student.caste),
-            initial: studentInitial
-        };
-
-        const studentPhotoHtml = studentPhoto
-            ? `<img src="${escapeAttribute(studentPhoto)}" alt="${escapeAttribute(studentName)}" class="student-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-               <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentInitial)}</div>`
-            : `<div class="student-avatar-fallback">${escapeHtml(studentInitial)}</div>`;
-
-        const row = `
-            <tr>
-                <td>
-                    <div
-                        class="student-cell clickable-student"
-                        onclick='openStudentDetailsModal(${JSON.stringify(studentData).replace(/'/g, "&apos;")})'
-                        title="View Student Details"
-                    >
-                        <div class="student-photo-wrap">
-                            ${studentPhotoHtml}
-                        </div>
-                        <div class="student-meta">
-                            <div class="student-name">${escapeHtml(studentName)}</div>
-                            <div class="student-roll">${escapeHtml(studentId)}</div>
-                        </div>
-                    </div>
-                </td>
-
-                <td>${escapeHtml(req.reason || "-")}</td>
-
-                <td>
-                    <button
-                        class="description-btn"
-                        onclick="openDescriptionModal('${escapeJsString(studentName)}', '${escapeJsString(studentId)}', '${escapeJsString(description)}')"
-                    >
-                        View
-                    </button>
-                </td>
-
-                <td>${getStatusBadge(req.status)}</td>
-
-                <td>${formatDate(req.startDate)}</td>
-                <td>${formatDate(req.endDate)}</td>
-                <td>${formatDate(req.requestDate)}</td>
-                <td>${formatDate(req.approvalDate)}</td>
-                <td>${formatDate(req.certificateDueDate)}</td>
-
-                <td>
-                    <button
-                        class="remark-btn"
-                        onclick="openRemarkModal('${escapeJsString(remark)}')"
-                    >
-                        View
-                    </button>
-                </td>
-            </tr>
-        `;
-
-        table.innerHTML += row;
+        table.innerHTML += mainRow + remarkRow;
     });
+}
+
+function buildRequestMainRow(req) {
+    const student = req.student || {};
+
+    const studentName = getStudentName(req);
+    const studentId = getStudentIdentifier(req);
+    const studentPhoto = getStudentPhoto(req);
+    const studentInitial = getStudentInitial(req);
+
+    const description = req.description || "No description provided.";
+
+    const studentData = {
+        photo: studentPhoto,
+        name: studentName,
+        rollNo: studentId,
+        email: getDisplayValue(student.email),
+        branch: getDisplayValue(student.branch),
+        section: getDisplayValue(student.section || student.sec),
+        sem: getDisplayValue(student.sem),
+        gender: getDisplayValue(student.gender),
+        dob: getDisplayValue(student.dateOfBirth),
+        studentPhone: getDisplayValue(student.studentPhoneNumber),
+        parentPhone: getDisplayValue(student.parentPhoneNumber),
+        fatherName: getDisplayValue(student.fatherName),
+        admissionType: getDisplayValue(student.admissionType),
+        caste: getDisplayValue(student.caste),
+        initial: studentInitial
+    };
+
+    const studentPhotoHtml = studentPhoto
+        ? `<img src="${escapeAttribute(studentPhoto)}" alt="${escapeAttribute(studentName)}" class="student-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+           <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentInitial)}</div>`
+        : `<div class="student-avatar-fallback">${escapeHtml(studentInitial)}</div>`;
+
+    return `
+        <tr class="main-row">
+            <td>
+                <div
+                    class="student-cell"
+                    onclick='openStudentDetailsModal(${JSON.stringify(studentData).replace(/'/g, "&apos;")})'
+                    title="View Student Details"
+                >
+                    ${studentPhotoHtml}
+                    <div>
+                        <div class="student-name">${escapeHtml(studentName)}</div>
+                        <div class="student-roll">${escapeHtml(studentId)}</div>
+                    </div>
+                </div>
+            </td>
+
+            <td class="reason-text">${escapeHtml(req.reason || "-")}</td>
+
+            <td>
+                <div class="description-wrap">
+                    <span class="desc-text">${escapeHtml(description)}</span>
+                    ${description.length > 90 ? `<button class="read-more-btn" onclick="toggleReadMore(this)">Read more</button>` : ""}
+                </div>
+            </td>
+
+            <td>${getStatusBadge(req.status)}</td>
+
+            <td>${formatDate(req.startDate)}</td>
+            <td>${formatDate(req.endDate)}</td>
+        </tr>
+    `;
+}
+
+function buildRemarkRow(req) {
+    const status = String(req.status || "").toUpperCase();
+
+    const remark = req.rejectionRemark
+        || req.remark
+        || req.rejectRemark
+        || req.hodRemark
+        || req.certificate?.rejectionRemark
+        || "";
+
+    if (status !== "REJECTED" || !remark) {
+        return "";
+    }
+
+    return `
+        <tr class="remark-row">
+            <td colspan="6">
+                <span class="remark-label">HOD Remark:</span>
+                ${escapeHtml(remark)}
+            </td>
+        </tr>
+    `;
+}
+
+function toggleReadMore(btn) {
+    const textSpan = btn.previousElementSibling;
+
+    if (textSpan.classList.contains("expanded")) {
+        textSpan.classList.remove("expanded");
+        btn.textContent = "Read more";
+    } else {
+        textSpan.classList.add("expanded");
+        btn.textContent = "Read less";
+    }
 }
 
 function getStudentName(req) {
@@ -219,7 +244,7 @@ function getStudentInitial(req) {
 }
 
 function getStatusBadge(status) {
-    const finalStatus = status || "PENDING";
+    const finalStatus = String(status || "PENDING").toUpperCase();
 
     if (finalStatus === "APPROVED") {
         return `<span class="status-badge status-approved">APPROVED</span>`;
@@ -248,26 +273,6 @@ function getDisplayValue(value) {
     return String(value);
 }
 
-function openDescriptionModal(studentName, studentId, description) {
-    document.getElementById("modalStudentName").textContent = studentName || "N/A";
-    document.getElementById("modalStudentRollNo").textContent = studentId || "N/A";
-    document.getElementById("modalDescriptionText").textContent = description || "No description provided.";
-    document.getElementById("descriptionModal").classList.remove("hidden");
-}
-
-function closeDescriptionModal() {
-    document.getElementById("descriptionModal").classList.add("hidden");
-}
-
-function openRemarkModal(remark) {
-    document.getElementById("modalRemarkText").textContent = remark || "No remark provided.";
-    document.getElementById("remarkModal").classList.remove("hidden");
-}
-
-function closeRemarkModal() {
-    document.getElementById("remarkModal").classList.add("hidden");
-}
-
 function openStudentDetailsModal(student) {
     document.getElementById("studentDetailsName").textContent = student.name || "-";
     document.getElementById("studentDetailsRollNo").textContent = student.rollNo || "-";
@@ -286,31 +291,29 @@ function openStudentDetailsModal(student) {
     const photoEl = document.getElementById("studentDetailsPhoto");
     photoEl.src = student.photo || "";
     photoEl.alt = student.name || "Student Photo";
+
     photoEl.onerror = function () {
         this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.initial || "S")}&background=2563eb&color=ffffff&size=160`;
     };
 
     document.getElementById("studentDetailsModal").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
 }
 
 function closeStudentDetailsModal() {
     document.getElementById("studentDetailsModal").classList.add("hidden");
+    document.body.style.overflow = "auto";
 }
 
-window.addEventListener("click", function (event) {
-    const descriptionModal = document.getElementById("descriptionModal");
-    const remarkModal = document.getElementById("remarkModal");
-    const studentDetailsModal = document.getElementById("studentDetailsModal");
-
-    if (event.target === descriptionModal) closeDescriptionModal();
-    if (event.target === remarkModal) closeRemarkModal();
-    if (event.target === studentDetailsModal) closeStudentDetailsModal();
-});
+function handleStudentModalOutsideClick(event) {
+    const modal = document.getElementById("studentDetailsModal");
+    if (event.target === modal) {
+        closeStudentDetailsModal();
+    }
+}
 
 window.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
-        closeDescriptionModal();
-        closeRemarkModal();
         closeStudentDetailsModal();
     }
 });
@@ -330,13 +333,4 @@ function escapeAttribute(value) {
         .replace(/"/g, "&quot;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
-}
-
-function escapeJsString(value) {
-    return String(value ?? "")
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-        .replace(/\r/g, "")
-        .replace(/\n/g, "\\n");
 }
