@@ -1,4 +1,12 @@
 const user = JSON.parse(localStorage.getItem("user"));
+const HOD_PHOTO_MAP = {
+    IARE10044: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCMZwwMTjidtPfcEX_ENvNeuBjJVB_5bdipg&s",
+    IARE10862: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYYUJj3qxUm_1sbOIcIzwEGbSbrxnjfYhjZQ&s",
+    IARE10033: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRModZ8yZYVjYdFjW5M5id654sapIyUyUXkNA&s",
+    IARE10952: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTEbJV9Gy3r4oT5KHyz2yrxpmOneQCaeSTU4w&s"
+};
+
+let dashboardCountsPromise = null;
 
 if (!user) {
     window.location.href = "index.html";
@@ -19,8 +27,17 @@ function getHodName() {
 }
 
 function getHodPhotoUrl() {
-    const empId = getHodEmployeeId();
-    return `https://www.iare.ac.in/sites/default/files/${empId}_0.png`;
+    const empId = String(getHodEmployeeId() || "").trim().toUpperCase();
+
+    if (!empId) {
+        return "";
+    }
+
+    if (HOD_PHOTO_MAP[empId]) {
+        return HOD_PHOTO_MAP[empId];
+    }
+
+    return `https://www.iare.ac.in/sites/default/files/${encodeURIComponent(empId)}_0.png`;
 }
 
 function initializeSidebar() {
@@ -68,8 +85,10 @@ function setHodInfo() {
     if (hodEmployeeIdEl) hodEmployeeIdEl.textContent = employeeId;
 
     if (hodHeaderPhotoEl) {
+        hodHeaderPhotoEl.loading = "lazy";
         hodHeaderPhotoEl.src = photoUrl;
         hodHeaderPhotoEl.onerror = function () {
+            this.onerror = null;
             this.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(hodName) + "&background=2563eb&color=fff";
         };
     }
@@ -155,8 +174,35 @@ function animateCount(elementId, targetValue) {
     requestAnimationFrame(update);
 }
 
+function setDashboardCountsLoading() {
+    ["totalCount", "pendingCount", "certificatePendingCount", "approvedCount", "rejectedCount"]
+        .forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = "Loading...";
+            }
+        });
+}
+
+function setDashboardCountsError() {
+    ["totalCount", "pendingCount", "certificatePendingCount", "approvedCount", "rejectedCount"]
+        .forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = "0";
+                element.title = "Unable to load dashboard counts";
+            }
+        });
+}
+
 function loadDashboardCounts() {
-    fetch(`/hod/${user.id}/dashboard-summary`)
+    if (dashboardCountsPromise) {
+        return dashboardCountsPromise;
+    }
+
+    setDashboardCountsLoading();
+
+    dashboardCountsPromise = fetch(`/hod/${user.id}/dashboard-summary`)
         .then((res) => {
             if (!res.ok) throw new Error("Failed to load dashboard summary");
             return res.json();
@@ -169,9 +215,13 @@ function loadDashboardCounts() {
             animateCount("rejectedCount", summary.rejectedCount);
         })
         .catch(() => {
-            ["totalCount", "pendingCount", "certificatePendingCount", "approvedCount", "rejectedCount"]
-                .forEach(id => document.getElementById(id).textContent = "0");
+            setDashboardCountsError();
+        })
+        .finally(() => {
+            dashboardCountsPromise = null;
         });
+
+    return dashboardCountsPromise;
 }
 
 function logout() {

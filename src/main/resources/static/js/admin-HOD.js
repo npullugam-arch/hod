@@ -8,6 +8,12 @@ if (!adminUser || adminUser.role !== "ADMIN") {
 let hodsCache = [];
 
 const FACULTY_PHOTO_BASE_URL = "https://www.iare.ac.in/sites/default/files/";
+const HOD_PHOTO_MAP = {
+    IARE10044: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCMZwwMTjidtPfcEX_ENvNeuBjJVB_5bdipg&s",
+    IARE10862: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYYUJj3qxUm_1sbOIcIzwEGbSbrxnjfYhjZQ&s",
+    IARE10033: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRModZ8yZYVjYdFjW5M5id654sapIyUyUXkNA&s",
+    IARE10952: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTEbJV9Gy3r4oT5KHyz2yrxpmOneQCaeSTU4w&s"
+};
 
 const hodFields = [
     { id: "detailUsername", key: "username", label: "Username", required: true },
@@ -109,13 +115,17 @@ function applyFilters() {
 }
 
 function getHodPhotoUrl(hod) {
+    const employeeId = String(hod.employeeId || hod.employee_id || hod.username || "").trim().toUpperCase();
+
+    if (employeeId && HOD_PHOTO_MAP[employeeId]) {
+        return HOD_PHOTO_MAP[employeeId];
+    }
+
     const savedPhoto = (hod.photo || "").trim();
 
     if (savedPhoto) {
         return savedPhoto;
     }
-
-    const employeeId = String(hod.employeeId || "").trim();
 
     if (!employeeId) {
         return "";
@@ -150,7 +160,7 @@ function renderHods(hods) {
         card.innerHTML = `
             <div class="hod-top">
                 <div class="hod-avatar" id="avatar-${hod.id}">${escapeHtml(initial)}</div>
-                <img class="hod-photo" id="photo-${hod.id}" alt="${escapeHtml(name)}" />
+                <img class="hod-photo" id="photo-${hod.id}" alt="${escapeHtml(name)}" loading="lazy" />
                 <div>
                     <div class="hod-name">${escapeHtml(name)}</div>
                     <div class="hod-meta">Emp ID: ${escapeHtml(empId)}</div>
@@ -178,6 +188,7 @@ function renderHods(hods) {
             };
 
             photoEl.onerror = () => {
+                photoEl.onerror = null;
                 photoEl.style.display = "none";
                 avatarEl.style.display = "flex";
             };

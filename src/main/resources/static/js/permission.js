@@ -1,4 +1,10 @@
 const user = JSON.parse(localStorage.getItem("user"));
+const HOD_PHOTO_MAP = {
+    IARE10044: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCMZwwMTjidtPfcEX_ENvNeuBjJVB_5bdipg&s",
+    IARE10862: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYYUJj3qxUm_1sbOIcIzwEGbSbrxnjfYhjZQ&s",
+    IARE10033: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRModZ8yZYVjYdFjW5M5id654sapIyUyUXkNA&s",
+    IARE10952: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTEbJV9Gy3r4oT5KHyz2yrxpmOneQCaeSTU4w&s"
+};
 
 if (!user) {
     window.top.location.href = "index.html";
@@ -63,13 +69,13 @@ function loadHods() {
                 const employeeId = hod.employeeId || hod.employee_id || hod.username || "HOD";
                 const hodName = hod.name || hod.fullName || hod.hodName || hod.username || "HOD";
                 const department = hod.department || hod.dept || "Head of Department";
-                const photo = hod.photo || `https://www.iare.ac.in/sites/default/files/${employeeId}_0.png`;
+                const photo = resolveHodPhoto(hod);
 
                 const option = document.createElement("button");
                 option.type = "button";
                 option.className = "hod-option";
                 option.innerHTML = `
-                    <img src="${photo}" 
+                    <img src="${photo}" loading="lazy"
                          onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(hodName)}&background=2563eb&color=fff'"
                          alt="HOD" />
                     <div class="hod-option-info">
@@ -83,7 +89,7 @@ function loadHods() {
 
                     hodSelectBtn.innerHTML = `
                         <span class="selected-hod">
-                            <img src="${photo}" 
+                            <img src="${photo}" loading="lazy"
                                  onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(hodName)}&background=2563eb&color=fff'"
                                  alt="HOD" />
                             <span>
@@ -109,6 +115,25 @@ function loadHods() {
                 <i class="fa-solid fa-chevron-down"></i>
             `;
         });
+}
+
+function resolveHodPhoto(hod) {
+    const employeeId = String(hod.employeeId || hod.employee_id || hod.username || "").trim().toUpperCase();
+
+    if (employeeId && HOD_PHOTO_MAP[employeeId]) {
+        return HOD_PHOTO_MAP[employeeId];
+    }
+
+    const savedPhoto = String(hod.photo || "").trim();
+    if (savedPhoto) {
+        return savedPhoto;
+    }
+
+    if (!employeeId) {
+        return "";
+    }
+
+    return `https://www.iare.ac.in/sites/default/files/${encodeURIComponent(employeeId)}_0.png`;
 }
 
 async function createRequest() {
