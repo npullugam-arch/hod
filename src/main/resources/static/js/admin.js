@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
             showSection(
                 "dashboardSection",
                 "Admin Dashboard",
-                "Manage students, HODs, Excel uploads, and records."
+                "Manage students, HODs, Excel uploads, section assignments, and records."
             );
         } else if (sectionId === "manualSection") {
             showSection(
@@ -146,6 +146,15 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     };
 
+    window.openHodAssignmentPage = function () {
+        openIframePage(
+            "admin-hod-assignment.html",
+            "hodAssignmentPage",
+            "HOD Section Management",
+            "Assign department, semester, and section access to each HOD."
+        );
+    };
+
     menuButtons.forEach((btn) => {
         btn.addEventListener("click", () => {
             const sectionKey = btn.dataset.section;
@@ -160,6 +169,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.showAdminSection("hodExcelSection");
             } else if (sectionKey === "studentsPage") {
                 window.openStudentsPage();
+            } else if (sectionKey === "hodPage") {
+                window.openHodPage();
+            } else if (sectionKey === "hodAssignmentPage") {
+                window.openHodAssignmentPage();
             }
         });
     });

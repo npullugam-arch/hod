@@ -15,6 +15,7 @@ const descriptionInput = document.getElementById("description");
 const submitBtn = document.getElementById("submitBtn");
 const successModal = document.getElementById("successModal");
 const closeModalBtn = document.getElementById("closeModalBtn");
+let resolvedStudentId = null;
 
 window.addEventListener("DOMContentLoaded", () => {
     loadHods();
@@ -110,7 +111,7 @@ function loadHods() {
         });
 }
 
-function createRequest() {
+async function createRequest() {
     const hodId = hodSelect.value;
     const reason = reasonSelect.value;
     const startDate = startDateInput.value;
@@ -160,45 +161,66 @@ function createRequest() {
         return;
     }
 
-    const requestData = {
-        reason: reason,
-        description: description,
-        startDate: startDate,
-        endDate: endDate,
-        student: { id: user.id },
-        hod: { id: Number(hodId) }
-    };
-
     submitBtn.disabled = true;
     submitBtn.innerHTML = `Submitting... <i class="fa-solid fa-spinner fa-spin"></i>`;
 
-    fetch("/request/create", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestData)
-    })
-        .then((res) => {
-            if (!res.ok) {
-                return res.text().then((message) => {
-                    throw new Error(message || "Failed to create request");
-                });
-            }
-            return res.json();
-        })
-        .then(() => {
-            openSuccessModal();
-            clearForm();
-        })
-        .catch((err) => {
-            console.error(err);
-            alert(err.message || "Error while submitting request.");
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `Submit Request <i class="fa-solid fa-paper-plane"></i>`;
+    try {
+        const studentId = await getStudentIdForRequestCreate();
+        const requestData = {
+            reason: reason,
+            description: description,
+            startDate: startDate,
+            endDate: endDate,
+            student: {
+                id: studentId,
+                user: { id: user.id }
+            },
+            hod: { id: Number(hodId) }
+        };
+
+        const res = await fetch("/request/create", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestData)
         });
+
+        if (!res.ok) {
+            const message = await res.text();
+            throw new Error(message || "Failed to create request");
+        }
+
+        await res.json();
+        openSuccessModal();
+        clearForm();
+    } catch (err) {
+        console.error(err);
+        alert(err.message || "Error while submitting request.");
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `Submit Request <i class="fa-solid fa-paper-plane"></i>`;
+    }
+}
+
+async function getStudentIdForRequestCreate() {
+    if (resolvedStudentId) {
+        return resolvedStudentId;
+    }
+
+    if (!user?.id) {
+        throw new Error("User ID not found");
+    }
+
+    const response = await fetch(`/student/user/${user.id}`);
+
+    if (!response.ok) {
+        throw new Error("Unable to load student info");
+    }
+
+    const student = await response.json();
+    resolvedStudentId = student?.id || user.id;
+    return resolvedStudentId;
 }
 
 function clearForm() {

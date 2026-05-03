@@ -25,6 +25,7 @@
             <nav class="menu">
                 <button class="menu-btn active" data-section="dashboardSection">Dashboard</button>
                 <button class="menu-btn" type="button" data-section="hodPage" onclick="openHodPage()">HOD Dashboard</button>
+                <button class="menu-btn" data-section="hodAssignmentPage">HOD Section Management</button>
                 <button class="menu-btn" data-section="manualSection">Manual Student Create</button>
                 <button class="menu-btn" data-section="excelSection">Student Excel Upload</button>
                 <button class="menu-btn" data-section="hodExcelSection">HOD Excel Upload</button>
@@ -38,7 +39,7 @@
             <header class="topbar">
                 <div>
                     <h1 id="pageTitle">Admin Dashboard</h1>
-                    <p id="pageSubtitle">Manage students, HODs, Excel uploads, and records.</p>
+                    <p id="pageSubtitle">Manage students, HODs, Excel uploads, section assignments, and records.</p>
                 </div>
             </header>
 
@@ -54,6 +55,12 @@
                         <h2>HOD Dashboard</h2>
                         <p>Open HOD records, HOD details, and HOD management page.</p>
                         <button class="primary-btn secondary-btn" type="button" onclick="openHodPage()">Open HOD Dashboard</button>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <h2>HOD Section Management</h2>
+                        <p>Assign department, semester, and section access to each HOD.</p>
+                        <button class="primary-btn secondary-btn" type="button" onclick="openHodAssignmentPage()">Manage Assignments</button>
                     </div>
 
                     <div class="dashboard-box">

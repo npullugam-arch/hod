@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HOD Students</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/hod-students.css" />
+</head>
+<body>
+
+    <div class="loading-overlay" id="loadingLayer">
+        <div class="loading-icon-box">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+        </div>
+        <h2>SANCHARA</h2>
+        <p>Preparing student data...</p>
+        <div class="dot-loader">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+    </div>
+
+    <div class="full-wrapper">
+        <div class="toolbar">
+            <input type="text" id="searchInput" placeholder="Search by roll number, name, branch, section, phone" />
+
+            <select id="branchFilter">
+                <option value="">All Branches</option>
+            </select>
+
+            <select id="sectionFilter">
+                <option value="">All Sections</option>
+            </select>
+
+            <select id="semFilter">
+                <option value="">All Semesters</option>
+            </select>
+        </div>
+
+        <div id="pageStatus" class="page-status"></div>
+
+        <div id="studentsContainer" class="students-grid"></div>
+
+        <div id="emptyState" class="empty-state" style="display:none;">
+            No students found.
+        </div>
+    </div>
+
+    <script src="js/hod-students.js"></script>
+</body>
+</html>

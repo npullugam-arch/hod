@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student History</title>
+
+    <link rel="stylesheet" href="css/student-history.css" />
+</head>
+<body>
+
+    <div class="top-bar">
+        <button class="btn btn-back" onclick="goBack()">
+            ⬅ Back
+        </button>
+
+        <button class="btn btn-download" id="openDownloadModal">
+            ⬇ Download Status Report
+        </button>
+    </div>
+
+    <div id="pageStatus" class="page-status"></div>
+
+    <section class="profile-card" id="studentProfile">
+        Loading student details...
+    </section>
+
+    <section class="stats" id="stats"></section>
+
+    <section class="chart-card">
+        <div class="section-title">Request Status Chart</div>
+
+        <div class="chart-container-centered">
+            <div class="chart-wrapper">
+                <canvas id="historyChart"></canvas>
+            </div>
+
+            <div class="chart-legend">
+                <div class="legend-item"><span class="legend-dot approved-dot"></span>Approved</div>
+                <div class="legend-item"><span class="legend-dot rejected-dot"></span>Rejected</div>
+                <div class="legend-item"><span class="legend-dot pending-dot"></span>Pending</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="history-card">
+        <div class="section-title">Complete Request History</div>
+        <div class="history-grid" id="requests"></div>
+    </section>
+
+    <div id="downloadModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Download Student History Report</h2>
+                <button type="button" class="close-btn" id="closeDownloadModal">×</button>
+            </div>
+
+            <div class="download-options">
+                <label>
+                    <input type="radio" name="reportRange" value="all" checked />
+                    Entire History
+                </label>
+
+                <label>
+                    <input type="radio" name="reportRange" value="month" />
+                    This Month
+                </label>
+
+                <label>
+                    <input type="radio" name="reportRange" value="last3" />
+                    Last 3 Months
+                </label>
+
+                <label>
+                    <input type="radio" name="reportRange" value="custom" />
+                    Custom Date Range
+                </label>
+            </div>
+
+            <div class="date-range-box" id="customDateBox" style="display:none;">
+                <div class="form-field">
+                    <label>From Date</label>
+                    <input type="date" id="fromDate" />
+                </div>
+
+                <div class="form-field">
+                    <label>To Date</label>
+                    <input type="date" id="toDate" />
+                </div>
+            </div>
+
+            <div id="downloadStatus" class="modal-status"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="secondary-btn" id="cancelDownloadBtn">Cancel</button>
+                <button type="button" class="primary-btn" id="generatePdfBtn">Generate PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="js/student-history.js"></script>
+</body>
+</html>

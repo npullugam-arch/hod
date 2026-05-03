@@ -13,6 +13,8 @@ public interface RequestService {
 
     Request rejectRequest(Long requestId, String remark);
 
+    List<Request> getAllRequests();
+
     List<Request> getRequestsByStudent(Long studentId);
 
     List<Request> getRequestsByHod(Long hodId);

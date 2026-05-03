@@ -59,7 +59,7 @@ public class RequestServiceImpl implements RequestService {
             throw new RuntimeException("Selected user is not an HOD");
         }
 
-        Student student = resolveStudent(request.getStudent().getId());
+        Student student = resolveStudentForCreate(request.getStudent());
 
         request.setReason(request.getReason().trim());
         request.setStudent(student);
@@ -108,9 +108,25 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    public List<Request> getAllRequests() {
+        return requestRepository.findAllWithDetails();
+    }
+
+    @Override
     public List<Request> getRequestsByStudent(Long studentId) {
-        Student student = resolveStudent(studentId);
-        return requestRepository.findByStudentId(student.getId());
+        Student student = resolveStudentForHistory(studentId);
+
+        Long actualStudentId = student.getId();
+        Long userId = student.getUser() != null ? student.getUser().getId() : null;
+        String rollNo = clean(student.getRollNo());
+        String email = clean(student.getEmail());
+
+        return requestRepository.findCompleteHistoryByStudent(
+                actualStudentId,
+                userId,
+                rollNo,
+                email
+        );
     }
 
     @Override
@@ -128,10 +144,32 @@ public class RequestServiceImpl implements RequestService {
         return userRepository.findByRole(Role.HOD);
     }
 
-    private Student resolveStudent(Long studentOrUserId) {
-        return studentRepository.findByUserId(studentOrUserId)
-                .or(() -> studentRepository.findById(studentOrUserId))
-                .orElseGet(() -> createStudentFromUser(studentOrUserId));
+    private Student resolveStudentForHistory(Long studentId) {
+        return studentRepository.findById(studentId)
+                .or(() -> studentRepository.findByUserId(studentId))
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+    }
+
+    private Student resolveStudentForCreate(Student requestStudent) {
+        Long studentId = requestStudent.getId();
+        Long studentUserId = requestStudent.getUser() != null ? requestStudent.getUser().getId() : null;
+
+        if (studentUserId != null) {
+            Student student = studentRepository.findById(studentId)
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+
+            Long actualUserId = student.getUser() != null ? student.getUser().getId() : null;
+
+            if (!studentUserId.equals(actualUserId)) {
+                throw new RuntimeException("Student mapping mismatch");
+            }
+
+            return student;
+        }
+
+        return studentRepository.findByUserId(studentId)
+                .or(() -> studentRepository.findById(studentId))
+                .orElseGet(() -> createStudentFromUser(studentId));
     }
 
     private Student createStudentFromUser(Long userId) {
@@ -144,7 +182,7 @@ public class RequestServiceImpl implements RequestService {
 
         Student student = new Student();
         student.setName(user.getUsername());
-        student.setEmail(user.getUsername());
+        student.setEmail(user.getEmail());
         student.setUser(user);
 
         return studentRepository.save(student);
@@ -159,5 +197,12 @@ public class RequestServiceImpl implements RequestService {
                 .trim()
                 .replaceAll("\\s+", " ")
                 .toUpperCase();
+    }
+
+    private String clean(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
     }
 }

@@ -115,7 +115,12 @@ function loadPage(event, pageUrl, title) {
     setActiveNav(event.currentTarget);
 
     document.getElementById("pageTitle").textContent = title;
-    document.getElementById("pageSubtitle").textContent = "Manage this section from the right panel.";
+
+    if (title === "All Requests") {
+        document.getElementById("pageSubtitle").textContent = "View all student requests with status, dates and remarks.";
+    } else {
+        document.getElementById("pageSubtitle").textContent = "Manage this section from the right panel.";
+    }
 
     document.getElementById("dashboardSection").classList.add("hidden");
     document.getElementById("iframeSection").classList.remove("hidden");

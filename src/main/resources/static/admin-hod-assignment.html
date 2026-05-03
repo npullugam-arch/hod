@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HOD Section Assignment</title>
+    <link rel="stylesheet" href="css/admin-hod-assignment.css">
+</head>
+<body>
+
+<div class="page">
+    <h1>Assign Sections to HOD</h1>
+
+    <div class="card">
+        <select id="hodSelect">
+            <option value="">Select HOD</option>
+        </select>
+
+        <input type="text" id="department" placeholder="Department / Branch e.g. CSE">
+        <input type="number" id="sem" placeholder="Semester e.g. 3">
+        <input type="text" id="section" placeholder="Section e.g. A">
+
+        <button onclick="assignSection()">Assign</button>
+    </div>
+
+    <p id="status"></p>
+
+    <div class="table-card">
+        <h2>Current Assignments</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>HOD</th>
+                    <th>Department</th>
+                    <th>Semester</th>
+                    <th>Section</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="assignmentTable"></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="js/admin-hod-assignment.js"></script>
+</body>
+</html>

@@ -64,23 +64,38 @@
             </a>
         </div>
 
-        <div class="nav-item">
+         <div class="nav-item">
             <a href="#" class="nav-link" onclick="loadPage(event, 'certificate-tracking.html', 'Certificate Tracking')">
                 <i class="fa-solid fa-certificate"></i>
                 <span>Certificate Tracking</span>
             </a>
         </div>
 
+        
         <div class="nav-item">
+            <a href="#" class="nav-link" onclick="loadPage(event, 'hod-students.html', 'Students')">
+                <i class="fa-solid fa-users"></i>
+                <span>Students</span>
+            </a>
+        </div>
+
+       <div class="nav-item">
+            <a href="#" class="nav-link" onclick="loadPage(event, 'allstudents.html', 'All Requests')">
+                <i class="fa-solid fa-list-check"></i>
+                <span>All Requests</span>
+            </a>
+        </div>
+
+
+        <!-- <div class="nav-item">
             <a href="#" class="nav-link" onclick="loadPage(event, 'reminders.html', 'Reminders')">
                 <i class="fa-solid fa-bell"></i>
                 <span>Reminders</span>
             </a>
-        </div>
+        </div> -->
 
     </nav>
 
-    <!-- ACCOUNT SECTION -->
     <nav class="nav-menu nav-bottom">
         <p class="menu-label">Account</p>
 
@@ -92,11 +107,11 @@
         </div>
 
         <div class="nav-item" id="updatePasswordNav">
-    <a href="#" class="nav-link" onclick="loadPage(event, 'hod-password.html', 'Update Password')">
-        <i class="fa-solid fa-key"></i>
-        <span>Update Password</span>
-    </a>
-</div>
+            <a href="#" class="nav-link" onclick="loadPage(event, 'hod-password.html', 'Update Password')">
+                <i class="fa-solid fa-key"></i>
+                <span>Update Password</span>
+            </a>
+        </div>
 
         <div class="nav-item">
             <a href="#" class="nav-link logout-link" onclick="logout()">
@@ -111,7 +126,6 @@
 
 <main class="main-wrapper">
 
-    <!-- MOBILE HEADER -->
     <div class="mobile-top-bar">
         <button class="mobile-hamburger" id="mobileMenuBtn">
             <i class="fa-solid fa-bars"></i>
@@ -122,7 +136,6 @@
         </h1>
     </div>
 
-    <!-- TOP HEADER -->
     <header class="top-header">
 
         <div class="welcome-msg">
@@ -133,7 +146,6 @@
             <p id="pageSubtitle">Overview of requests and certificate submissions.</p>
         </div>
 
-        <!-- UPDATED PROFILE HEADER -->
         <div class="user-profile-card">
 
             <img id="hodHeaderPhoto" class="hod-header-photo" src="" />
@@ -147,7 +159,6 @@
 
     </header>
 
-    <!-- DASHBOARD -->
     <section id="dashboardSection">
 
         <div class="stats-grid">
@@ -186,7 +197,6 @@
 
     </section>
 
-    <!-- IFRAME -->
     <section id="iframeSection" class="hidden">
         <div class="iframe-card">
             <iframe id="contentFrame"></iframe>

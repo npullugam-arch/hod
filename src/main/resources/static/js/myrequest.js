@@ -1,4 +1,5 @@
 const user = JSON.parse(localStorage.getItem("user"));
+let resolvedStudentId = null;
 
 if (!user) {
     window.location.href = "index.html";
@@ -8,54 +9,107 @@ window.addEventListener("DOMContentLoaded", function () {
     loadRequests();
 });
 
-function loadRequests() {
-    fetch(`/request/student/${user.id}`)
-        .then((res) => {
-            if (!res.ok) throw new Error("Failed to load requests");
-            return res.json();
-        })
-        .then((data) => {
-            const table = document.getElementById("requestTable");
-            table.innerHTML = "";
+async function loadRequests() {
+    try {
+        const studentId = await getStudentIdForRequests();
+        const res = await fetch(`/request/student/${studentId}`);
 
-            if (!Array.isArray(data) || data.length === 0) {
-                table.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="empty-row">No requests found.</td>
-                    </tr>
-                `;
-                return;
-            }
+        if (!res.ok) throw new Error("Failed to load requests");
 
-            data.forEach((req) => {
-                const hodName = req.hod?.username ? escapeHtml(req.hod.username) : "-";
-                const endDate = formatDate(req.endDate);
-                const dueDate = formatDate(req.certificateDueDate);
-                const statusBadge = getRequestStatusHtml(req);
-                const certificateStatus = getCertificateStatusHtml(req);
-                const documentAction = getDocumentActionHtml(req);
+        const data = await res.json();
+        const table = document.getElementById("requestTable");
+        table.innerHTML = "";
 
-                table.innerHTML += `
-                    <tr>
-                        <td data-label="Event / Reason">${escapeHtml(req.reason || "-")}</td>
-                        <td data-label="HOD">${hodName}</td>
-                        <td data-label="Status">${statusBadge}</td>
-                        <td data-label="End Date">${endDate}</td>
-                        <td data-label="Certificate Due">${dueDate}</td>
-                        <td data-label="Certificate">${certificateStatus}</td>
-                        <td data-label="Document">${documentAction}</td>
-                    </tr>
-                `;
-            });
-        })
-        .catch((err) => {
-            console.error(err);
-            document.getElementById("requestTable").innerHTML = `
+        if (!Array.isArray(data) || data.length === 0) {
+            table.innerHTML = `
                 <tr>
-                    <td colspan="7" class="empty-row">Unable to load requests.</td>
+                    <td colspan="7" class="empty-row">No requests found.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        data.forEach((req) => {
+            const hodName = req.hod?.username ? escapeHtml(req.hod.username) : "-";
+            const endDate = formatDate(req.endDate);
+            const dueDate = formatDate(req.certificateDueDate);
+            const statusBadge = getRequestStatusHtml(req);
+            const certificateStatus = getCertificateStatusHtml(req);
+            const documentAction = getDocumentActionHtml(req);
+
+            table.innerHTML += `
+                <tr>
+                    <td data-label="Event / Reason">${escapeHtml(req.reason || "-")}</td>
+                    <td data-label="HOD">${hodName}</td>
+                    <td data-label="Status">${statusBadge}</td>
+                    <td data-label="End Date">${endDate}</td>
+                    <td data-label="Certificate Due">${dueDate}</td>
+                    <td data-label="Certificate">${certificateStatus}</td>
+                    <td data-label="Document">${documentAction}</td>
                 </tr>
             `;
         });
+    } catch (err) {
+        console.error(err);
+        document.getElementById("requestTable").innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-row">Unable to load requests.</td>
+            </tr>
+        `;
+    }
+}
+
+async function getStudentIdForRequests() {
+    if (resolvedStudentId) {
+        return resolvedStudentId;
+    }
+
+    if (!user?.id) {
+        throw new Error("User ID not found");
+    }
+
+    const res = await fetch(`/student/user/${user.id}`);
+
+    if (!res.ok) {
+        throw new Error("Unable to load student info");
+    }
+
+    const student = await res.json();
+    resolvedStudentId = student?.id || user.id;
+    return resolvedStudentId;
+}
+
+async function downloadRequestPdf(requestId, event) {
+    if (event) event.preventDefault();
+
+    try {
+        const studentId = await getStudentIdForRequests();
+        const res = await fetch(`/request/student/${studentId}`);
+
+        if (!res.ok) throw new Error("Failed to fetch request details");
+
+        const requests = await res.json();
+        const req = requests.find((item) => Number(item.id) === Number(requestId));
+
+        if (!req) {
+            alert("Request not found.");
+            return;
+        }
+
+        if (String(req.status || "").toUpperCase() !== "APPROVED") {
+            alert("PDF is available only after approval.");
+            return;
+        }
+
+        if (isGatePassReason(req.reason)) {
+            generateGatePassPdf(req);
+        } else {
+            generatePermissionLetterPdf(req);
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Unable to generate PDF.");
+    }
 }
 
 function isGatePassReason(reason) {
@@ -162,38 +216,6 @@ function getDocumentActionHtml(req) {
     `;
 }
 
-function downloadRequestPdf(requestId, event) {
-    if (event) event.preventDefault();
-
-    fetch(`/request/student/${user.id}`)
-        .then((res) => {
-            if (!res.ok) throw new Error("Failed to fetch request details");
-            return res.json();
-        })
-        .then((requests) => {
-            const req = requests.find((item) => Number(item.id) === Number(requestId));
-
-            if (!req) {
-                alert("Request not found.");
-                return;
-            }
-
-            if (String(req.status || "").toUpperCase() !== "APPROVED") {
-                alert("PDF is available only after approval.");
-                return;
-            }
-
-            if (isGatePassReason(req.reason)) {
-                generateGatePassPdf(req);
-            } else {
-                generatePermissionLetterPdf(req);
-            }
-        })
-        .catch((err) => {
-            console.error(err);
-            alert("Unable to generate PDF.");
-        });
-}
 
 function generatePermissionLetterPdf(req) {
     const jspdfLib = window.jspdf;

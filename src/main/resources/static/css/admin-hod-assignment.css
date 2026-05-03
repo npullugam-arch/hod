@@ -1,0 +1,78 @@
+body {
+    font-family: Inter, Arial, sans-serif;
+    background: #f3f6fb;
+    margin: 0;
+    padding: 30px;
+}
+
+.page {
+    max-width: 1100px;
+    margin: auto;
+}
+
+h1 {
+    color: #172554;
+}
+
+.card, .table-card {
+    background: white;
+    padding: 22px;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    margin-bottom: 24px;
+}
+
+.card {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+}
+
+input, select {
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+button {
+    border: none;
+    background: #2563eb;
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+.delete-btn {
+    background: #dc2626;
+    padding: 9px 14px;
+}
+
+.delete-btn:hover {
+    background: #b91c1c;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 14px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+th {
+    background: #eff6ff;
+    color: #1e3a8a;
+}
+
+#status {
+    font-weight: 700;
+}

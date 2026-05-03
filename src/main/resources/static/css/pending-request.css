@@ -537,3 +537,30 @@ th {
         font-size: 24px;
     }
 }
+
+.history-btn {
+    border: none;
+    background: #2563eb;
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.history-btn:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.history-btn.disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+}
+
+.action-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}

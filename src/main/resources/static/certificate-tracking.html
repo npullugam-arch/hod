@@ -3,114 +3,148 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Certificate Tracking</title>
+    <title>EduPermis | HOD Certificate Tracking</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
+
     <link rel="stylesheet" href="css/certificate-tracking.css" />
 </head>
 <body>
-    <div class="page-wrap">
-        <section class="content-card">
-            <div class="card-header">
-                <div>
-                    <h2>Certificate Tracking</h2>
-                    <p>Track certificate submission status only for approved requests that require certificate upload.</p>
-                </div>
-            </div>
 
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Student</th>
-                            <th>Event Name</th>
-                            <th>Event End</th>
-                            <th>Deadline</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="trackingTable"></tbody>
-                </table>
-            </div>
-        </section>
-    </div>
+<div class="standalone-wrapper">
 
-    <!-- Student Details Modal -->
-    <div id="studentDetailsModal" class="modal-overlay hidden">
-        <div class="modal-box student-modal-box">
-            <div class="modal-header">
-                <h3>Student Details</h3>
-                <button class="modal-close" onclick="closeStudentDetailsModal()">&times;</button>
-            </div>
+    <div class="filter-bar">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Search by student name, roll number, or event...">
+        </div>
 
-            <div class="modal-body">
-                <div class="student-profile-top">
-                    <img id="studentDetailsPhoto" class="student-details-photo" src="" alt="Student Photo" />
-                    <div class="student-profile-meta">
-                        <div id="studentDetailsName" class="modal-student-name">-</div>
-                        <div id="studentDetailsRollNo" class="modal-student-roll">-</div>
-                    </div>
-                </div>
+        <div class="filter-options">
+            <select id="statusFilter" class="filter-select">
+                <option value="all" selected>All Statuses</option>
+                <option value="active">Active Event</option>
+                <option value="pending">Pending Upload</option>
+                <option value="submitted">Needs Review</option>
+                <option value="verified">Verified</option>
+                <option value="rejected">Rejected</option>
+                <option value="overdue">Overdue</option>
+            </select>
 
-                <div class="student-details-grid">
-                    <div class="detail-card">
-                        <div class="detail-label">Email</div>
-                        <div id="studentDetailsEmail" class="detail-value">-</div>
-                    </div>
+            <select id="reminderFilter" class="filter-select">
+                <option value="all" selected>All Reminders</option>
+                <option value="needs-reminder">Needs Reminder</option>
+                <option value="no-action">No Reminder Action</option>
+            </select>
 
-                    <div class="detail-card">
-                        <div class="detail-label">Branch</div>
-                        <div id="studentDetailsBranch" class="detail-value">-</div>
-                    </div>
-
-                    <div class="detail-card">
-                        <div class="detail-label">Section</div>
-                        <div id="studentDetailsSection" class="detail-value">-</div>
-                    </div>
-
-                    <div class="detail-card">
-                        <div class="detail-label">Semester</div>
-                        <div id="studentDetailsSem" class="detail-value">-</div>
-                    </div>
-
-                    <div class="detail-card">
-                        <div class="detail-label">Gender</div>
-                        <div id="studentDetailsGender" class="detail-value">-</div>
-                    </div>
-
-                    <div class="detail-card">
-                        <div class="detail-label">Date of Birth</div>
-                        <div id="studentDetailsDob" class="detail-value">-</div>
-                    </div>
-
-                    <div class="detail-card">
-                        <div class="detail-label">Student Phone</div>
-                        <div id="studentDetailsStudentPhone" class="detail-value">-</div>
-                    </div>
-
-                    <div class="detail-card">
-                        <div class="detail-label">Parent Phone</div>
-                        <div id="studentDetailsParentPhone" class="detail-value">-</div>
-                    </div>
-
-                    <div class="detail-card">
-                        <div class="detail-label">Father Name</div>
-                        <div id="studentDetailsFatherName" class="detail-value">-</div>
-                    </div>
-
-                    <div class="detail-card">
-                        <div class="detail-label">Admission Type</div>
-                        <div id="studentDetailsAdmissionType" class="detail-value">-</div>
-                    </div>
-
-                    <div class="detail-card">
-                        <div class="detail-label">Caste</div>
-                        <div id="studentDetailsCaste" class="detail-value">-</div>
-                    </div>
-                </div>
-            </div>
+            <select id="sortFilter" class="filter-select">
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+                <option value="date-desc">Newest First</option>
+                <option value="date-asc">Oldest First</option>
+            </select>
         </div>
     </div>
 
-    <script src="js/certificate-tracking.js"></script>
+    <div class="table-card">
+        <table class="requests-table">
+            <thead>
+            <tr>
+                <th>Student Details</th>
+                <th>Event</th>
+                <th>Status Progress</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+
+            <tbody id="trackingTable"></tbody>
+        </table>
+
+        <div class="no-results" id="noResultsMsg">No certificates match your search criteria.</div>
+    </div>
+</div>
+
+<!-- Verify Success Modal -->
+<div class="modal-overlay" id="verifyModal">
+    <div class="modal-box">
+        <div class="modal-icon-wrapper">
+            <dotlottie-wc src="https://lottie.host/58a2824f-7b40-4856-942b-3960faa89a20/MIbr0DRH6i.lottie" autoplay loop></dotlottie-wc>
+        </div>
+        <h3 class="modal-title success-title">Verified!</h3>
+        <p class="modal-desc">The student's certificate has been approved and recorded.</p>
+        <button class="modal-btn btn-success" onclick="closeModal('verifyModal')">Done</button>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal-overlay" id="rejectModal">
+    <div class="modal-box reject-box">
+        <div class="modal-icon-wrapper">
+            <dotlottie-wc src="https://lottie.host/e42c7517-f9bb-4908-98bf-ed8ac832084c/Lg5BdIPPEf.lottie" class="big-lottie" autoplay loop></dotlottie-wc>
+        </div>
+
+        <h3 class="modal-title danger-title">Reject Certificate</h3>
+        <p class="modal-desc">Please provide the reason for rejection. The student will be notified to correct and re-upload.</p>
+
+        <textarea id="rejectRemarks" class="remark-textarea" rows="3"
+                  placeholder="e.g., Document is blurry, incorrect dates..."
+                  oninput="validateRemarks()"></textarea>
+
+        <div class="btn-group">
+            <button class="modal-btn btn-cancel" onclick="closeModal('rejectModal')">Cancel</button>
+            <button id="submitRejectBtn" class="modal-btn btn-danger" onclick="submitReject()" disabled>
+                <i class="fa-solid fa-paper-plane"></i> Submit Rejection
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Reminder Success Modal -->
+<div class="modal-overlay" id="remindModal">
+    <div class="modal-box">
+        <div class="modal-icon-wrapper">
+            <dotlottie-wc src="https://lottie.host/901e1e77-5e51-44a9-8d1e-a7600f693e53/38v8fDNNEe.lottie" class="big-lottie" autoplay loop></dotlottie-wc>
+        </div>
+        <h3 class="modal-title warning-title">Reminder Sent</h3>
+        <p class="modal-desc">An alert has been sent to the student to upload their pending certificate.</p>
+        <button class="modal-btn btn-warning" onclick="closeModal('remindModal')">Okay</button>
+    </div>
+</div>
+
+<!-- Student Details Modal -->
+<div class="modal-overlay" id="studentDetailsModal">
+    <div class="modal-box student-modal-box">
+        <div class="student-modal-header">
+            <h3>Student Details</h3>
+            <button class="student-close-btn" onclick="closeModal('studentDetailsModal')">&times;</button>
+        </div>
+
+        <div class="student-profile-top">
+            <img id="studentDetailsPhoto" class="student-details-photo" src="" alt="Student Photo" />
+            <div>
+                <div id="studentDetailsName" class="modal-student-name">-</div>
+                <div id="studentDetailsRollNo" class="modal-student-roll">-</div>
+            </div>
+        </div>
+
+        <div class="student-details-grid">
+            <div class="detail-card"><span>Email</span><b id="studentDetailsEmail">-</b></div>
+            <div class="detail-card"><span>Branch</span><b id="studentDetailsBranch">-</b></div>
+            <div class="detail-card"><span>Section</span><b id="studentDetailsSection">-</b></div>
+            <div class="detail-card"><span>Semester</span><b id="studentDetailsSem">-</b></div>
+            <div class="detail-card"><span>Gender</span><b id="studentDetailsGender">-</b></div>
+            <div class="detail-card"><span>Date of Birth</span><b id="studentDetailsDob">-</b></div>
+            <div class="detail-card"><span>Student Phone</span><b id="studentDetailsStudentPhone">-</b></div>
+            <div class="detail-card"><span>Parent Phone</span><b id="studentDetailsParentPhone">-</b></div>
+            <div class="detail-card"><span>Father Name</span><b id="studentDetailsFatherName">-</b></div>
+            <div class="detail-card"><span>Admission Type</span><b id="studentDetailsAdmissionType">-</b></div>
+            <div class="detail-card"><span>Caste</span><b id="studentDetailsCaste">-</b></div>
+        </div>
+    </div>
+</div>
+
+<script src="js/certificate-tracking.js"></script>
 </body>
 </html>

@@ -38,6 +38,11 @@ public class RequestController {
         return requestService.rejectRequest(id, remark);
     }
 
+    @GetMapping("/all")
+    public List<Request> getAllRequests() {
+        return requestService.getAllRequests();
+    }
+
     @GetMapping("/student/{studentId}")
     public List<Request> getRequestsByStudent(@PathVariable Long studentId) {
         return requestService.getRequestsByStudent(studentId);

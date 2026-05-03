@@ -26,9 +26,15 @@ public class SecurityConfig {
 
                     "/student.html",
                     "/hod.html",
+                    "/hod-students.html",
+                    "/allstudents.html",
+
                     "/admin.html",
                     "/admin-HOD.html",
                     "/admin-student.html",
+                    "/admin-hod-assignment.html",
+                    "/student-details.html",
+                    "/student-history.html",
 
                     "/profile.html",
                     "/password.html",

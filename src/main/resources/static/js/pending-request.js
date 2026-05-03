@@ -18,9 +18,7 @@ function getStudentName(req) {
 }
 
 function getStudentIdentifier(req) {
-    if (!req.student) {
-        return "N/A";
-    }
+    if (!req.student) return "N/A";
 
     return req.student.rollNo
         || req.student.rollNumber
@@ -30,10 +28,12 @@ function getStudentIdentifier(req) {
         || "N/A";
 }
 
+function getRealStudentId(req) {
+    return req?.student?.id || null;
+}
+
 function getStudentPhoto(req) {
-    if (!req.student) {
-        return "";
-    }
+    if (!req.student) return "";
 
     const rollNo = req.student.rollNo
         || req.student.rollNumber
@@ -61,21 +61,15 @@ function getStudentPhoto(req) {
 
 function getStudentInitial(req) {
     const name = getStudentName(req);
-    if (!name || name === "N/A") {
-        return "S";
-    }
+    if (!name || name === "N/A") return "S";
     return name.trim().charAt(0).toUpperCase();
 }
 
 function formatDate(value) {
-    if (!value) {
-        return "-";
-    }
+    if (!value) return "-";
 
     const date = new Date(value);
-    if (isNaN(date.getTime())) {
-        return escapeHtml(value);
-    }
+    if (isNaN(date.getTime())) return escapeHtml(value);
 
     return date.toLocaleDateString("en-GB");
 }
@@ -90,9 +84,7 @@ function getDisplayValue(value) {
 function loadPendingRequests() {
     fetch(`/request/hod/${user.id}/pending`)
         .then(res => {
-            if (!res.ok) {
-                throw new Error("Failed to load requests");
-            }
+            if (!res.ok) throw new Error("Failed to load requests");
             return res.json();
         })
         .then(data => {
@@ -115,10 +107,10 @@ function loadPendingRequests() {
             pendingRequests.forEach(req => {
                 const studentName = getStudentName(req);
                 const studentId = getStudentIdentifier(req);
+                const realStudentId = getRealStudentId(req);
                 const studentPhoto = getStudentPhoto(req);
                 const studentInitial = getStudentInitial(req);
                 const description = req.description || "No description provided.";
-
                 const student = req.student || {};
 
                 const studentData = {
@@ -144,6 +136,10 @@ function loadPendingRequests() {
                        <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentInitial)}</div>`
                     : `<div class="student-avatar-fallback">${escapeHtml(studentInitial)}</div>`;
 
+                const historyButton = realStudentId
+                    ? `<button class="history-btn" onclick="viewStudentHistory(${realStudentId})">View History</button>`
+                    : `<button class="history-btn disabled" disabled>View History</button>`;
+
                 const row = `
                     <tr>
                         <td>
@@ -161,7 +157,9 @@ function loadPendingRequests() {
                                 </div>
                             </div>
                         </td>
+
                         <td>${escapeHtml(req.reason || "-")}</td>
+
                         <td>
                             <button
                                 class="description-btn"
@@ -171,13 +169,16 @@ function loadPendingRequests() {
                                 View
                             </button>
                         </td>
+
                         <td>${formatDate(req.startDate)}</td>
                         <td>${formatDate(req.endDate)}</td>
                         <td>${formatDate(req.requestDate)}</td>
+
                         <td>
                             <div class="action-group">
                                 <button class="approve-btn" onclick="approveRequest(${req.id})">Approve</button>
                                 <button class="reject-btn" onclick="rejectRequest(${req.id})">Reject</button>
+                                ${historyButton}
                             </div>
                         </td>
                     </tr>
@@ -194,6 +195,15 @@ function loadPendingRequests() {
                 </tr>
             `;
         });
+}
+
+function viewStudentHistory(studentId) {
+    if (!studentId) {
+        alert("Student ID not found.");
+        return;
+    }
+
+    window.location.href = `student-history.html?id=${studentId}&from=pending`;
 }
 
 function openDescriptionModal(studentName, studentId, description) {
@@ -240,13 +250,8 @@ window.addEventListener("click", function (event) {
     const descriptionModal = document.getElementById("descriptionModal");
     const studentDetailsModal = document.getElementById("studentDetailsModal");
 
-    if (event.target === descriptionModal) {
-        closeDescriptionModal();
-    }
-
-    if (event.target === studentDetailsModal) {
-        closeStudentDetailsModal();
-    }
+    if (event.target === descriptionModal) closeDescriptionModal();
+    if (event.target === studentDetailsModal) closeStudentDetailsModal();
 });
 
 window.addEventListener("keydown", function (event) {
@@ -281,9 +286,7 @@ function approveRequest(id) {
 function rejectRequest(id) {
     const remark = prompt("Enter remark for rejection:");
 
-    if (remark === null) {
-        return;
-    }
+    if (remark === null) return;
 
     if (remark.trim() === "") {
         alert("Rejection remark is required.");

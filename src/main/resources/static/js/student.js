@@ -1,4 +1,6 @@
 const user = JSON.parse(localStorage.getItem("user"));
+let resolvedStudent = null;
+let resolvedStudentPromise = null;
 
 const CERTIFICATE_REQUIRED_REASONS = [
     "HACKATHON",
@@ -85,19 +87,7 @@ async function setStudentInfo() {
     if (userInitialEl) userInitialEl.textContent = initial;
 
     try {
-        const userId = user?.id;
-
-        if (!userId) {
-            throw new Error("User ID not found");
-        }
-
-        const response = await fetch(`/student/user/${userId}`);
-
-        if (!response.ok) {
-            throw new Error("Unable to load student info");
-        }
-
-        const student = await response.json();
+        const student = await getResolvedStudent();
 
         displayName = student?.name || user?.username || user?.name || "Student";
         displayId = student?.rollNo || student?.rollNumber || user?.rollNumber || user?.studentId || user?.id || "-";
@@ -193,6 +183,7 @@ function showDashboard(event) {
     }
 
     loadDashboardCounts();
+    loadDashboardCertificateUploads();
     loadUnreadReminderCount();
     updatePasswordMenuVisibility();
 
@@ -292,7 +283,16 @@ function hasUploadedCertificate(req) {
 }
 
 function loadDashboardCounts() {
-    fetch(`/request/student/${user.id}`)
+    getResolvedStudent()
+        .then(student => {
+            const studentId = student?.id || user?.id;
+
+            if (!studentId) {
+                throw new Error("Student ID not found");
+            }
+
+            return fetch(`/request/student/${studentId}`);
+        })
         .then(res => {
             if (!res.ok) {
                 throw new Error("Failed to load dashboard data");
@@ -333,6 +333,39 @@ function loadDashboardCounts() {
             animateCounter("certificateCount", 0);
             animateCounter("totalCount", 0);
         });
+}
+
+async function getResolvedStudent() {
+    if (resolvedStudent) {
+        return resolvedStudent;
+    }
+
+    if (!resolvedStudentPromise) {
+        const userId = user?.id;
+
+        if (!userId) {
+            throw new Error("User ID not found");
+        }
+
+        resolvedStudentPromise = fetch(`/student/user/${userId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Unable to load student info");
+                }
+
+                return response.json();
+            })
+            .then(student => {
+                resolvedStudent = student;
+                return student;
+            })
+            .catch(error => {
+                resolvedStudentPromise = null;
+                throw error;
+            });
+    }
+
+    return resolvedStudentPromise;
 }
 
 function animateCounter(elementId, target) {
@@ -396,6 +429,157 @@ function loadUnreadReminderCount() {
                 badge.style.display = "none";
             }
         });
+}
+
+async function loadDashboardCertificateUploads() {
+    const card = document.getElementById("dashboardCertificateCard");
+    const list = document.getElementById("dashboardCertificateList");
+    const statusBox = document.getElementById("dashboardCertificateStatus");
+
+    if (!card || !list || !statusBox) return;
+
+    card.style.display = "none";
+    list.innerHTML = "";
+    statusBox.textContent = "";
+
+    try {
+        const student = await getResolvedStudent();
+        const studentId = student?.id || user?.id;
+
+        if (!studentId) {
+            throw new Error("Student ID not found");
+        }
+
+        const res = await fetch(`/request/student/${studentId}`);
+
+        if (!res.ok) {
+            throw new Error("Unable to load certificate pending requests");
+        }
+
+        const requests = await res.json();
+        const allRequests = Array.isArray(requests) ? requests : [];
+
+        const pendingCertificateRequests = allRequests.filter(req => {
+            const status = String(req.status || "").toUpperCase();
+            return status === "APPROVED" &&
+                isCertificateRequired(req.reason) &&
+                !hasUploadedCertificate(req);
+        });
+
+        if (pendingCertificateRequests.length === 0) {
+            card.style.display = "none";
+            return;
+        }
+
+        card.style.display = "block";
+
+        statusBox.innerHTML = `
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            ${pendingCertificateRequests.length} certificate upload pending.
+        `;
+
+        list.innerHTML = pendingCertificateRequests.map(req => buildDashboardCertificateItem(req)).join("");
+
+    } catch (error) {
+        console.error("Dashboard certificate load error:", error);
+    }
+}
+
+function buildDashboardCertificateItem(req) {
+    const requestId = req.id;
+    const reason = escapeHtml(req.reason || "Certificate Required");
+    const endDate = formatDashboardDate(req.endDate);
+    const dueDate = formatDashboardDate(req.certificateDueDate);
+    const hodName = escapeHtml(req.hod?.username || req.hod?.name || "HOD");
+
+    return `
+        <div class="dashboard-cert-item">
+            <div class="dashboard-cert-info">
+                <h3>${reason}</h3>
+                <p><strong>HOD:</strong> ${hodName}</p>
+                <p><strong>Event End:</strong> ${endDate} | <strong>Due:</strong> ${dueDate}</p>
+            </div>
+
+            <div class="dashboard-cert-upload">
+                <input 
+                    type="file" 
+                    id="dashboard-cert-file-${requestId}" 
+                    class="dashboard-hidden-file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onchange="uploadDashboardCertificate(${requestId})"
+                />
+
+                <label for="dashboard-cert-file-${requestId}" class="dashboard-cert-upload-btn">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    Upload Certificate
+                </label>
+            </div>
+        </div>
+    `;
+}
+
+function uploadDashboardCertificate(requestId) {
+    const fileInput = document.getElementById(`dashboard-cert-file-${requestId}`);
+
+    if (!fileInput || fileInput.files.length === 0) {
+        alert("Please select a certificate file.");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const allowedExtensions = ["jpg", "jpeg", "png", "pdf"];
+    const fileName = file.name.toLowerCase();
+    const extension = fileName.includes(".") ? fileName.split(".").pop() : "";
+
+    if (!allowedExtensions.includes(extension)) {
+        fileInput.value = "";
+        alert("Only JPG, JPEG, PNG, and PDF files are allowed.");
+        return;
+    }
+
+    if (file.size > 1024 * 1024) {
+        fileInput.value = "";
+        alert("File size is more than 1 MB.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("requestId", requestId);
+    formData.append("file", file);
+
+    fetch("/certificate/upload", {
+        method: "POST",
+        body: formData
+    })
+        .then(async res => {
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(errorText || "Failed to upload certificate");
+            }
+            return res.json();
+        })
+        .then(() => {
+            alert("Certificate uploaded successfully!");
+            loadDashboardCounts();
+            loadDashboardCertificateUploads();
+        })
+        .catch(error => {
+            console.error(error);
+            alert(error.message || "Certificate upload failed.");
+        });
+}
+
+function formatDashboardDate(value) {
+    if (!value) return "—";
+
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return value;
+
+    const dd = String(date.getDate()).padStart(2, "0");
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const yy = String(date.getFullYear()).slice(-2);
+
+    return `${dd}-${mm}-${yy}`;
 }
 
 function logout() {

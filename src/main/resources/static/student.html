@@ -190,6 +190,21 @@
                 </div>
             </div>
 
+
+            <section class="dashboard-certificate-card xy" id="dashboardCertificateCard" style="display:none;">
+    <div class="dashboard-cert-header">
+        <div>
+            <h2><i class="fa-solid fa-certificate"></i> Certificate Upload Required</h2>
+            <p>You have approved requests that need certificate/proof upload.</p>
+        </div>
+        <button class="view-all-cert-btn" onclick="loadPage(event, 'certificate.html', 'Upload Certificate')">
+            View All
+        </button>
+    </div>
+
+    <div id="dashboardCertificateStatus" class="dashboard-cert-status"></div>
+    <div id="dashboardCertificateList" class="dashboard-cert-list"></div>
+</section>
             <section class="content-card">
                 <div class="card-header">
                     <h2>Student Dashboard</h2>

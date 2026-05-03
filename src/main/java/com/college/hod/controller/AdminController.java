@@ -5,9 +5,11 @@ import com.college.hod.dto.AdminStudentCreateRequest;
 import com.college.hod.dto.AdminStudentPasswordUpdateRequest;
 import com.college.hod.dto.AdminStudentUpdateRequest;
 import com.college.hod.dto.ExcelUploadResponse;
+import com.college.hod.dto.HodAssignmentRequest;
 import com.college.hod.entity.Hod;
 import com.college.hod.entity.Student;
 import com.college.hod.service.AdminService;
+import com.college.hod.service.HodAssignmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,9 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private HodAssignmentService hodAssignmentService;
 
     @GetMapping("/hods")
     public ResponseEntity<?> getAllHods() {
@@ -157,6 +162,45 @@ public class AdminController {
         try {
             adminService.updateStudentPassword(studentId, request);
             return ResponseEntity.ok("Student password updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // ================= HOD ASSIGNMENT APIs =================
+
+    @PostMapping("/hod-assignment")
+    public ResponseEntity<?> assignHodSection(@RequestBody HodAssignmentRequest request) {
+        try {
+            return ResponseEntity.ok(hodAssignmentService.assignSection(request));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/hod-assignment")
+    public ResponseEntity<?> getAllHodAssignments() {
+        try {
+            return ResponseEntity.ok(hodAssignmentService.getAllAssignments());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/hod-assignment/{hodId}")
+    public ResponseEntity<?> getAssignmentsByHod(@PathVariable Long hodId) {
+        try {
+            return ResponseEntity.ok(hodAssignmentService.getAssignmentsByHod(hodId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/hod-assignment/{assignmentId}")
+    public ResponseEntity<?> deleteAssignment(@PathVariable Long assignmentId) {
+        try {
+            hodAssignmentService.deleteAssignment(assignmentId);
+            return ResponseEntity.ok("Assignment deleted successfully");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

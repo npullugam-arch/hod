@@ -9,5 +9,7 @@ public interface HodRepository extends JpaRepository<Hod, Long> {
 
     Optional<Hod> findByEmployeeId(String employeeId);
 
+    Optional<Hod> findByUser_Id(Long userId);
+
     boolean existsByEmployeeId(String employeeId);
 }

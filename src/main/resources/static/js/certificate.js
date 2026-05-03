@@ -1,6 +1,7 @@
 const user = JSON.parse(localStorage.getItem("user"));
 const fileActionMap = {};
 let deleteRequestId = null;
+let resolvedStudentId = null;
 
 const CERTIFICATE_REQUIRED_REASONS = [
     "HACKATHON",
@@ -31,56 +32,76 @@ function bindStaticEvents() {
     }
 }
 
-function loadCertificateRequests() {
-    fetch(`/request/student/${user.id}`)
-        .then(res => {
-            if (!res.ok) {
-                throw new Error("Failed to load requests");
-            }
-            return res.json();
-        })
-        .then(data => {
-            const table = document.getElementById("certificateTable");
-            table.innerHTML = "";
+async function loadCertificateRequests() {
+    try {
+        const studentId = await getStudentIdForRequests();
+        const res = await fetch(`/request/student/${studentId}`);
 
-            if (!data || data.length === 0) {
-                table.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="empty-row">No requests found.</td>
-                    </tr>
-                `;
-                return;
-            }
+        if (!res.ok) {
+            throw new Error("Failed to load requests");
+        }
 
-            const approvedCertificateRequests = data.filter(req => {
-                const status = String(req.status || "").toUpperCase();
-                const reason = normalizeReason(req.reason);
-                return status === "APPROVED" && CERTIFICATE_REQUIRED_REASONS.includes(reason);
-            });
+        const data = await res.json();
+        const table = document.getElementById("certificateTable");
+        table.innerHTML = "";
 
-            if (approvedCertificateRequests.length === 0) {
-                table.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="empty-row">
-                            No approved certificate-required requests available for upload.
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            approvedCertificateRequests.forEach(req => {
-                table.innerHTML += buildCertificateRow(req);
-            });
-        })
-        .catch(err => {
-            console.error(err);
-            document.getElementById("certificateTable").innerHTML = `
+        if (!data || data.length === 0) {
+            table.innerHTML = `
                 <tr>
-                    <td colspan="7" class="empty-row">Unable to load certificate requests.</td>
+                    <td colspan="7" class="empty-row">No requests found.</td>
                 </tr>
             `;
+            return;
+        }
+
+        const approvedCertificateRequests = data.filter(req => {
+            const status = String(req.status || "").toUpperCase();
+            const reason = normalizeReason(req.reason);
+            return status === "APPROVED" && CERTIFICATE_REQUIRED_REASONS.includes(reason);
         });
+
+        if (approvedCertificateRequests.length === 0) {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="7" class="empty-row">
+                        No approved certificate-required requests available for upload.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        approvedCertificateRequests.forEach(req => {
+            table.innerHTML += buildCertificateRow(req);
+        });
+    } catch (err) {
+        console.error(err);
+        document.getElementById("certificateTable").innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-row">Unable to load certificate requests.</td>
+            </tr>
+        `;
+    }
+}
+
+async function getStudentIdForRequests() {
+    if (resolvedStudentId) {
+        return resolvedStudentId;
+    }
+
+    if (!user?.id) {
+        throw new Error("User ID not found");
+    }
+
+    const res = await fetch(`/student/user/${user.id}`);
+
+    if (!res.ok) {
+        throw new Error("Unable to load student info");
+    }
+
+    const student = await res.json();
+    resolvedStudentId = student?.id || user.id;
+    return resolvedStudentId;
 }
 
 function buildCertificateRow(req) {
