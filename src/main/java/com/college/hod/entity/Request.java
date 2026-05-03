@@ -10,14 +10,7 @@ import com.college.hod.enums.RequestStatus;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(
-        name = "request",
-        indexes = {
-                @Index(name = "idx_request_status", columnList = "status"),
-                @Index(name = "idx_request_hod_id", columnList = "hod_id"),
-                @Index(name = "idx_request_student_id", columnList = "student_id")
-        }
-)
+@Table(name = "request")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Request {
 
