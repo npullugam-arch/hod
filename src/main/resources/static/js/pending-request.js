@@ -4,65 +4,258 @@ if (!user) {
     window.top.location.href = "index.html";
 }
 
+const STUDENT_PHOTO_BASE_URL = "https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS";
+const DEFAULT_PAGE_SIZE = 20;
+
+let currentPage = 0;
+let totalPages = 0;
+let totalElements = 0;
+let currentPendingRequests = [];
+let isPendingLoading = false;
+
 window.onload = function () {
+    bindPendingPagination();
     loadPendingRequests();
 };
 
-const STUDENT_PHOTO_BASE_URL = "https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS";
+function bindPendingPagination() {
+    const prevBtn = document.getElementById("pendingPrevBtn");
+    const nextBtn = document.getElementById("pendingNextBtn");
 
-function getStudentName(req) {
-    if (req.student) {
-        return req.student.name || req.student.username || req.student.fullName || "N/A";
+    if (prevBtn) {
+        prevBtn.addEventListener("click", function () {
+            if (currentPage > 0 && !isPendingLoading) {
+                currentPage -= 1;
+                loadPendingRequests();
+            }
+        });
     }
-    return "N/A";
+
+    if (nextBtn) {
+        nextBtn.addEventListener("click", function () {
+            if (currentPage + 1 < totalPages && !isPendingLoading) {
+                currentPage += 1;
+                loadPendingRequests();
+            }
+        });
+    }
 }
 
-function getStudentIdentifier(req) {
-    if (!req.student) return "N/A";
+function loadPendingRequests() {
+    isPendingLoading = true;
+    renderPendingLoadingState();
+    updatePendingPagination();
 
-    return req.student.rollNo
-        || req.student.rollNumber
-        || (req.student.user && req.student.user.username)
-        || (req.student.user && req.student.user.id)
-        || req.student.id
-        || "N/A";
+    const url = `/request/hod/${user.id}/pending?page=${currentPage}&size=${DEFAULT_PAGE_SIZE}`;
+
+    fetch(url)
+        .then(res => {
+            if (!res.ok) {
+                throw new Error("Failed to load requests");
+            }
+            return res.json();
+        })
+        .then(data => {
+            currentPendingRequests = Array.isArray(data.content) ? data.content : [];
+            totalPages = Number(data.totalPages) || 0;
+            totalElements = Number(data.totalElements) || 0;
+
+            if (totalPages > 0 && currentPage >= totalPages) {
+                currentPage = totalPages - 1;
+                return loadPendingRequests();
+            }
+
+            renderPendingTable();
+            updatePendingPagination();
+        })
+        .catch(err => {
+            console.error(err);
+            currentPendingRequests = [];
+            totalPages = 0;
+            totalElements = 0;
+            renderPendingErrorState();
+            updatePendingPagination();
+        })
+        .finally(() => {
+            isPendingLoading = false;
+        });
 }
 
-function getRealStudentId(req) {
-    return req?.student?.id || null;
+function renderPendingLoadingState() {
+    const table = document.getElementById("pendingTable");
+    const status = document.getElementById("pendingStatus");
+
+    if (status) {
+        status.textContent = "Loading pending requests...";
+    }
+
+    if (table) {
+        table.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-row">Loading pending requests...</td>
+            </tr>
+        `;
+    }
+}
+
+function renderPendingErrorState() {
+    const table = document.getElementById("pendingTable");
+    const status = document.getElementById("pendingStatus");
+
+    if (status) {
+        status.textContent = "Unable to load pending requests.";
+    }
+
+    if (table) {
+        table.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-row">Unable to load pending requests.</td>
+            </tr>
+        `;
+    }
+}
+
+function renderPendingTable() {
+    const table = document.getElementById("pendingTable");
+    const status = document.getElementById("pendingStatus");
+
+    if (!table) return;
+
+    table.innerHTML = "";
+
+    if (currentPendingRequests.length === 0) {
+        if (status) {
+            status.textContent = totalElements === 0
+                ? "No pending requests found."
+                : "No pending requests on this page.";
+        }
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-row">No pending requests found.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    if (status) {
+        const start = currentPage * DEFAULT_PAGE_SIZE + 1;
+        const end = currentPage * DEFAULT_PAGE_SIZE + currentPendingRequests.length;
+        status.textContent = `Showing ${start}-${end} of ${totalElements} pending requests`;
+    }
+
+    currentPendingRequests.forEach((req, index) => {
+        const studentData = buildPendingStudentData(req);
+        const studentPhotoHtml = studentData.photo
+            ? `<img src="${escapeAttribute(studentData.photo)}" alt="${escapeAttribute(studentData.name)}" class="student-photo" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+               <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentData.initial)}</div>`
+            : `<div class="student-avatar-fallback">${escapeHtml(studentData.initial)}</div>`;
+
+        const historyButton = req.studentId
+            ? `<button class="history-btn" onclick="viewStudentHistory(${req.studentId})">View History</button>`
+            : `<button class="history-btn disabled" disabled>View History</button>`;
+
+        table.innerHTML += `
+            <tr>
+                <td>
+                    <div class="student-cell clickable-student" onclick="openStudentDetailsModalByIndex(${index})" title="View Student Details">
+                        <div class="student-photo-wrap">
+                            ${studentPhotoHtml}
+                        </div>
+                        <div class="student-meta">
+                            <div class="student-name">${escapeHtml(studentData.name)}</div>
+                            <div class="student-roll">${escapeHtml(studentData.rollNo)}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>${escapeHtml(req.reason || "-")}</td>
+                <td>
+                    <button
+                        class="description-btn"
+                        onclick="openDescriptionModal('${escapeJsString(studentData.name)}', '${escapeJsString(studentData.rollNo)}', '${escapeJsString(req.description || "No description provided.")}')"
+                        title="View Description"
+                    >
+                        View
+                    </button>
+                </td>
+                <td>${formatDate(req.startDate)}</td>
+                <td>${formatDate(req.endDate)}</td>
+                <td>${formatDate(req.requestDate)}</td>
+                <td>
+                    <div class="action-group">
+                        <button class="approve-btn" onclick="approveRequest(${req.id})">Approve</button>
+                        <button class="reject-btn" onclick="rejectRequest(${req.id})">Reject</button>
+                        ${historyButton}
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function updatePendingPagination() {
+    const prevBtn = document.getElementById("pendingPrevBtn");
+    const nextBtn = document.getElementById("pendingNextBtn");
+    const pageInfo = document.getElementById("pendingPageInfo");
+
+    if (prevBtn) {
+        prevBtn.disabled = isPendingLoading || currentPage <= 0;
+    }
+
+    if (nextBtn) {
+        nextBtn.disabled = isPendingLoading || totalPages === 0 || currentPage >= totalPages - 1;
+    }
+
+    if (pageInfo) {
+        const displayPage = totalPages === 0 ? 0 : currentPage + 1;
+        const safeTotalPages = totalPages === 0 ? 0 : totalPages;
+        pageInfo.textContent = `Page ${displayPage} of ${safeTotalPages}`;
+    }
+}
+
+function buildPendingStudentData(req) {
+    const name = req.studentName || "N/A";
+    const rollNo = req.studentRollNo || req.studentId || "N/A";
+    const photo = getStudentPhoto(req);
+
+    return {
+        photo,
+        name,
+        rollNo: String(rollNo),
+        email: getDisplayValue(req.studentEmail),
+        branch: getDisplayValue(req.studentBranch),
+        section: getDisplayValue(req.studentSection || req.studentSec),
+        sem: getDisplayValue(req.studentSem),
+        gender: getDisplayValue(req.studentGender),
+        dob: getDisplayValue(req.studentDateOfBirth),
+        studentPhone: getDisplayValue(req.studentPhoneNumber),
+        parentPhone: getDisplayValue(req.parentPhoneNumber),
+        fatherName: getDisplayValue(req.fatherName),
+        admissionType: getDisplayValue(req.admissionType),
+        caste: getDisplayValue(req.caste),
+        initial: getInitial(name)
+    };
 }
 
 function getStudentPhoto(req) {
-    if (!req.student) return "";
-
-    const rollNo = req.student.rollNo
-        || req.student.rollNumber
-        || (req.student.user && req.student.user.username)
-        || "";
-
-    const customPhoto = req.student.photoUrl
-        || req.student.photo
-        || req.student.imageUrl
-        || req.student.profilePhoto
-        || req.student.profileImage
-        || "";
+    const customPhoto = req.studentPhotoUrl || "";
 
     if (customPhoto && customPhoto.trim() !== "") {
-        return customPhoto;
+        return customPhoto.trim();
     }
 
-    if (rollNo && rollNo.trim() !== "") {
-        const cleanRollNo = rollNo.trim();
-        return `${STUDENT_PHOTO_BASE_URL}/${encodeURIComponent(cleanRollNo)}/${encodeURIComponent(cleanRollNo)}.jpg`;
+    const rollNo = req.studentRollNo || "";
+    if (!rollNo || !String(rollNo).trim()) {
+        return "";
     }
 
-    return "";
+    const cleanRollNo = String(rollNo).trim().toUpperCase();
+    return `${STUDENT_PHOTO_BASE_URL}/${encodeURIComponent(cleanRollNo)}/${encodeURIComponent(cleanRollNo)}.jpg`;
 }
 
-function getStudentInitial(req) {
-    const name = getStudentName(req);
+function getInitial(name) {
     if (!name || name === "N/A") return "S";
-    return name.trim().charAt(0).toUpperCase();
+    return String(name).trim().charAt(0).toUpperCase();
 }
 
 function formatDate(value) {
@@ -78,123 +271,8 @@ function getDisplayValue(value) {
     if (value === null || value === undefined || String(value).trim() === "") {
         return "-";
     }
+
     return String(value);
-}
-
-function loadPendingRequests() {
-    fetch(`/request/hod/${user.id}/pending`)
-        .then(res => {
-            if (!res.ok) throw new Error("Failed to load requests");
-            return res.json();
-        })
-        .then(data => {
-            const table = document.getElementById("pendingTable");
-            table.innerHTML = "";
-
-            const pendingRequests = Array.isArray(data)
-                ? data.filter(req => req.status === "PENDING")
-                : [];
-
-            if (pendingRequests.length === 0) {
-                table.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="empty-row">No pending requests found.</td>
-                    </tr>
-                `;
-                return;
-            }
-
-            pendingRequests.forEach(req => {
-                const studentName = getStudentName(req);
-                const studentId = getStudentIdentifier(req);
-                const realStudentId = getRealStudentId(req);
-                const studentPhoto = getStudentPhoto(req);
-                const studentInitial = getStudentInitial(req);
-                const description = req.description || "No description provided.";
-                const student = req.student || {};
-
-                const studentData = {
-                    photo: studentPhoto,
-                    name: studentName,
-                    rollNo: studentId,
-                    email: getDisplayValue(student.email),
-                    branch: getDisplayValue(student.branch),
-                    section: getDisplayValue(student.section || student.sec),
-                    sem: getDisplayValue(student.sem),
-                    gender: getDisplayValue(student.gender),
-                    dob: getDisplayValue(student.dateOfBirth),
-                    studentPhone: getDisplayValue(student.studentPhoneNumber),
-                    parentPhone: getDisplayValue(student.parentPhoneNumber),
-                    fatherName: getDisplayValue(student.fatherName),
-                    admissionType: getDisplayValue(student.admissionType),
-                    caste: getDisplayValue(student.caste),
-                    initial: studentInitial
-                };
-
-                const studentPhotoHtml = studentPhoto
-                    ? `<img src="${escapeAttribute(studentPhoto)}" alt="${escapeAttribute(studentName)}" class="student-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                       <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentInitial)}</div>`
-                    : `<div class="student-avatar-fallback">${escapeHtml(studentInitial)}</div>`;
-
-                const historyButton = realStudentId
-                    ? `<button class="history-btn" onclick="viewStudentHistory(${realStudentId})">View History</button>`
-                    : `<button class="history-btn disabled" disabled>View History</button>`;
-
-                const row = `
-                    <tr>
-                        <td>
-                            <div
-                                class="student-cell clickable-student"
-                                onclick='openStudentDetailsModal(${JSON.stringify(studentData).replace(/'/g, "&apos;")})'
-                                title="View Student Details"
-                            >
-                                <div class="student-photo-wrap">
-                                    ${studentPhotoHtml}
-                                </div>
-                                <div class="student-meta">
-                                    <div class="student-name">${escapeHtml(studentName)}</div>
-                                    <div class="student-roll">${escapeHtml(studentId)}</div>
-                                </div>
-                            </div>
-                        </td>
-
-                        <td>${escapeHtml(req.reason || "-")}</td>
-
-                        <td>
-                            <button
-                                class="description-btn"
-                                onclick="openDescriptionModal('${escapeJsString(studentName)}', '${escapeJsString(studentId)}', '${escapeJsString(description)}')"
-                                title="View Description"
-                            >
-                                View
-                            </button>
-                        </td>
-
-                        <td>${formatDate(req.startDate)}</td>
-                        <td>${formatDate(req.endDate)}</td>
-                        <td>${formatDate(req.requestDate)}</td>
-
-                        <td>
-                            <div class="action-group">
-                                <button class="approve-btn" onclick="approveRequest(${req.id})">Approve</button>
-                                <button class="reject-btn" onclick="rejectRequest(${req.id})">Reject</button>
-                                ${historyButton}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-
-                table.innerHTML += row;
-            });
-        })
-        .catch(err => {
-            console.error(err);
-            document.getElementById("pendingTable").innerHTML = `
-                <tr>
-                    <td colspan="7" class="empty-row">Unable to load pending requests.</td>
-                </tr>
-            `;
-        });
 }
 
 function viewStudentHistory(studentId) {
@@ -215,6 +293,11 @@ function openDescriptionModal(studentName, studentId, description) {
 
 function closeDescriptionModal() {
     document.getElementById("descriptionModal").classList.add("hidden");
+}
+
+function openStudentDetailsModalByIndex(index) {
+    const student = buildPendingStudentData(currentPendingRequests[index] || {});
+    openStudentDetailsModal(student);
 }
 
 function openStudentDetailsModal(student) {
@@ -271,10 +354,16 @@ function approveRequest(id) {
                 console.error("Approve API error:", errorText);
                 throw new Error("Failed to approve request");
             }
+
             return res.json();
         })
         .then(() => {
             alert("The leave request has been approved successfully.");
+
+            if (currentPendingRequests.length === 1 && currentPage > 0) {
+                currentPage -= 1;
+            }
+
             loadPendingRequests();
         })
         .catch(err => {
@@ -302,10 +391,16 @@ function rejectRequest(id) {
                 console.error("Reject API error:", errorText);
                 throw new Error("Failed to reject request");
             }
+
             return res.json();
         })
         .then(() => {
             alert("The leave request has been rejected successfully.");
+
+            if (currentPendingRequests.length === 1 && currentPage > 0) {
+                currentPage -= 1;
+            }
+
             loadPendingRequests();
         })
         .catch(err => {

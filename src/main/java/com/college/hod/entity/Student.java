@@ -9,7 +9,16 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-@Table(name = "student")
+@Table(
+        name = "student",
+        indexes = {
+                @Index(name = "idx_student_roll_no", columnList = "roll_no"),
+                @Index(name = "idx_student_name", columnList = "name"),
+                @Index(name = "idx_student_branch", columnList = "branch"),
+                @Index(name = "idx_student_sem", columnList = "sem"),
+                @Index(name = "idx_student_sec", columnList = "sec")
+        }
+)
 public class Student {
 
     @Id

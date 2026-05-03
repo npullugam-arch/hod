@@ -1,5 +1,6 @@
 package com.college.hod.controller;
 
+import com.college.hod.dto.RequestSummaryResponse;
 import com.college.hod.entity.Hod;
 import com.college.hod.entity.Request;
 import com.college.hod.entity.Student;
@@ -49,5 +50,11 @@ public class HodController {
     @GetMapping("/{hodId}/pending")
     public List<Request> getPending(@PathVariable Long hodId) {
         return requestService.getPendingRequests(hodId);
+    }
+
+    @GetMapping("/{hodId}/dashboard-summary")
+    public RequestSummaryResponse getDashboardSummary(@PathVariable Long hodId) {
+        long assignedStudentsCount = studentService.countStudentsByHod(hodId);
+        return requestService.getHodDashboardSummary(hodId, assignedStudentsCount);
     }
 }

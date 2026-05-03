@@ -1,5 +1,10 @@
 package com.college.hod.service.impl;
 
+import com.college.hod.dto.CertificateTrackingListItem;
+import com.college.hod.dto.PaginatedResponse;
+import com.college.hod.dto.PendingRequestListItem;
+import com.college.hod.dto.RequestSummaryResponse;
+import com.college.hod.dto.StudentCertificatePendingItem;
 import com.college.hod.entity.Request;
 import com.college.hod.entity.Student;
 import com.college.hod.entity.User;
@@ -10,6 +15,10 @@ import com.college.hod.repository.StudentRepository;
 import com.college.hod.repository.UserRepository;
 import com.college.hod.service.RequestService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -137,6 +146,79 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public List<Request> getPendingRequests(Long hodId) {
         return requestRepository.findByHodIdAndStatus(hodId, RequestStatus.PENDING);
+    }
+
+    @Override
+    public PaginatedResponse<PendingRequestListItem> getPendingRequestsPage(Long hodId, int page, int size) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.min(Math.max(size, 1), 100),
+                Sort.by(Sort.Direction.DESC, "requestDate").and(Sort.by(Sort.Direction.DESC, "id"))
+        );
+
+        Page<PendingRequestListItem> resultPage = requestRepository.findPendingRequestPageByHodId(hodId, pageable);
+        return new PaginatedResponse<>(
+                resultPage.getContent(),
+                resultPage.getNumber(),
+                resultPage.getSize(),
+                resultPage.getTotalElements(),
+                resultPage.getTotalPages(),
+                resultPage.isLast()
+        );
+    }
+
+    @Override
+    public PaginatedResponse<CertificateTrackingListItem> getCertificateTrackingPage(Long hodId, int page, int size, String search) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.min(Math.max(size, 1), 100),
+                Sort.by(Sort.Direction.DESC, "endDate").and(Sort.by(Sort.Direction.DESC, "id"))
+        );
+
+        Page<CertificateTrackingListItem> resultPage = requestRepository.findCertificateTrackingPageByHodId(
+                hodId,
+                CERTIFICATE_REQUIRED_REASONS,
+                search == null ? "" : search.trim(),
+                pageable
+        );
+
+        return new PaginatedResponse<>(
+                resultPage.getContent(),
+                resultPage.getNumber(),
+                resultPage.getSize(),
+                resultPage.getTotalElements(),
+                resultPage.getTotalPages(),
+                resultPage.isLast()
+        );
+    }
+
+    @Override
+    public RequestSummaryResponse getHodDashboardSummary(Long hodId, long assignedStudentsCount) {
+        long total = requestRepository.countByHodId(hodId);
+        long pending = requestRepository.countByHodIdAndStatus(hodId, RequestStatus.PENDING);
+        long approved = requestRepository.countByHodIdAndStatus(hodId, RequestStatus.APPROVED);
+        long rejected = requestRepository.countByHodIdAndStatus(hodId, RequestStatus.REJECTED);
+        long certificatePending = requestRepository.countCertificatePendingByHodId(hodId, CERTIFICATE_REQUIRED_REASONS);
+
+        return new RequestSummaryResponse(total, pending, approved, rejected, certificatePending, assignedStudentsCount);
+    }
+
+    @Override
+    public RequestSummaryResponse getStudentDashboardSummary(Long studentId) {
+        Student student = resolveStudentForHistory(studentId);
+        long total = requestRepository.countByStudentId(student.getId());
+        long pending = requestRepository.countByStudentIdAndStatus(student.getId(), RequestStatus.PENDING);
+        long approved = requestRepository.countByStudentIdAndStatus(student.getId(), RequestStatus.APPROVED);
+        long rejected = requestRepository.countByStudentIdAndStatus(student.getId(), RequestStatus.REJECTED);
+        long certificatePending = requestRepository.countCertificatePendingByStudentId(student.getId(), CERTIFICATE_REQUIRED_REASONS);
+
+        return new RequestSummaryResponse(total, pending, approved, rejected, certificatePending, 0);
+    }
+
+    @Override
+    public List<StudentCertificatePendingItem> getStudentCertificatePendingItems(Long studentId) {
+        Student student = resolveStudentForHistory(studentId);
+        return requestRepository.findStudentCertificatePendingItems(student.getId(), CERTIFICATE_REQUIRED_REASONS);
     }
 
     @Override

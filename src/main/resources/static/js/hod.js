@@ -156,30 +156,17 @@ function animateCount(elementId, targetValue) {
 }
 
 function loadDashboardCounts() {
-    fetch(`/hod/${user.id}/requests`)
+    fetch(`/hod/${user.id}/dashboard-summary`)
         .then((res) => {
-            if (!res.ok) throw new Error("Failed to load requests");
+            if (!res.ok) throw new Error("Failed to load dashboard summary");
             return res.json();
         })
-        .then((data) => {
-            let pendingCount = 0;
-            let certificatePendingCount = 0;
-            let approvedCount = 0;
-            let rejectedCount = 0;
-
-            data.forEach((req) => {
-                if (req.status === "PENDING") pendingCount++;
-                else if (req.status === "APPROVED") {
-                    approvedCount++;
-                    if (!req.certificate) certificatePendingCount++;
-                } else if (req.status === "REJECTED") rejectedCount++;
-            });
-
-            animateCount("totalCount", data.length);
-            animateCount("pendingCount", pendingCount);
-            animateCount("certificatePendingCount", certificatePendingCount);
-            animateCount("approvedCount", approvedCount);
-            animateCount("rejectedCount", rejectedCount);
+        .then((summary) => {
+            animateCount("totalCount", summary.totalCount);
+            animateCount("pendingCount", summary.pendingCount);
+            animateCount("certificatePendingCount", summary.certificatePendingCount);
+            animateCount("approvedCount", summary.approvedCount);
+            animateCount("rejectedCount", summary.rejectedCount);
         })
         .catch(() => {
             ["totalCount", "pendingCount", "certificatePendingCount", "approvedCount", "rejectedCount"]

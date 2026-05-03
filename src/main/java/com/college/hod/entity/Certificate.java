@@ -11,7 +11,13 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "certificate")
+@Table(
+        name = "certificate",
+        indexes = {
+                @Index(name = "idx_certificate_status", columnList = "status"),
+                @Index(name = "idx_certificate_request_id", columnList = "request_id")
+        }
+)
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Certificate {
 

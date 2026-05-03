@@ -1,6 +1,11 @@
 package com.college.hod.controller;
 
+import com.college.hod.dto.CertificateTrackingListItem;
 import com.college.hod.entity.Hod;
+import com.college.hod.dto.PaginatedResponse;
+import com.college.hod.dto.PendingRequestListItem;
+import com.college.hod.dto.RequestSummaryResponse;
+import com.college.hod.dto.StudentCertificatePendingItem;
 import com.college.hod.entity.Request;
 import com.college.hod.repository.HodRepository;
 import com.college.hod.service.RequestService;
@@ -48,14 +53,38 @@ public class RequestController {
         return requestService.getRequestsByStudent(studentId);
     }
 
+    @GetMapping("/student/{studentId}/summary")
+    public RequestSummaryResponse getStudentSummary(@PathVariable Long studentId) {
+        return requestService.getStudentDashboardSummary(studentId);
+    }
+
+    @GetMapping("/student/{studentId}/certificate-pending")
+    public List<StudentCertificatePendingItem> getStudentCertificatePending(@PathVariable Long studentId) {
+        return requestService.getStudentCertificatePendingItems(studentId);
+    }
+
     @GetMapping("/hod/{hodId}")
     public List<Request> getRequestsByHod(@PathVariable Long hodId) {
         return requestService.getRequestsByHod(hodId);
     }
 
     @GetMapping("/hod/{hodId}/pending")
-    public List<Request> getPendingRequests(@PathVariable Long hodId) {
-        return requestService.getPendingRequests(hodId);
+    public PaginatedResponse<PendingRequestListItem> getPendingRequests(
+            @PathVariable Long hodId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return requestService.getPendingRequestsPage(hodId, page, size);
+    }
+
+    @GetMapping("/hod/{hodId}/certificate-tracking")
+    public PaginatedResponse<CertificateTrackingListItem> getCertificateTracking(
+            @PathVariable Long hodId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search
+    ) {
+        return requestService.getCertificateTrackingPage(hodId, page, size, search);
     }
 
     @GetMapping("/hods")

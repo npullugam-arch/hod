@@ -10,64 +10,169 @@ const CERTIFICATE_REQUIRED_REASONS = [
 ];
 
 const STUDENT_PHOTO_BASE_URL = "https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS";
+const TRACKING_PAGE_SIZE = 20;
 
-let allTrackingRequests = [];
+let currentTrackingItems = [];
 let currentRejectCertificateId = null;
+let currentPage = 0;
+let totalPages = 0;
+let totalElements = 0;
+let isTrackingLoading = false;
+let searchDebounceTimer = null;
+let visibleTrackingItems = [];
 
 if (!user) {
     window.top.location.href = "index.html";
 }
 
 window.onload = function () {
-    loadCertificateTracking();
     bindFilters();
+    bindTrackingPagination();
+    loadCertificateTracking();
 };
 
 function bindFilters() {
-    document.getElementById("searchInput").addEventListener("input", applyFiltersAndSort);
-    document.getElementById("statusFilter").addEventListener("change", applyFiltersAndSort);
-    document.getElementById("reminderFilter").addEventListener("change", applyFiltersAndSort);
-    document.getElementById("sortFilter").addEventListener("change", applyFiltersAndSort);
+    const searchInput = document.getElementById("searchInput");
+    const statusFilter = document.getElementById("statusFilter");
+    const reminderFilter = document.getElementById("reminderFilter");
+    const sortFilter = document.getElementById("sortFilter");
+
+    if (searchInput) {
+        searchInput.addEventListener("input", function () {
+            currentPage = 0;
+            window.clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = window.setTimeout(loadCertificateTracking, 250);
+        });
+    }
+
+    [statusFilter, reminderFilter, sortFilter].forEach(element => {
+        if (!element) return;
+
+        element.addEventListener("change", function () {
+            currentPage = 0;
+            loadCertificateTracking();
+        });
+    });
+}
+
+function bindTrackingPagination() {
+    const prevBtn = document.getElementById("trackingPrevBtn");
+    const nextBtn = document.getElementById("trackingNextBtn");
+
+    if (prevBtn) {
+        prevBtn.addEventListener("click", function () {
+            if (currentPage > 0 && !isTrackingLoading) {
+                currentPage -= 1;
+                loadCertificateTracking();
+            }
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener("click", function () {
+            if (currentPage + 1 < totalPages && !isTrackingLoading) {
+                currentPage += 1;
+                loadCertificateTracking();
+            }
+        });
+    }
 }
 
 function loadCertificateTracking() {
-    fetch(`/request/hod/${user.id}`)
+    isTrackingLoading = true;
+    renderTrackingLoadingState();
+    updateTrackingPagination();
+
+    const searchTerm = document.getElementById("searchInput")?.value?.trim() || "";
+    const url = `/request/hod/${user.id}/certificate-tracking?page=${currentPage}&size=${TRACKING_PAGE_SIZE}&search=${encodeURIComponent(searchTerm)}`;
+
+    fetch(url)
         .then(res => {
-            if (!res.ok) throw new Error("Failed to load requests");
+            if (!res.ok) throw new Error("Failed to load certificate tracking data");
             return res.json();
         })
         .then(data => {
-            if (!Array.isArray(data)) data = [];
+            currentTrackingItems = Array.isArray(data.content) ? data.content : [];
+            totalPages = Number(data.totalPages) || 0;
+            totalElements = Number(data.totalElements) || 0;
 
-            allTrackingRequests = data.filter(req => {
-                const status = String(req.status || "").toUpperCase();
-                return status === "APPROVED" && isCertificateRequired(req.reason);
-            });
+            if (totalPages > 0 && currentPage >= totalPages) {
+                currentPage = totalPages - 1;
+                return loadCertificateTracking();
+            }
 
             applyFiltersAndSort();
+            updateTrackingPagination();
         })
         .catch(err => {
             console.error(err);
-            document.getElementById("trackingTable").innerHTML = `
-                <tr>
-                    <td colspan="5" class="empty-row">Unable to load certificate tracking data.</td>
-                </tr>
-            `;
+            currentTrackingItems = [];
+            totalPages = 0;
+            totalElements = 0;
+            renderTrackingErrorState();
+            updateTrackingPagination();
+        })
+        .finally(() => {
+            isTrackingLoading = false;
         });
 }
 
-function applyFiltersAndSort() {
-    const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
-    const statusFilter = document.getElementById("statusFilter").value;
-    const reminderFilter = document.getElementById("reminderFilter").value;
-    const sortFilter = document.getElementById("sortFilter").value;
+function renderTrackingLoadingState() {
+    const table = document.getElementById("trackingTable");
+    const noResultsMsg = document.getElementById("noResultsMsg");
+    const status = document.getElementById("trackingStatus");
 
-    let list = [...allTrackingRequests];
+    if (noResultsMsg) {
+        noResultsMsg.style.display = "none";
+    }
+
+    if (status) {
+        status.textContent = "Loading certificate tracking data...";
+    }
+
+    if (table) {
+        table.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty-row">Loading certificate tracking data...</td>
+            </tr>
+        `;
+    }
+}
+
+function renderTrackingErrorState() {
+    const table = document.getElementById("trackingTable");
+    const noResultsMsg = document.getElementById("noResultsMsg");
+    const status = document.getElementById("trackingStatus");
+
+    if (noResultsMsg) {
+        noResultsMsg.style.display = "none";
+    }
+
+    if (status) {
+        status.textContent = "Unable to load certificate tracking data.";
+    }
+
+    if (table) {
+        table.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty-row">Unable to load certificate tracking data.</td>
+            </tr>
+        `;
+    }
+}
+
+function applyFiltersAndSort() {
+    const searchTerm = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
+    const statusFilter = document.getElementById("statusFilter")?.value || "all";
+    const reminderFilter = document.getElementById("reminderFilter")?.value || "all";
+    const sortFilter = document.getElementById("sortFilter")?.value || "date-desc";
+
+    let list = [...currentTrackingItems];
 
     list = list.filter(req => {
         const statusKey = getStatusKey(req);
-        const studentName = getStudentName(req).toLowerCase();
-        const rollNo = getStudentIdentifier(req).toLowerCase();
+        const studentName = String(req.studentName || "").toLowerCase();
+        const rollNo = String(req.studentRollNo || "").toLowerCase();
         const eventName = String(req.reason || "").toLowerCase();
 
         const matchesSearch =
@@ -75,13 +180,10 @@ function applyFiltersAndSort() {
             rollNo.includes(searchTerm) ||
             eventName.includes(searchTerm);
 
-        const matchesStatus =
-            statusFilter === "all" ||
-            statusFilter === statusKey;
-
-        const needsReminder = canSendReminder(req);
+        const matchesStatus = statusFilter === "all" || statusFilter === statusKey;
 
         let matchesReminder = true;
+        const needsReminder = canSendReminder(req);
 
         if (reminderFilter === "needs-reminder") {
             matchesReminder = needsReminder;
@@ -93,9 +195,8 @@ function applyFiltersAndSort() {
     });
 
     list.sort((a, b) => {
-        const nameA = getStudentName(a).toLowerCase();
-        const nameB = getStudentName(b).toLowerCase();
-
+        const nameA = String(a.studentName || "").toLowerCase();
+        const nameB = String(b.studentName || "").toLowerCase();
         const dateA = new Date(a.endDate || a.requestDate || 0);
         const dateB = new Date(b.endDate || b.requestDate || 0);
 
@@ -111,96 +212,132 @@ function applyFiltersAndSort() {
 function renderTrackingTable(list) {
     const table = document.getElementById("trackingTable");
     const noResultsMsg = document.getElementById("noResultsMsg");
+    const status = document.getElementById("trackingStatus");
+
+    if (!table) return;
 
     table.innerHTML = "";
+    visibleTrackingItems = list;
 
-    if (allTrackingRequests.length === 0) {
+    if (currentTrackingItems.length === 0) {
+        if (noResultsMsg) {
+            noResultsMsg.style.display = "none";
+        }
+
+        if (status) {
+            status.textContent = totalElements === 0
+                ? "No approved certificate-required requests found."
+                : "No certificate records on this page.";
+        }
+
         table.innerHTML = `
             <tr>
                 <td colspan="5" class="empty-row">No approved certificate-required requests found.</td>
             </tr>
         `;
-        noResultsMsg.style.display = "none";
         return;
     }
 
     if (list.length === 0) {
-        noResultsMsg.style.display = "block";
+        if (noResultsMsg) {
+            noResultsMsg.style.display = "block";
+        }
+
+        if (status) {
+            status.textContent = `Showing ${currentTrackingItems.length} records on this page`;
+        }
+
+        table.innerHTML = "";
         return;
     }
 
-    noResultsMsg.style.display = "none";
+    if (noResultsMsg) {
+        noResultsMsg.style.display = "none";
+    }
 
-    list.forEach(req => {
-        const statusKey = getStatusKey(req);
-        const student = req.student || {};
-        const studentName = getStudentName(req);
-        const studentId = getStudentIdentifier(req);
-        const studentPhoto = getStudentPhoto(req);
-        const studentInitial = getStudentInitial(req);
+    if (status) {
+        const start = currentPage * TRACKING_PAGE_SIZE + 1;
+        const end = currentPage * TRACKING_PAGE_SIZE + currentTrackingItems.length;
+        status.textContent = `Showing ${start}-${end} of ${totalElements} certificate records`;
+    }
 
-        const studentData = {
-            photo: studentPhoto,
-            name: studentName,
-            rollNo: studentId,
-            email: getDisplayValue(student.email),
-            branch: getDisplayValue(student.branch),
-            section: getDisplayValue(student.section || student.sec),
-            sem: getDisplayValue(student.sem),
-            gender: getDisplayValue(student.gender),
-            dob: getDisplayValue(student.dateOfBirth),
-            studentPhone: getDisplayValue(student.studentPhoneNumber),
-            parentPhone: getDisplayValue(student.parentPhoneNumber),
-            fatherName: getDisplayValue(student.fatherName),
-            admissionType: getDisplayValue(student.admissionType),
-            caste: getDisplayValue(student.caste),
-            initial: studentInitial
-        };
-
-        const encodedStudent = escapeAttribute(JSON.stringify(studentData));
-
-        const studentAvatar = studentPhoto
-            ? `<img src="${escapeAttribute(studentPhoto)}" class="student-avatar" alt="Avatar"
+    list.forEach((req, index) => {
+        const studentData = buildTrackingStudentData(req);
+        const studentAvatar = studentData.photo
+            ? `<img src="${escapeAttribute(studentData.photo)}" class="student-avatar" alt="Avatar" loading="lazy"
                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-               <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentInitial)}</div>`
-            : `<div class="student-avatar-fallback">${escapeHtml(studentInitial)}</div>`;
+               <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentData.initial)}</div>`
+            : `<div class="student-avatar-fallback">${escapeHtml(studentData.initial)}</div>`;
 
-        const row = `
-            <tr class="request-row"
-                data-status="${statusKey}"
-                data-name="${escapeAttribute(studentName)}"
-                data-date="${escapeAttribute(req.endDate || "")}">
-                
+        table.innerHTML += `
+            <tr class="request-row">
                 <td data-label="Student Details">
-                    <div class="student-profile" onclick="openStudentDetailsModalFromString('${encodedStudent}')">
+                    <div class="student-profile" onclick="openStudentDetailsModalByIndex(${index})">
                         ${studentAvatar}
                         <div class="student-info">
-                            <span class="name">${escapeHtml(studentName)}</span>
-                            <span class="roll">${escapeHtml(studentId)}</span>
+                            <span class="name">${escapeHtml(studentData.name)}</span>
+                            <span class="roll">${escapeHtml(studentData.rollNo)}</span>
                         </div>
                     </div>
                 </td>
-
                 <td data-label="Event" style="font-weight:600;">
                     ${escapeHtml(req.reason || "-")}
                 </td>
-
                 <td data-label="Status Progress">
                     ${getTimelineTracker(req)}
                 </td>
-
                 <td data-label="Status">
                     ${getStatusBadge(req)}
                 </td>
-
                 <td data-label="Actions">
                     ${getActionButtons(req)}
                 </td>
             </tr>
         `;
-
-        table.innerHTML += row;
     });
+}
+
+function updateTrackingPagination() {
+    const prevBtn = document.getElementById("trackingPrevBtn");
+    const nextBtn = document.getElementById("trackingNextBtn");
+    const pageInfo = document.getElementById("trackingPageInfo");
+
+    if (prevBtn) {
+        prevBtn.disabled = isTrackingLoading || currentPage <= 0;
+    }
+
+    if (nextBtn) {
+        nextBtn.disabled = isTrackingLoading || totalPages === 0 || currentPage >= totalPages - 1;
+    }
+
+    if (pageInfo) {
+        const displayPage = totalPages === 0 ? 0 : currentPage + 1;
+        const safeTotalPages = totalPages === 0 ? 0 : totalPages;
+        pageInfo.textContent = `Page ${displayPage} of ${safeTotalPages}`;
+    }
+}
+
+function buildTrackingStudentData(req) {
+    const name = req.studentName || "Student";
+    const rollNo = req.studentRollNo || req.studentId || "N/A";
+
+    return {
+        photo: getStudentPhoto(req),
+        name,
+        rollNo: String(rollNo),
+        email: getDisplayValue(req.studentEmail),
+        branch: getDisplayValue(req.studentBranch),
+        section: getDisplayValue(req.studentSection || req.studentSec),
+        sem: getDisplayValue(req.studentSem),
+        gender: getDisplayValue(req.studentGender),
+        dob: getDisplayValue(req.studentDateOfBirth),
+        studentPhone: getDisplayValue(req.studentPhoneNumber),
+        parentPhone: getDisplayValue(req.parentPhoneNumber),
+        fatherName: getDisplayValue(req.fatherName),
+        admissionType: getDisplayValue(req.admissionType),
+        caste: getDisplayValue(req.caste),
+        initial: getStudentInitial(name)
+    };
 }
 
 function getTimelineTracker(req) {
@@ -339,9 +476,10 @@ function getStatusBadge(req) {
     if (statusKey === "pending") return `<span class="status-badge badge-pending">Pending</span>`;
     if (statusKey === "submitted") return `<span class="status-badge badge-submitted">Review</span>`;
     if (statusKey === "verified") return `<span class="status-badge badge-verified">Verified</span>`;
+
     if (statusKey === "rejected") {
-        const remark = req.certificate && req.certificate.rejectionRemark
-            ? `<div class="remark-small">Remark: ${escapeHtml(req.certificate.rejectionRemark)}</div>`
+        const remark = req.certificateRejectionRemark
+            ? `<div class="remark-small">Remark: ${escapeHtml(req.certificateRejectionRemark)}</div>`
             : "";
         return `<span class="status-badge badge-rejected">Rejected</span>${remark}`;
     }
@@ -352,9 +490,8 @@ function getStatusBadge(req) {
 function getActionButtons(req) {
     const statusKey = getStatusKey(req);
 
-    if (req.certificate && req.certificate.filePath) {
-        const filePath = req.certificate.filePath;
-        const certificateId = req.certificate.id;
+    if (req.certificateFilePath) {
+        const certificateId = req.certificateId;
 
         if (statusKey === "verified") {
             return `<span class="no-action-text">No action needed</span>`;
@@ -363,7 +500,7 @@ function getActionButtons(req) {
         if (statusKey === "rejected") {
             return `
                 <div class="action-group">
-                    <a href="${escapeAttribute(filePath)}" target="_blank" class="hod-action-btn btn-view btn-icon" title="View Certificate">
+                    <a href="${escapeAttribute(req.certificateFilePath)}" target="_blank" class="hod-action-btn btn-view btn-icon" title="View Certificate">
                         <i class="fa-solid fa-eye"></i>
                     </a>
                     <button class="hod-action-btn btn-reject btn-icon" onclick="openRejectModal(${certificateId})" title="Update Remark">
@@ -375,7 +512,7 @@ function getActionButtons(req) {
 
         return `
             <div class="action-group">
-                <a href="${escapeAttribute(filePath)}" target="_blank" class="hod-action-btn btn-view btn-icon" title="View Certificate">
+                <a href="${escapeAttribute(req.certificateFilePath)}" target="_blank" class="hod-action-btn btn-view btn-icon" title="View Certificate">
                     <i class="fa-solid fa-eye"></i>
                 </a>
                 <button class="hod-action-btn btn-verify btn-icon" onclick="verifyCertificate(${certificateId})" title="Verify Certificate">
@@ -392,7 +529,7 @@ function getActionButtons(req) {
         return `
             <div class="action-group">
                 <button class="hod-action-btn btn-remind btn-icon"
-                    onclick="sendReminder(${req.id}, '${escapeJsString(getStudentName(req))}')"
+                    onclick="sendReminder(${req.requestId}, '${escapeJsString(req.studentName || "Student")}')"
                     title="Send Reminder">
                     <i class="fa-solid fa-bell"></i>
                 </button>
@@ -423,6 +560,11 @@ function verifyCertificate(certificateId) {
         })
         .then(() => {
             openModal("verifyModal");
+
+            if (currentTrackingItems.length === 1 && currentPage > 0) {
+                currentPage -= 1;
+            }
+
             loadCertificateTracking();
         })
         .catch(err => {
@@ -470,6 +612,11 @@ function submitReject() {
         .then(() => {
             closeModal("rejectModal");
             currentRejectCertificateId = null;
+
+            if (currentTrackingItems.length === 1 && currentPage > 0) {
+                currentPage -= 1;
+            }
+
             loadCertificateTracking();
         })
         .catch(err => {
@@ -504,8 +651,8 @@ function sendReminder(requestId, studentName) {
         });
 }
 
-function openStudentDetailsModalFromString(studentString) {
-    const student = JSON.parse(studentString.replace(/&quot;/g, '"'));
+function openStudentDetailsModalByIndex(index) {
+    const student = buildTrackingStudentData(visibleTrackingItems[index] || {});
     openStudentDetailsModal(student);
 }
 
@@ -573,12 +720,11 @@ function getStatusKey(req) {
     const endDate = normalizeDate(req.endDate);
     const dueDate = normalizeDate(req.certificateDueDate);
 
-    if (req.certificate) {
-        const certStatus = String(req.certificate.status || "").toUpperCase();
+    if (req.certificateId) {
+        const certStatus = String(req.certificateStatus || "").toUpperCase();
 
         if (certStatus === "VERIFIED") return "verified";
         if (certStatus === "REJECTED") return "rejected";
-
         return "submitted";
     }
 
@@ -589,7 +735,7 @@ function getStatusKey(req) {
 }
 
 function canSendReminder(req) {
-    if (req.certificate && req.certificate.filePath) return false;
+    if (req.certificateFilePath) return false;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -597,56 +743,23 @@ function canSendReminder(req) {
     const endDate = normalizeDate(req.endDate);
     const dueDate = normalizeDate(req.certificateDueDate);
 
-    return today >= endDate && today <= dueDate;
-}
-
-function getStudentName(req) {
-    if (req.student) {
-        return req.student.name || req.student.username || req.student.fullName || "Student";
-    }
-    return "Student";
-}
-
-function getStudentIdentifier(req) {
-    if (!req.student) return "N/A";
-
-    return req.student.rollNo
-        || req.student.rollNumber
-        || (req.student.user && req.student.user.username)
-        || (req.student.user && req.student.user.id)
-        || req.student.id
-        || "N/A";
+    return !!(endDate && dueDate && today >= endDate && today <= dueDate);
 }
 
 function getStudentPhoto(req) {
-    if (!req.student) return "";
+    const customPhoto = req.studentPhotoUrl || "";
+    if (customPhoto && customPhoto.trim() !== "") return customPhoto.trim();
 
-    const rollNo = req.student.rollNo
-        || req.student.rollNumber
-        || (req.student.user && req.student.user.username)
-        || "";
+    const rollNo = req.studentRollNo || "";
+    if (!rollNo || !String(rollNo).trim()) return "";
 
-    const customPhoto = req.student.photoUrl
-        || req.student.photo
-        || req.student.imageUrl
-        || req.student.profilePhoto
-        || req.student.profileImage
-        || "";
-
-    if (customPhoto && customPhoto.trim() !== "") return customPhoto;
-
-    if (rollNo && rollNo.trim() !== "") {
-        const cleanRollNo = rollNo.trim();
-        return `${STUDENT_PHOTO_BASE_URL}/${encodeURIComponent(cleanRollNo)}/${encodeURIComponent(cleanRollNo)}.jpg`;
-    }
-
-    return "";
+    const cleanRollNo = String(rollNo).trim().toUpperCase();
+    return `${STUDENT_PHOTO_BASE_URL}/${encodeURIComponent(cleanRollNo)}/${encodeURIComponent(cleanRollNo)}.jpg`;
 }
 
-function getStudentInitial(req) {
-    const name = getStudentName(req);
+function getStudentInitial(name) {
     if (!name || name === "N/A") return "S";
-    return name.trim().charAt(0).toUpperCase();
+    return String(name).trim().charAt(0).toUpperCase();
 }
 
 function getDisplayValue(value) {

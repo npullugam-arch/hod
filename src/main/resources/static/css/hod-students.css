@@ -175,6 +175,44 @@ body {
     gap: 25px;
 }
 
+.pagination-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin: 22px 0 10px;
+    flex-wrap: wrap;
+}
+
+.pagination-summary,
+.page-indicator {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-btn {
+    border: 1px solid #cbd5e1;
+    background: white;
+    color: var(--text-dark);
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .student-card {
     background: var(--glass-bg);
     backdrop-filter: blur(12px);

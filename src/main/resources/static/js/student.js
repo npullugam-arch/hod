@@ -291,7 +291,7 @@ function loadDashboardCounts() {
                 throw new Error("Student ID not found");
             }
 
-            return fetch(`/request/student/${studentId}`);
+            return fetch(`/request/student/${studentId}/summary`);
         })
         .then(res => {
             if (!res.ok) {
@@ -299,32 +299,11 @@ function loadDashboardCounts() {
             }
             return res.json();
         })
-        .then(data => {
-            const requests = Array.isArray(data) ? data : [];
-
-            let approved = 0;
-            let pending = 0;
-            let certificatePending = 0;
-            let total = requests.length;
-
-            requests.forEach(req => {
-                const status = String(req.status || "").toUpperCase();
-
-                if (status === "APPROVED") {
-                    approved++;
-
-                    if (isCertificateRequired(req.reason) && !hasUploadedCertificate(req)) {
-                        certificatePending++;
-                    }
-                } else if (status === "PENDING") {
-                    pending++;
-                }
-            });
-
-            animateCounter("approvedCount", approved);
-            animateCounter("pendingCount", pending);
-            animateCounter("certificateCount", certificatePending);
-            animateCounter("totalCount", total);
+        .then(summary => {
+            animateCounter("approvedCount", summary.approvedCount);
+            animateCounter("pendingCount", summary.pendingCount);
+            animateCounter("certificateCount", summary.certificatePendingCount);
+            animateCounter("totalCount", summary.totalCount);
         })
         .catch(error => {
             console.error(error);
@@ -450,23 +429,16 @@ async function loadDashboardCertificateUploads() {
             throw new Error("Student ID not found");
         }
 
-        const res = await fetch(`/request/student/${studentId}`);
+        const res = await fetch(`/request/student/${studentId}/certificate-pending`);
 
         if (!res.ok) {
             throw new Error("Unable to load certificate pending requests");
         }
 
-        const requests = await res.json();
-        const allRequests = Array.isArray(requests) ? requests : [];
+        const pendingCertificateRequests = await res.json();
+        const safeRequests = Array.isArray(pendingCertificateRequests) ? pendingCertificateRequests : [];
 
-        const pendingCertificateRequests = allRequests.filter(req => {
-            const status = String(req.status || "").toUpperCase();
-            return status === "APPROVED" &&
-                isCertificateRequired(req.reason) &&
-                !hasUploadedCertificate(req);
-        });
-
-        if (pendingCertificateRequests.length === 0) {
+        if (safeRequests.length === 0) {
             card.style.display = "none";
             return;
         }
@@ -475,10 +447,10 @@ async function loadDashboardCertificateUploads() {
 
         statusBox.innerHTML = `
             <i class="fa-solid fa-triangle-exclamation"></i>
-            ${pendingCertificateRequests.length} certificate upload pending.
+            ${safeRequests.length} certificate upload pending.
         `;
 
-        list.innerHTML = pendingCertificateRequests.map(req => buildDashboardCertificateItem(req)).join("");
+        list.innerHTML = safeRequests.map(req => buildDashboardCertificateItem(req)).join("");
 
     } catch (error) {
         console.error("Dashboard certificate load error:", error);
@@ -486,11 +458,11 @@ async function loadDashboardCertificateUploads() {
 }
 
 function buildDashboardCertificateItem(req) {
-    const requestId = req.id;
+    const requestId = req.requestId;
     const reason = escapeHtml(req.reason || "Certificate Required");
     const endDate = formatDashboardDate(req.endDate);
     const dueDate = formatDashboardDate(req.certificateDueDate);
-    const hodName = escapeHtml(req.hod?.username || req.hod?.name || "HOD");
+    const hodName = escapeHtml(req.hodName || req.hodUsername || "HOD");
 
     return `
         <div class="dashboard-cert-item">

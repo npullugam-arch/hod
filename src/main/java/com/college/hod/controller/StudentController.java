@@ -1,5 +1,7 @@
 package com.college.hod.controller;
 
+import com.college.hod.dto.HodStudentListItem;
+import com.college.hod.dto.PaginatedResponse;
 import com.college.hod.entity.Student;
 import com.college.hod.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URL;
-import java.util.List;
 
 @RestController
 @RequestMapping("/student")
@@ -28,8 +29,16 @@ public class StudentController {
     }
 
     @GetMapping("/hod/{hodId}")
-    public List<Student> getStudentsByHod(@PathVariable Long hodId) {
-        return studentService.getStudentsByHod(hodId);
+    public PaginatedResponse<HodStudentListItem> getStudentsByHod(
+            @PathVariable Long hodId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String branch,
+            @RequestParam(required = false) Integer sem,
+            @RequestParam(required = false) String sec
+    ) {
+        return studentService.getStudentsPageByHod(hodId, page, size, search, branch, sem, sec);
     }
 
     @GetMapping("/photo/{rollNo}")
