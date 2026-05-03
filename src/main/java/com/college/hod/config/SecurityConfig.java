@@ -18,17 +18,26 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+
+                    // ROOT
                     "/",
                     "/index.html",
 
+                    // ✅ IMPORTANT (SEO FILES)
+                    "/sitemap.xml",
+                    "/robots.txt",
+
+                    // ADMIN
                     "/admin",
                     "/adminlogin.html",
 
+                    // STUDENT & HOD PAGES
                     "/student.html",
                     "/hod.html",
                     "/hod-students.html",
                     "/allstudents.html",
 
+                    // ADMIN PAGES
                     "/admin.html",
                     "/admin-HOD.html",
                     "/admin-student.html",
@@ -36,12 +45,13 @@ public class SecurityConfig {
                     "/student-details.html",
                     "/student-history.html",
 
+                    // PROFILE
                     "/profile.html",
                     "/password.html",
-
                     "/hod-profile.html",
                     "/hod-password.html",
 
+                    // FEATURES
                     "/reminders.html",
                     "/permission.html",
                     "/request.html",
@@ -50,6 +60,7 @@ public class SecurityConfig {
                     "/pending-request.html",
                     "/certificate-tracking.html",
 
+                    // API
                     "/auth/**",
                     "/student/**",
                     "/hod/**",
@@ -58,6 +69,7 @@ public class SecurityConfig {
                     "/certificate/**",
                     "/notification/**",
 
+                    // STATIC
                     "/uploads/**",
                     "/css/**",
                     "/js/**",
