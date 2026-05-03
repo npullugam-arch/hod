@@ -2,9 +2,11 @@ package com.college.hod.service.impl;
 
 import com.college.hod.dto.AdminHodUpdateRequest;
 import com.college.hod.dto.AdminStudentCreateRequest;
+import com.college.hod.dto.AdminStudentListItem;
 import com.college.hod.dto.AdminStudentPasswordUpdateRequest;
 import com.college.hod.dto.AdminStudentUpdateRequest;
 import com.college.hod.dto.ExcelUploadResponse;
+import com.college.hod.dto.PaginatedResponse;
 import com.college.hod.entity.Hod;
 import com.college.hod.entity.Student;
 import com.college.hod.entity.User;
@@ -15,6 +17,10 @@ import com.college.hod.repository.UserRepository;
 import com.college.hod.service.AdminService;
 import jakarta.transaction.Transactional;
 import org.apache.poi.ss.usermodel.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,7 +28,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class AdminServiceImpl implements AdminService {
@@ -244,9 +249,6 @@ public class AdminServiceImpl implements AdminService {
 
         ExcelUploadResponse response = new ExcelUploadResponse();
         List<String> errors = new ArrayList<>();
-        Set<String> excelUsernames = new HashSet<>();
-        Set<String> excelRollNumbers = new HashSet<>();
-        Set<String> excelEmails = new HashSet<>();
 
         try (InputStream inputStream = file.getInputStream();
              Workbook workbook = WorkbookFactory.create(inputStream)) {
@@ -264,7 +266,10 @@ public class AdminServiceImpl implements AdminService {
 
             int lastRowNum = sheet.getLastRowNum();
             int totalDataRows = 0;
-            int successCount = 0;
+            List<PendingStudentUploadRow> pendingRows = new ArrayList<>();
+            Set<String> excelUsernames = new HashSet<>();
+            Set<String> excelRollNumbers = new HashSet<>();
+            Set<String> excelEmails = new HashSet<>();
 
             for (int rowIndex = 2; rowIndex <= lastRowNum; rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
@@ -290,43 +295,25 @@ public class AdminServiceImpl implements AdminService {
 
                     String username = rollNo.trim();
                     String password = rollNo.trim();
+                    String normalizedUsername = username.toLowerCase();
+                    String normalizedRollNo = rollNo.trim().toLowerCase();
+                    String normalizedEmail = studentEmail != null && !studentEmail.isBlank()
+                            ? studentEmail.trim().toLowerCase()
+                            : null;
 
-                    if (excelUsernames.contains(username.toLowerCase())) {
+                    if (excelUsernames.contains(normalizedUsername)) {
                         throw new RuntimeException("Duplicate username/roll no in same Excel");
                     }
 
-                    if (excelRollNumbers.contains(rollNo.trim().toLowerCase())) {
+                    if (excelRollNumbers.contains(normalizedRollNo)) {
                         throw new RuntimeException("Duplicate roll no in same Excel");
                     }
 
-                    if (studentEmail != null && !studentEmail.isBlank()
-                            && excelEmails.contains(studentEmail.trim().toLowerCase())) {
+                    if (normalizedEmail != null && excelEmails.contains(normalizedEmail)) {
                         throw new RuntimeException("Duplicate email in same Excel: " + studentEmail);
                     }
 
-                    if (userRepository.existsByUsername(username)) {
-                        throw new RuntimeException("Username already exists: " + username);
-                    }
-
-                    if (studentRepository.existsByRollNo(rollNo.trim())) {
-                        throw new RuntimeException("Roll No already exists: " + rollNo);
-                    }
-
-                    if (studentEmail != null && !studentEmail.isBlank()
-                            && userRepository.existsByEmail(studentEmail.trim())) {
-                        throw new RuntimeException("Email already exists: " + studentEmail);
-                    }
-
-                    User user = new User();
-                    user.setUsername(username);
-                    user.setPassword(password);
-                    user.setEmail(blankToNull(studentEmail));
-                    user.setRole(Role.STUDENT);
-                    user.setPasswordChanged(false);
-                    User savedUser = userRepository.save(user);
-
                     Student student = new Student();
-
                     student.setName(blankToNull(studentName));
                     student.setRollNo(blankToNull(rollNo));
                     student.setEmail(blankToNull(studentEmail));
@@ -381,29 +368,79 @@ public class AdminServiceImpl implements AdminService {
                     student.setDomicileState(blankToNull(getCellByHeader(row, headerMap, "domicile State")));
                     student.setSscState(blankToNull(getCellByHeader(row, headerMap, "SSC State")));
                     student.setInterState(blankToNull(getCellByHeader(row, headerMap, "Inter State")));
-
-                    student.setUser(savedUser);
                     student.setHod(hod);
 
-                    studentRepository.save(student);
+                    User user = new User();
+                    user.setUsername(username);
+                    user.setPassword(password);
+                    user.setEmail(blankToNull(studentEmail));
+                    user.setRole(Role.STUDENT);
+                    user.setPasswordChanged(false);
 
-                    excelUsernames.add(username.toLowerCase());
-                    excelRollNumbers.add(rollNo.trim().toLowerCase());
+                    pendingRows.add(new PendingStudentUploadRow(rowIndex, username, normalizedUsername, rollNo.trim(),
+                            normalizedRollNo, studentEmail, normalizedEmail, user, student));
 
-                    if (studentEmail != null && !studentEmail.isBlank()) {
-                        excelEmails.add(studentEmail.trim().toLowerCase());
+                    excelUsernames.add(normalizedUsername);
+                    excelRollNumbers.add(normalizedRollNo);
+
+                    if (normalizedEmail != null) {
+                        excelEmails.add(normalizedEmail);
                     }
-
-                    successCount++;
 
                 } catch (Exception ex) {
                     errors.add("Row " + (rowIndex + 1) + ": " + ex.getMessage());
                 }
             }
 
+            Set<String> existingUsernames = excelUsernames.isEmpty()
+                    ? Collections.emptySet()
+                    : userRepository.findExistingUsernames(excelUsernames);
+            Set<String> existingRollNos = excelRollNumbers.isEmpty()
+                    ? Collections.emptySet()
+                    : studentRepository.findExistingRollNos(excelRollNumbers);
+            Set<String> existingEmails = excelEmails.isEmpty()
+                    ? Collections.emptySet()
+                    : userRepository.findExistingEmails(excelEmails);
+
+            List<PendingStudentUploadRow> validRows = new ArrayList<>();
+
+            for (PendingStudentUploadRow pendingRow : pendingRows) {
+                if (existingUsernames.contains(pendingRow.normalizedUsername)) {
+                    errors.add("Row " + (pendingRow.rowIndex + 1) + ": Username already exists: " + pendingRow.username);
+                    continue;
+                }
+
+                if (existingRollNos.contains(pendingRow.normalizedRollNo)) {
+                    errors.add("Row " + (pendingRow.rowIndex + 1) + ": Roll No already exists: " + pendingRow.rollNo);
+                    continue;
+                }
+
+                if (pendingRow.normalizedEmail != null && existingEmails.contains(pendingRow.normalizedEmail)) {
+                    errors.add("Row " + (pendingRow.rowIndex + 1) + ": Email already exists: " + pendingRow.email);
+                    continue;
+                }
+
+                validRows.add(pendingRow);
+            }
+
+            List<User> usersToSave = validRows.stream()
+                    .map(pendingRow -> pendingRow.user)
+                    .toList();
+
+            List<User> savedUsers = userRepository.saveAll(usersToSave);
+
+            List<Student> studentsToSave = new ArrayList<>();
+            for (int i = 0; i < validRows.size(); i++) {
+                PendingStudentUploadRow pendingRow = validRows.get(i);
+                pendingRow.student.setUser(savedUsers.get(i));
+                studentsToSave.add(pendingRow.student);
+            }
+
+            studentRepository.saveAll(studentsToSave);
+
             response.setTotalRows(totalDataRows);
-            response.setSuccessCount(successCount);
-            response.setFailedCount(totalDataRows - successCount);
+            response.setSuccessCount(validRows.size());
+            response.setFailedCount(totalDataRows - validRows.size());
             response.setErrors(errors);
 
             return response;
@@ -531,16 +568,39 @@ public class AdminServiceImpl implements AdminService {
         userRepository.save(user);
     }
 
-@Override
-    public List<Student> getAllStudents(String search, String branch, String section, Integer sem) {
-        return studentRepository.findAll()
-                .stream()
-                .filter(student -> matchesSearch(student, search))
-                .filter(student -> matchesBranch(student, branch))
-                .filter(student -> matchesSection(student, section))
-                .filter(student -> matchesSem(student, sem))
-                .sorted(Comparator.comparing(student -> safeValue(student.getName()).toLowerCase()))
-                .collect(Collectors.toList());
+    @Override
+    public PaginatedResponse<AdminStudentListItem> getStudentsPage(
+            int page,
+            int size,
+            String search,
+            String branch,
+            Integer sem,
+            String sec,
+            String sortBy,
+            String sortDir
+    ) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        String normalizedSortBy = resolveStudentSortBy(sortBy);
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(direction, normalizedSortBy));
+
+        Page<AdminStudentListItem> resultPage = studentRepository.findAdminStudentCards(
+                safeString(search),
+                safeString(branch),
+                sem,
+                safeString(sec),
+                pageable
+        );
+
+        return new PaginatedResponse<>(
+                resultPage.getContent(),
+                resultPage.getNumber(),
+                resultPage.getSize(),
+                resultPage.getTotalElements(),
+                resultPage.getTotalPages(),
+                resultPage.isLast()
+        );
     }
 
     @Override
@@ -796,50 +856,6 @@ public class AdminServiceImpl implements AdminService {
         student.setInterState(blankToNull(request.getInterState()));
     }
 
-    private boolean matchesSearch(Student student, String search) {
-        String value = safeValue(search).trim().toLowerCase();
-        if (value.isEmpty()) {
-            return true;
-        }
-
-        return safeValue(student.getName()).toLowerCase().contains(value)
-                || safeValue(student.getRollNo()).toLowerCase().contains(value)
-                || safeValue(student.getBranch()).toLowerCase().contains(value)
-                || safeValue(student.getSection()).toLowerCase().contains(value)
-                || safeValue(student.getSec()).toLowerCase().contains(value)
-                || safeValue(student.getEmail()).toLowerCase().contains(value)
-                || safeValue(student.getStudentPhoneNumber()).toLowerCase().contains(value)
-                || safeValue(student.getParentPhoneNumber()).toLowerCase().contains(value)
-                || safeValue(student.getAadhar()).toLowerCase().contains(value);
-    }
-
-    private boolean matchesBranch(Student student, String branch) {
-        String value = safeValue(branch).trim().toLowerCase();
-        if (value.isEmpty()) {
-            return true;
-        }
-        return safeValue(student.getBranch()).trim().toLowerCase().equals(value);
-    }
-
-    private boolean matchesSection(Student student, String section) {
-        String value = safeValue(section).trim().toLowerCase();
-        if (value.isEmpty()) {
-            return true;
-        }
-
-        String studentSection = safeValue(student.getSection()).trim().toLowerCase();
-        String studentSec = safeValue(student.getSec()).trim().toLowerCase();
-
-        return studentSection.equals(value) || studentSec.equals(value);
-    }
-
-    private boolean matchesSem(Student student, Integer sem) {
-        if (sem == null) {
-            return true;
-        }
-        return Objects.equals(student.getSem(), sem);
-    }
-
     private void validateManualStudentRequest(AdminStudentCreateRequest request) {
         if (request.getName() == null || request.getName().trim().isEmpty()) {
             throw new RuntimeException("Student name is required");
@@ -1021,6 +1037,18 @@ public class AdminServiceImpl implements AdminService {
         return value == null ? "" : value;
     }
 
+    private String safeString(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String resolveStudentSortBy(String sortBy) {
+        Set<String> allowedSortFields = Set.of("id", "name", "rollNo", "branch", "sem", "section", "sec", "email");
+        if (sortBy == null || !allowedSortFields.contains(sortBy)) {
+            return "name";
+        }
+        return sortBy;
+    }
+
     private String firstNonBlank(String... values) {
         for (String value : values) {
             if (value != null && !value.trim().isEmpty()) {
@@ -1035,5 +1063,39 @@ public class AdminServiceImpl implements AdminService {
             return null;
         }
         return "https://www.iare.ac.in/sites/default/files/" + employeeId.trim() + "_0.png";
+    }
+
+    private static class PendingStudentUploadRow {
+        private final int rowIndex;
+        private final String username;
+        private final String normalizedUsername;
+        private final String rollNo;
+        private final String normalizedRollNo;
+        private final String email;
+        private final String normalizedEmail;
+        private final User user;
+        private final Student student;
+
+        private PendingStudentUploadRow(
+                int rowIndex,
+                String username,
+                String normalizedUsername,
+                String rollNo,
+                String normalizedRollNo,
+                String email,
+                String normalizedEmail,
+                User user,
+                Student student
+        ) {
+            this.rowIndex = rowIndex;
+            this.username = username;
+            this.normalizedUsername = normalizedUsername;
+            this.rollNo = rollNo;
+            this.normalizedRollNo = normalizedRollNo;
+            this.email = email;
+            this.normalizedEmail = normalizedEmail;
+            this.user = user;
+            this.student = student;
+        }
     }
 }

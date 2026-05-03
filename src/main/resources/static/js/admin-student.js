@@ -6,6 +6,10 @@ if (!adminUser || adminUser.role !== "ADMIN") {
 }
 
 let studentsCache = [];
+let currentPage = 0;
+const pageSize = 20;
+let totalPages = 0;
+let totalElements = 0;
 
 const VALID_BRANCHES = [
     "CSE", "CSM", "CSD", "CSC", "CSI", "CSIT", "IT",
@@ -75,11 +79,14 @@ const extraFields = [
 
 document.addEventListener("DOMContentLoaded", () => {
     buildFormFields();
+    populateFilterOptions();
 
-    document.getElementById("searchInput").addEventListener("input", applyClientFilters);
-    document.getElementById("branchFilter").addEventListener("change", applyClientFilters);
-    document.getElementById("sectionFilter").addEventListener("change", applyClientFilters);
-    document.getElementById("semFilter").addEventListener("change", applyClientFilters);
+    document.getElementById("searchInput").addEventListener("input", debounce(resetAndLoadStudents, 300));
+    document.getElementById("branchFilter").addEventListener("change", resetAndLoadStudents);
+    document.getElementById("sectionFilter").addEventListener("change", resetAndLoadStudents);
+    document.getElementById("semFilter").addEventListener("change", resetAndLoadStudents);
+    document.getElementById("prevPageBtn").addEventListener("click", () => changePage(currentPage - 1));
+    document.getElementById("nextPageBtn").addEventListener("click", () => changePage(currentPage + 1));
 
     document.getElementById("closeDetailsModal").addEventListener("click", () => hideModal("detailsModal"));
     document.getElementById("cancelDetailsBtn").addEventListener("click", () => hideModal("detailsModal"));
@@ -115,97 +122,105 @@ function renderFieldGroup(containerId, fields) {
     });
 }
 
+function populateFilterOptions() {
+    const branchFilter = document.getElementById("branchFilter");
+    const sectionFilter = document.getElementById("sectionFilter");
+    const semFilter = document.getElementById("semFilter");
+
+    branchFilter.innerHTML = `<option value="">All Branches</option>`;
+    sectionFilter.innerHTML = `<option value="">All Sections</option>`;
+    semFilter.innerHTML = `<option value="">All Semesters</option>`;
+
+    VALID_BRANCHES.forEach(branch => {
+        branchFilter.innerHTML += `<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`;
+    });
+
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(section => {
+        sectionFilter.innerHTML += `<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`;
+    });
+
+    for (let sem = 1; sem <= 8; sem++) {
+        semFilter.innerHTML += `<option value="${sem}">${sem}</option>`;
+    }
+}
+
 async function loadStudents() {
     clearPageStatus();
+    setPaginationSummary("Loading students...");
 
     try {
-        const response = await fetch("/admin/students");
+        const params = new URLSearchParams({
+            page: String(currentPage),
+            size: String(pageSize),
+            search: document.getElementById("searchInput").value.trim(),
+            branch: document.getElementById("branchFilter").value.trim(),
+            sem: document.getElementById("semFilter").value.trim(),
+            sec: document.getElementById("sectionFilter").value.trim(),
+            sortBy: "name",
+            sortDir: "asc"
+        });
+
+        const response = await fetch(`/admin/students?${params.toString()}`);
 
         if (!response.ok) {
             const err = await response.text();
             throw new Error(err || "Failed to load students");
         }
 
-        const students = await response.json();
-        studentsCache = Array.isArray(students) ? students : [];
+        const result = await response.json();
+        studentsCache = Array.isArray(result.content) ? result.content : [];
+        currentPage = Number(result.page) || 0;
+        totalPages = Number(result.totalPages) || 0;
+        totalElements = Number(result.totalElements) || 0;
 
-        populateFilters(studentsCache);
-        applyClientFilters();
+        updatePagination(result);
+        renderStudents(studentsCache);
     } catch (error) {
         setPageStatus(error.message, "error");
+        updatePagination({ page: 0, totalPages: 0, totalElements: 0, content: [] });
         renderStudents([]);
     }
 }
 
-function populateFilters(students) {
-    const branchFilter = document.getElementById("branchFilter");
-    const sectionFilter = document.getElementById("sectionFilter");
-    const semFilter = document.getElementById("semFilter");
-
-    const branches = [...new Set(
-        students
-            .map(s => normalizeBranch(s.branch))
-            .filter(Boolean)
-    )].sort();
-
-    const sections = [...new Set(
-        students
-            .map(s => normalizeSection(s.section || s.sec))
-            .filter(Boolean)
-    )].sort();
-
-    const semesters = [...new Set(
-        students
-            .map(s => normalizeSemester(s.sem))
-            .filter(v => v !== "")
-    )].sort((a, b) => Number(a) - Number(b));
-
-    branchFilter.innerHTML = `<option value="">All Branches</option>`;
-    sectionFilter.innerHTML = `<option value="">All Sections</option>`;
-    semFilter.innerHTML = `<option value="">All Semesters</option>`;
-
-    branches.forEach(branch => {
-        branchFilter.innerHTML += `<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`;
-    });
-
-    sections.forEach(section => {
-        sectionFilter.innerHTML += `<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`;
-    });
-
-    semesters.forEach(sem => {
-        semFilter.innerHTML += `<option value="${escapeHtml(sem)}">${escapeHtml(sem)}</option>`;
-    });
+function resetAndLoadStudents() {
+    currentPage = 0;
+    loadStudents();
 }
 
-function applyClientFilters() {
-    const search = document.getElementById("searchInput").value.trim().toLowerCase();
-    const branch = document.getElementById("branchFilter").value.trim();
-    const section = document.getElementById("sectionFilter").value.trim();
-    const sem = document.getElementById("semFilter").value.trim();
+function changePage(page) {
+    if (page < 0 || (totalPages > 0 && page >= totalPages)) {
+        return;
+    }
 
-    const filtered = studentsCache.filter(student => {
-        const studentBranch = normalizeBranch(student.branch);
-        const studentSection = normalizeSection(student.section || student.sec);
-        const studentSem = normalizeSemester(student.sem);
+    currentPage = page;
+    loadStudents();
+}
 
-        const searchable = [
-            student.name,
-            student.rollNo,
-            studentBranch,
-            studentSection,
-            studentSem,
-            student.studentPhoneNumber,
-            student.parentPhoneNumber,
-            student.email
-        ].join(" ").toLowerCase();
+function updatePagination(result) {
+    const summary = document.getElementById("paginationSummary");
+    const indicator = document.getElementById("pageIndicator");
+    const prevBtn = document.getElementById("prevPageBtn");
+    const nextBtn = document.getElementById("nextPageBtn");
 
-        return (!search || searchable.includes(search)) &&
-            (!branch || studentBranch === branch) &&
-            (!section || studentSection === section) &&
-            (!sem || studentSem === sem);
-    });
+    const page = Number(result.page) || 0;
+    const last = !!result.last;
+    const total = Number(result.totalElements) || 0;
+    const totalPageCount = Number(result.totalPages) || 0;
+    const start = total === 0 ? 0 : (page * pageSize) + 1;
+    const end = Math.min((page + 1) * pageSize, total);
 
-    renderStudents(filtered);
+    summary.textContent = total === 0
+        ? "No students found"
+        : `Showing ${start}-${end} of ${total} students`;
+    indicator.textContent = totalPageCount === 0
+        ? "Page 0 of 0"
+        : `Page ${page + 1} of ${totalPageCount}`;
+    prevBtn.disabled = page <= 0;
+    nextBtn.disabled = totalPageCount === 0 || last;
+}
+
+function setPaginationSummary(message) {
+    document.getElementById("paginationSummary").textContent = message;
 }
 
 function renderStudents(students) {
@@ -236,7 +251,7 @@ function renderStudents(students) {
         card.innerHTML = `
             <div class="student-top">
                 <div class="student-avatar" id="avatar-${student.id}">${escapeHtml(initial)}</div>
-                <img class="student-photo" id="photo-${student.id}" alt="${escapeHtml(displayName)}" />
+                <img class="student-photo" id="photo-${student.id}" alt="${escapeHtml(displayName)}" loading="lazy" />
                 <div>
                     <div class="student-name">${escapeHtml(displayName)}</div>
                     <div class="student-meta">Roll No: ${escapeHtml(displayRollNo)}</div>
@@ -506,4 +521,13 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+function debounce(fn, delay) {
+    let timeoutId = null;
+
+    return function () {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn.apply(this, arguments), delay);
+    };
 }

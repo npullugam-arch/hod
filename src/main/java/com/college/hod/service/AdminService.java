@@ -2,9 +2,11 @@ package com.college.hod.service;
 
 import com.college.hod.dto.AdminHodUpdateRequest;
 import com.college.hod.dto.AdminStudentCreateRequest;
+import com.college.hod.dto.AdminStudentListItem;
 import com.college.hod.dto.AdminStudentPasswordUpdateRequest;
 import com.college.hod.dto.AdminStudentUpdateRequest;
 import com.college.hod.dto.ExcelUploadResponse;
+import com.college.hod.dto.PaginatedResponse;
 import com.college.hod.entity.Hod;
 import com.college.hod.entity.Student;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,7 +32,16 @@ public interface AdminService {
 
     void updateHodPassword(Long hodId, AdminStudentPasswordUpdateRequest request);
 
-    List<Student> getAllStudents(String search, String branch, String section, Integer sem);
+    PaginatedResponse<AdminStudentListItem> getStudentsPage(
+            int page,
+            int size,
+            String search,
+            String branch,
+            Integer sem,
+            String sec,
+            String sortBy,
+            String sortDir
+    );
 
     Student getStudentById(Long studentId);
 

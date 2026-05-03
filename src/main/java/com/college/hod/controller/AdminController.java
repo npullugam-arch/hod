@@ -111,13 +111,28 @@ public class AdminController {
 
     @GetMapping("/students")
     public ResponseEntity<?> getStudents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String branch,
+            @RequestParam(required = false) Integer sem,
             @RequestParam(required = false) String section,
-            @RequestParam(required = false) Integer sem
+            @RequestParam(required = false) String sec,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir
     ) {
         try {
-            return ResponseEntity.ok(adminService.getAllStudents(search, branch, section, sem));
+            String effectiveSec = sec != null && !sec.trim().isEmpty() ? sec : section;
+            return ResponseEntity.ok(adminService.getStudentsPage(
+                    page,
+                    size,
+                    search,
+                    branch,
+                    sem,
+                    effectiveSec,
+                    sortBy,
+                    sortDir
+            ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
