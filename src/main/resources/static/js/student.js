@@ -228,18 +228,112 @@ function loadPage(event, pageUrl, title) {
     const frame = document.getElementById("contentFrame");
 
     if (dashboardSection) dashboardSection.classList.add("hidden");
-    if (iframeSection) iframeSection.classList.remove("hidden");
+    if (iframeSection) {
+        iframeSection.classList.remove("hidden");
+        iframeSection.classList.add("iframe-loading");
+    }
 
     if (frame) {
+        if (frame._resizeObserver) {
+            frame._resizeObserver.disconnect();
+            frame._resizeObserver = null;
+        }
+
+        frame.style.setProperty("height", "0px", "important");
+        frame.style.setProperty("min-height", "0px", "important");
+        frame.style.setProperty("overflow", "hidden", "important");
+        frame.setAttribute("scrolling", "no");
+
         frame.onerror = function () {
             alert("Unable to load " + title + " right now.");
+            if (iframeSection) iframeSection.classList.remove("iframe-loading");
         };
 
         frame.onload = function () {
+            try {
+                const iframeDoc = frame.contentDocument || frame.contentWindow.document;
+                const docEl = iframeDoc.documentElement;
+                const body = iframeDoc.body;
+
+                if (docEl) {
+                    docEl.style.overflow = "hidden";
+                    docEl.style.height = "auto";
+                    docEl.style.minHeight = "0";
+                    docEl.style.scrollbarWidth = "none";
+                }
+
+                if (body) {
+                    body.style.overflow = "hidden";
+                    body.style.height = "auto";
+                    body.style.minHeight = "0";
+                    body.style.margin = "0";
+                    body.style.padding = "0";
+                    body.style.background = "transparent";
+                    body.style.scrollbarWidth = "none";
+                }
+
+                const resizeIframe = () => {
+                    try {
+                        const contentRoot =
+                            iframeDoc.querySelector(".standalone-wrapper") ||
+                            iframeDoc.querySelector(".page-wrap") ||
+                            iframeDoc.querySelector(".content-card") ||
+                            body;
+
+                        if (!contentRoot) return;
+
+                        const rectHeight = Math.ceil(contentRoot.getBoundingClientRect().height || 0);
+                        const scrollHeight = Math.ceil(contentRoot.scrollHeight || 0);
+                        const offsetHeight = Math.ceil(contentRoot.offsetHeight || 0);
+
+                        const finalHeight = Math.max(rectHeight, scrollHeight, offsetHeight, 300);
+
+                        frame.style.setProperty("height", finalHeight + "px", "important");
+                        frame.style.setProperty("min-height", finalHeight + "px", "important");
+                    } catch (resizeError) {
+                        console.warn("Iframe resize error:", resizeError);
+                    }
+                };
+
+                resizeIframe();
+
+                setTimeout(resizeIframe, 50);
+                setTimeout(resizeIframe, 150);
+                setTimeout(resizeIframe, 400);
+                setTimeout(resizeIframe, 900);
+                setTimeout(resizeIframe, 1500);
+
+                if (window.ResizeObserver) {
+                    const observedTarget =
+                        iframeDoc.querySelector(".standalone-wrapper") ||
+                        iframeDoc.body;
+
+                    if (observedTarget) {
+                        const observer = new ResizeObserver(() => resizeIframe());
+                        observer.observe(observedTarget);
+                        frame._resizeObserver = observer;
+                    }
+                }
+
+                requestAnimationFrame(() => {
+                    resizeIframe();
+                    if (iframeSection) iframeSection.classList.remove("iframe-loading");
+                });
+            } catch (error) {
+                console.warn("Iframe resize failed:", error);
+                frame.style.setProperty("height", "600px", "important");
+                frame.style.setProperty("min-height", "600px", "important");
+                if (iframeSection) iframeSection.classList.remove("iframe-loading");
+            }
+
             window.scrollTo({ top: 0, behavior: "auto" });
         };
 
         const resolvedPageUrl = new URL(pageUrl, window.location.href);
+
+        frame.style.setProperty("overflow", "hidden", "important");
+        frame.setAttribute("scrolling", "no");
+
         frame.src = resolvedPageUrl.pathname + "?t=" + new Date().getTime();
     }
 }

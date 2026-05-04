@@ -816,3 +816,146 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* =====================================================
+   Full Width + Slow Animation - Certificate Tracking
+===================================================== */
+
+/* Remove left/right white space */
+.standalone-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    animation: trackingPageEntry 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.filter-bar,
+.table-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Smooth page entry */
+@keyframes trackingPageEntry {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.filter-bar {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+    animation: trackingBlockIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+}
+
+.table-card {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+    animation: trackingBlockIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.32s forwards;
+}
+
+@keyframes trackingBlockIn {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Rows come slowly one by one */
+.requests-table tbody tr {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: trackingRowIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    transition: all 0.25s ease;
+}
+
+.requests-table tbody tr:nth-child(1) { animation-delay: 0.55s; }
+.requests-table tbody tr:nth-child(2) { animation-delay: 0.70s; }
+.requests-table tbody tr:nth-child(3) { animation-delay: 0.85s; }
+.requests-table tbody tr:nth-child(4) { animation-delay: 1.00s; }
+.requests-table tbody tr:nth-child(5) { animation-delay: 1.15s; }
+.requests-table tbody tr:nth-child(6) { animation-delay: 1.30s; }
+
+@keyframes trackingRowIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hover premium feel */
+.requests-table tbody tr:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+/* Search/filter smooth */
+.search-box,
+.filter-select,
+.page-btn,
+.modal-btn {
+    transition: all 0.25s ease;
+}
+
+.search-box:focus-within,
+.filter-select:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(59, 130, 246, 0.14);
+}
+
+.page-btn:hover,
+.modal-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Loading/status pulse */
+.table-status,
+.no-results {
+    animation: trackingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes trackingPulse {
+    0%, 100% {
+        opacity: 0.58;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Modal animation */
+.modal-overlay.active .modal-box {
+    animation: trackingModalPop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes trackingModalPop {
+    from {
+        opacity: 0;
+        transform: translateY(26px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Mobile safe */
+@media (max-width: 768px) {
+    .standalone-wrapper {
+        padding: 0 !important;
+    }
+
+    .filter-bar,
+    .table-card,
+    .requests-table tbody tr {
+        animation-delay: 0.2s !important;
+    }
+}

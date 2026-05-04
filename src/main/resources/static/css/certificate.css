@@ -76,11 +76,11 @@ body {
     padding: 0 18px 18px;
 }
 
-.requests-table {
+/* .requests-table {
     width: 100%;
     border-collapse: collapse;
     min-width: 1100px;
-}
+} */
 
 .requests-table thead th {
     font-size: 0.76rem;
@@ -528,4 +528,289 @@ body {
     .modal-btn-primary {
         width: 100%;
     }
+}
+
+/* =====================================================
+   FIX: Make certificate page FULL WIDTH like others
+===================================================== */
+
+.page-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 40px !important; /* same spacing as other pages */
+    margin: 0 !important;
+}
+
+.content-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 20px !important;
+}
+
+/* Table full width */
+.table-wrap {
+    width: 100% !important;
+    overflow-x: auto;
+}
+
+.requests-table {
+    width: 100% !important;
+}
+
+/* Responsive fix */
+@media (max-width: 768px) {
+    .page-wrap {
+        padding: 0 16px !important;
+    }
+}
+
+/* =====================================================
+   Certificate page align with top navbar/header width
+===================================================== */
+
+.page-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.content-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+/* Keep inside spacing only */
+.content-card .card-header {
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+}
+
+.table-wrap {
+    width: 100% !important;
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+}
+
+.requests-table {
+    width: 100% !important;
+}
+
+/* =====================================================
+   Smooth Slow Loading Animation - Certificate Page
+===================================================== */
+
+:root {
+    --smooth-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Page smooth entry */
+.page-wrap {
+    animation: certPageEntry 0.7s var(--smooth-ease) both;
+}
+
+@keyframes certPageEntry {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Card slow reveal */
+.content-card {
+    opacity: 0;
+    transform: translateY(30px) scale(0.97);
+    animation: certCardRise 0.85s var(--smooth-ease) 0.18s forwards;
+}
+
+@keyframes certCardRise {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Header text slow reveal */
+.card-header h2,
+.card-header p {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: certTextIn 0.55s var(--smooth-ease) forwards;
+}
+
+.card-header h2 {
+    animation-delay: 0.35s;
+}
+
+.card-header p {
+    animation-delay: 0.48s;
+}
+
+@keyframes certTextIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Table entry */
+.table-wrap {
+    opacity: 0;
+    transform: translateY(22px);
+    animation: certTableIn 0.7s var(--smooth-ease) 0.62s forwards;
+}
+
+@keyframes certTableIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Rows come slowly one by one */
+.requests-table tbody tr {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: certRowIn 0.55s var(--smooth-ease) forwards;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.requests-table tbody tr:nth-child(1) { animation-delay: 0.75s; }
+.requests-table tbody tr:nth-child(2) { animation-delay: 0.90s; }
+.requests-table tbody tr:nth-child(3) { animation-delay: 1.05s; }
+.requests-table tbody tr:nth-child(4) { animation-delay: 1.20s; }
+.requests-table tbody tr:nth-child(5) { animation-delay: 1.35s; }
+.requests-table tbody tr:nth-child(6) { animation-delay: 1.50s; }
+.requests-table tbody tr:nth-child(7) { animation-delay: 1.65s; }
+.requests-table tbody tr:nth-child(8) { animation-delay: 1.80s; }
+
+@keyframes certRowIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Row hover premium feel */
+.requests-table tbody tr:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+/* Loading shimmer */
+.requests-table tbody tr::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        110deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.28) 45%,
+        transparent 70%
+    );
+    transform: translateX(-120%);
+    animation: certShimmer 2.3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes certShimmer {
+    0% {
+        transform: translateX(-120%);
+    }
+    60% {
+        transform: translateX(120%);
+    }
+    100% {
+        transform: translateX(120%);
+    }
+}
+
+/* File input + upload button smooth */
+input,
+button,
+.modal-btn {
+    transition: all 0.25s ease;
+}
+
+button:hover,
+.modal-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Empty loading text pulse */
+.empty-row {
+    animation: certPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes certPulse {
+    0%, 100% {
+        opacity: 0.55;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Modal animation */
+.modal-overlay {
+    animation: certModalFade 0.3s ease both;
+}
+
+.modal-box {
+    animation: certModalPop 0.45s var(--smooth-ease) both;
+}
+
+@keyframes certModalFade {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes certModalPop {
+    from {
+        opacity: 0;
+        transform: translateY(26px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .content-card,
+    .table-wrap,
+    .requests-table tbody tr {
+        animation-delay: 0.2s !important;
+    }
+}
+
+/* =====================================================
+   FINAL FIX: remove bottom horizontal scroll
+===================================================== */
+
+.table-wrap {
+    overflow-x: hidden !important;
+}
+
+.requests-table {
+    min-width: 100% !important;
+    width: 100% !important;
+    table-layout: auto !important;
+}
+html, body {
+    overflow-x: hidden !important;
 }

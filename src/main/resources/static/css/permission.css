@@ -674,3 +674,319 @@ body {
     border-color: #ef4444 !important;
     box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14);
 }
+
+/* =====================================================
+   FIXED Smooth Animation - Permission Page
+   Add at bottom of permission.css
+===================================================== */
+
+:root {
+    --permission-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Page entry */
+.standalone-wrapper {
+    animation: permissionPageEntry 0.7s var(--permission-ease) both;
+}
+
+@keyframes permissionPageEntry {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form card slow lag entry */
+.form-card {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+    animation: formCardEntry 0.8s var(--permission-ease) 0.12s forwards;
+}
+
+@keyframes formCardEntry {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Fields one by one */
+.form-card h3,
+.form-subtitle,
+.input-group,
+.input-row,
+.info-alert,
+.form-actions {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: fieldEntry 0.55s var(--permission-ease) forwards;
+}
+
+.form-card h3 {
+    animation-delay: 0.25s;
+}
+
+.form-subtitle {
+    animation-delay: 0.35s;
+}
+
+#hodGroup {
+    animation-delay: 0.50s;
+}
+
+#reasonGroup {
+    animation-delay: 0.65s;
+}
+
+.input-row {
+    animation-delay: 0.80s;
+}
+
+#descriptionGroup {
+    animation-delay: 0.95s;
+}
+
+.info-alert {
+    animation-delay: 1.10s;
+}
+
+.form-actions {
+    animation-delay: 1.25s;
+}
+
+@keyframes fieldEntry {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Input smooth focus */
+.input-with-icon,
+.hod-select-btn,
+select,
+input,
+textarea {
+    transition: all 0.28s ease;
+}
+
+.input-with-icon:focus-within,
+.hod-select-btn:hover,
+.hod-select-btn:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(59, 130, 246, 0.14);
+}
+
+/* Submit button animation */
+.submit-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.28s ease;
+}
+
+.submit-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 34px rgba(59, 130, 246, 0.28);
+}
+
+.submit-btn i {
+    transition: transform 0.28s ease;
+}
+
+.submit-btn:hover i {
+    transform: translateX(5px) rotate(-8deg);
+}
+
+/* Info alert shine */
+.info-alert {
+    position: relative;
+    overflow: hidden;
+}
+
+.info-alert::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        110deg,
+        transparent,
+        rgba(255, 255, 255, 0.28),
+        transparent
+    );
+    transform: translateX(-130%);
+    animation: infoShine 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes infoShine {
+    0% {
+        transform: translateX(-130%);
+    }
+    55% {
+        transform: translateX(130%);
+    }
+    100% {
+        transform: translateX(130%);
+    }
+}
+
+/* HOD dropdown soft open */
+.hod-options {
+    animation: dropdownOpen 0.25s ease both;
+    transform-origin: top;
+}
+
+@keyframes dropdownOpen {
+    from {
+        opacity: 0;
+        transform: scaleY(0.92) translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1) translateY(0);
+    }
+}
+
+/* IMPORTANT FIX: modal should NOT show directly */
+.success-modal {
+    display: none;
+    opacity: 0;
+}
+
+/* When JS changes display to flex/block, animate only then */
+.success-modal[style*="flex"],
+.success-modal[style*="block"],
+.success-modal.active,
+.success-modal.show {
+    display: flex !important;
+    opacity: 1;
+    animation: modalBgFade 0.35s ease both;
+}
+
+.success-modal[style*="flex"] .modal-content,
+.success-modal[style*="block"] .modal-content,
+.success-modal.active .modal-content,
+.success-modal.show .modal-content {
+    animation: modalPop 0.48s var(--permission-ease) both;
+}
+
+@keyframes modalBgFade {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(6px);
+    }
+}
+
+@keyframes modalPop {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal lottie breathing only when modal visible */
+.success-modal[style*="flex"] dotlottie-wc,
+.success-modal[style*="block"] dotlottie-wc,
+.success-modal.active dotlottie-wc,
+.success-modal.show dotlottie-wc {
+    animation: lottieBreath 2.5s ease-in-out infinite;
+}
+
+@keyframes lottieBreath {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.04);
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .form-card {
+        animation-duration: 0.65s;
+    }
+
+    .form-card h3,
+    .form-subtitle,
+    .input-group,
+    .input-row,
+    .info-alert,
+    .form-actions {
+        animation-delay: 0.15s;
+    }
+}
+
+/* =====================================================
+   FIX HOD DROPDOWN OVERLAP BUG
+   Add at bottom of permission.css
+===================================================== */
+
+.form-card {
+    overflow: visible !important;
+}
+
+.input-group,
+#hodGroup,
+.hod-custom-select {
+    position: relative !important;
+}
+
+#hodGroup {
+    z-index: 9999 !important;
+}
+
+#reasonGroup,
+.input-row,
+#descriptionGroup,
+.info-alert,
+.form-actions {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+.hod-options {
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    left: 0 !important;
+    right: 0 !important;
+
+    z-index: 10000 !important;
+
+    background: #ffffff !important;
+    border: 1px solid #dbe5f1 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18) !important;
+
+    max-height: 280px !important;
+    overflow-y: auto !important;
+
+    padding: 8px !important;
+}
+
+/* Each HOD option should look like dropdown row */
+.hod-option {
+    position: relative !important;
+    z-index: 10001 !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+}
+
+/* If your JS uses active/open class */
+.hod-options.show,
+.hod-options.active,
+.hod-custom-select.open .hod-options {
+    display: block !important;
+}

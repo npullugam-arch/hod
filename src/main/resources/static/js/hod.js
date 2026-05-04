@@ -145,6 +145,94 @@ function loadPage(event, pageUrl, title) {
     document.getElementById("iframeSection").classList.remove("hidden");
 
     const frame = document.getElementById("contentFrame");
+    if (frame._resizeObserver) {
+        frame._resizeObserver.disconnect();
+        frame._resizeObserver = null;
+    }
+
+    frame.style.overflow = "hidden";
+    frame.setAttribute("scrolling", "no");
+    frame.style.visibility = "hidden";
+    frame.style.setProperty("height", "0px", "important");
+    frame.style.setProperty("min-height", "0px", "important");
+
+    frame.onerror = function () {
+        frame.style.visibility = "visible";
+        alert("Unable to load " + title + " right now.");
+    };
+
+    frame.onload = function () {
+        try {
+            const iframeDoc = frame.contentDocument || frame.contentWindow.document;
+
+            const resizeIframe = () => {
+                try {
+                    const docEl = iframeDoc.documentElement;
+                    const body = iframeDoc.body;
+
+                    if (!docEl || !body) return;
+
+                    docEl.style.overflow = "hidden";
+                    docEl.style.height = "auto";
+                    body.style.overflow = "hidden";
+                    body.style.height = "auto";
+
+                    const contentRoot =
+                        iframeDoc.querySelector(".standalone-wrapper") ||
+                        iframeDoc.querySelector(".page-wrap") ||
+                        iframeDoc.querySelector(".table-card") ||
+                        iframeDoc.querySelector(".content-card") ||
+                        body;
+
+                    const rectHeight = Math.ceil(contentRoot.getBoundingClientRect().height || 0);
+                    const bodyScrollHeight = Math.ceil(body.scrollHeight || 0);
+                    const bodyOffsetHeight = Math.ceil(body.offsetHeight || 0);
+                    const htmlScrollHeight = Math.ceil(docEl.scrollHeight || 0);
+                    const htmlOffsetHeight = Math.ceil(docEl.offsetHeight || 0);
+
+                    const finalHeight = Math.max(
+                        rectHeight,
+                        bodyScrollHeight,
+                        bodyOffsetHeight,
+                        htmlScrollHeight,
+                        htmlOffsetHeight,
+                        320
+                    );
+
+                    frame.style.setProperty("height", finalHeight + "px", "important");
+                    frame.style.setProperty("min-height", finalHeight + "px", "important");
+                    frame.style.visibility = "visible";
+                } catch (resizeError) {
+                    console.warn("HOD iframe resize error:", resizeError);
+                }
+            };
+
+            resizeIframe();
+            setTimeout(resizeIframe, 100);
+            setTimeout(resizeIframe, 300);
+            setTimeout(resizeIframe, 800);
+            setTimeout(resizeIframe, 1500);
+
+            if (window.ResizeObserver) {
+                const observedTarget =
+                    iframeDoc.querySelector(".standalone-wrapper") ||
+                    iframeDoc.querySelector(".page-wrap") ||
+                    iframeDoc.body;
+
+                const observer = new ResizeObserver(() => resizeIframe());
+                observer.observe(observedTarget);
+                frame._resizeObserver = observer;
+            }
+        } catch (error) {
+            console.warn("HOD iframe resize failed:", error);
+            frame.style.setProperty("height", "600px", "important");
+            frame.style.setProperty("min-height", "600px", "important");
+            frame.style.visibility = "visible";
+        }
+
+        window.scrollTo({ top: 0, behavior: "auto" });
+    };
+
     frame.src = pageUrl + "?t=" + new Date().getTime();
 
     if (window.innerWidth <= 900 && typeof window.closeMobileSidebar === "function") {

@@ -221,3 +221,137 @@ body {
         font-size: 23px;
     }
 }
+
+/* =====================================================
+   Smooth Slow Loading Animation - Student Profile Page
+===================================================== */
+
+:root {
+    --smooth-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.main-container {
+    animation: profilePageEntry 0.75s var(--smooth-ease) both;
+}
+
+@keyframes profilePageEntry {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-card {
+    opacity: 0;
+    transform: translateY(32px) scale(0.97);
+    animation: profileCardRise 0.85s var(--smooth-ease) 0.15s forwards;
+}
+
+@keyframes profileCardRise {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.profile-top,
+.details-section {
+    opacity: 0;
+    transform: translateY(22px);
+    animation: profileBlockIn 0.65s var(--smooth-ease) forwards;
+}
+
+.profile-top {
+    animation-delay: 0.38s;
+}
+
+.details-section {
+    animation-delay: 0.62s;
+}
+
+@keyframes profileBlockIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-image {
+    animation: avatarFloat 3.2s ease-in-out infinite;
+}
+
+@keyframes avatarFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-7px);
+    }
+}
+
+.top-box,
+.detail-item {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: profileItemIn 0.5s var(--smooth-ease) forwards;
+}
+
+.top-box:nth-child(1) { animation-delay: 0.75s; }
+.top-box:nth-child(2) { animation-delay: 0.88s; }
+.top-box:nth-child(3) { animation-delay: 1.01s; }
+
+.detail-item:nth-child(1) { animation-delay: 0.80s; }
+.detail-item:nth-child(2) { animation-delay: 0.90s; }
+.detail-item:nth-child(3) { animation-delay: 1.00s; }
+.detail-item:nth-child(4) { animation-delay: 1.10s; }
+.detail-item:nth-child(5) { animation-delay: 1.20s; }
+.detail-item:nth-child(6) { animation-delay: 1.30s; }
+.detail-item:nth-child(7) { animation-delay: 1.40s; }
+.detail-item:nth-child(8) { animation-delay: 1.50s; }
+
+@keyframes profileItemIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.detail-item,
+.top-box {
+    transition: all 0.25s ease;
+}
+
+.detail-item:hover,
+.top-box:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
+}
+
+.profile-status:not(:empty) {
+    animation: statusPop 0.35s ease both;
+}
+
+@keyframes statusPop {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-card,
+    .profile-top,
+    .details-section,
+    .top-box,
+    .detail-item {
+        animation-delay: 0.2s !important;
+    }
+}

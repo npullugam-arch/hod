@@ -589,3 +589,58 @@ body.sidebar-collapsed .main-wrapper {
         padding: 14px 18px;
     }
 }
+
+/* ===== HOD iframe single-scroll fix ===== */
+
+html,
+body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+.mobile-top-bar,
+.top-header {
+    position: relative !important;
+    top: auto !important;
+}
+
+.main-wrapper {
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+#iframeSection {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
+.iframe-card {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
+#contentFrame {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    border: none !important;
+    display: block !important;
+}
+
+@media (max-width: 900px) {
+    .mobile-top-bar {
+        position: relative !important;
+    }
+
+    #iframeSection,
+    .iframe-card {
+        overflow: visible !important;
+    }
+}

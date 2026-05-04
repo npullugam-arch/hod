@@ -103,3 +103,175 @@ body {
         flex-direction: column;
     }
 }
+
+/* =====================================================
+   Smooth Slow Loading Animation - Reminders Page
+===================================================== */
+
+:root {
+    --smooth-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Full page soft entry */
+.reminders-page {
+    animation: remindersPageEntry 0.75s var(--smooth-ease) both;
+}
+
+@keyframes remindersPageEntry {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Main card slow reveal */
+.reminders-card {
+    opacity: 0;
+    transform: translateY(30px) scale(0.97);
+    animation: remindersCardRise 0.85s var(--smooth-ease) 0.15s forwards;
+}
+
+@keyframes remindersCardRise {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Header text animation */
+.page-head h2,
+.page-head p {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: remindersTextIn 0.55s var(--smooth-ease) forwards;
+}
+
+.page-head h2 {
+    animation-delay: 0.35s;
+}
+
+.page-head p {
+    animation-delay: 0.48s;
+}
+
+@keyframes remindersTextIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Reminder list entry */
+.reminder-list {
+    opacity: 0;
+    transform: translateY(22px);
+    animation: remindersListIn 0.7s var(--smooth-ease) 0.62s forwards;
+}
+
+@keyframes remindersListIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Reminder items one by one */
+.reminder-item,
+.reminder-list > div {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: reminderItemIn 0.55s var(--smooth-ease) forwards;
+    transition: all 0.25s ease;
+}
+
+.reminder-list > div:nth-child(1) { animation-delay: 0.75s; }
+.reminder-list > div:nth-child(2) { animation-delay: 0.90s; }
+.reminder-list > div:nth-child(3) { animation-delay: 1.05s; }
+.reminder-list > div:nth-child(4) { animation-delay: 1.20s; }
+.reminder-list > div:nth-child(5) { animation-delay: 1.35s; }
+.reminder-list > div:nth-child(6) { animation-delay: 1.50s; }
+
+@keyframes reminderItemIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hover premium feel */
+.reminder-item:hover,
+.reminder-list > div:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
+}
+
+/* Loading shimmer */
+.reminder-list > div {
+    position: relative;
+    overflow: hidden;
+}
+
+.reminder-list > div::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        110deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.28) 45%,
+        transparent 70%
+    );
+    transform: translateX(-120%);
+    animation: reminderShimmer 2.3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes reminderShimmer {
+    0% {
+        transform: translateX(-120%);
+    }
+    60% {
+        transform: translateX(120%);
+    }
+    100% {
+        transform: translateX(120%);
+    }
+}
+
+/* Loading text pulse */
+.empty-state {
+    animation: reminderPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes reminderPulse {
+    0%, 100% {
+        opacity: 0.55;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Buttons / links smooth */
+button,
+a {
+    transition: all 0.25s ease;
+}
+
+button:hover,
+a:hover {
+    transform: translateY(-2px);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .reminders-card,
+    .reminder-list,
+    .reminder-list > div {
+        animation-delay: 0.2s !important;
+    }
+}

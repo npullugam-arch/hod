@@ -1787,3 +1787,678 @@ body:not(.iframe-mode) #contentFrame {
     margin-left:40px;
     margin-right:40px;
 }
+
+/* =====================================================
+   Smooth Dashboard Loading Animations - Student Page
+   Add this at the bottom of student.css
+===================================================== */
+
+:root {
+    --smooth-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Whole page soft entry */
+.main-wrapper {
+    animation: pageSoftEntry 0.7s var(--smooth-ease) both;
+}
+
+@keyframes pageSoftEntry {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header smooth entry */
+.top-header {
+    animation: slideDownFade 0.75s var(--smooth-ease) both;
+}
+
+@keyframes slideDownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dashboard cards come one by one */
+.stat-card {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+    animation: cardRiseIn 0.75s var(--smooth-ease) forwards;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.stat-card:nth-child(1) {
+    animation-delay: 0.12s;
+}
+
+.stat-card:nth-child(2) {
+    animation-delay: 0.28s;
+}
+
+.stat-card:nth-child(3) {
+    animation-delay: 0.44s;
+}
+
+.stat-card:nth-child(4) {
+    animation-delay: 0.60s;
+}
+
+@keyframes cardRiseIn {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Card hover feel */
+.stat-card:hover {
+    transform: translateY(-6px) scale(1.015);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+}
+
+/* Lottie icon soft floating */
+.stat-icon {
+    animation: iconFloat 3.2s ease-in-out infinite;
+}
+
+@keyframes iconFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+/* Counter pop after JS animation */
+.counter.pop {
+    animation: counterPop 0.35s ease;
+}
+
+@keyframes counterPop {
+    0% {
+        transform: scale(1);
+    }
+    45% {
+        transform: scale(1.18);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Certificate card smooth reveal */
+.dashboard-certificate-card {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: certCardReveal 0.85s var(--smooth-ease) 0.75s forwards;
+}
+
+@keyframes certCardReveal {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Certificate items one by one */
+.dashboard-cert-item {
+    opacity: 0;
+    transform: translateX(-22px);
+    animation: certItemSlide 0.55s var(--smooth-ease) forwards;
+}
+
+.dashboard-cert-item:nth-child(1) {
+    animation-delay: 0.12s;
+}
+
+.dashboard-cert-item:nth-child(2) {
+    animation-delay: 0.24s;
+}
+
+.dashboard-cert-item:nth-child(3) {
+    animation-delay: 0.36s;
+}
+
+.dashboard-cert-item:nth-child(4) {
+    animation-delay: 0.48s;
+}
+
+@keyframes certItemSlide {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Student dashboard content slow entry */
+.content-card {
+    opacity: 0;
+    transform: translateY(26px);
+    animation: contentReveal 0.8s var(--smooth-ease) 0.95s forwards;
+}
+
+@keyframes contentReveal {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Sidebar menu nice entry */
+.nav-item {
+    opacity: 0;
+    transform: translateX(-16px);
+    animation: navEntry 0.45s ease forwards;
+}
+
+.nav-item:nth-child(1) {
+    animation-delay: 0.08s;
+}
+
+.nav-item:nth-child(2) {
+    animation-delay: 0.16s;
+}
+
+.nav-item:nth-child(3) {
+    animation-delay: 0.24s;
+}
+
+.nav-item:nth-child(4) {
+    animation-delay: 0.32s;
+}
+
+.nav-item:nth-child(5) {
+    animation-delay: 0.40s;
+}
+
+@keyframes navEntry {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Attractive button interaction */
+button,
+.nav-link,
+.view-all-cert-btn,
+.dashboard-cert-upload-btn,
+.user-profile-card,
+.bell-btn {
+    transition: all 0.28s ease;
+}
+
+button:hover,
+.view-all-cert-btn:hover,
+.dashboard-cert-upload-btn:hover,
+.bell-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Iframe page smooth load feeling */
+.iframe-section {
+    animation: iframeFadeIn 0.55s var(--smooth-ease) both;
+}
+
+.frame-card {
+    animation: iframeCardRise 0.65s var(--smooth-ease) both;
+}
+
+@keyframes iframeFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes iframeCardRise {
+    from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Shimmer effect for dashboard while data feels loading */
+.stat-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+        110deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.22) 45%,
+        transparent 70%
+    );
+    transform: translateX(-120%);
+    animation: cardShimmer 2.4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes cardShimmer {
+    0% {
+        transform: translateX(-120%);
+    }
+    55% {
+        transform: translateX(120%);
+    }
+    100% {
+        transform: translateX(120%);
+    }
+}
+
+/* Make shimmer work only if card supports relative */
+.stat-card {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Reminder badge pulse */
+.reminder-badge {
+    animation: badgePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(239, 68, 68, 0.45);
+    }
+    50% {
+        transform: scale(1.12);
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+}
+
+/* Profile card soft glow */
+.user-profile-card:hover {
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.16);
+}
+
+/* Smooth hidden handling */
+.hidden {
+    display: none !important;
+}
+
+/* Better mobile smoothness */
+@media (max-width: 768px) {
+    .stat-card {
+        animation-duration: 0.65s;
+    }
+
+    .dashboard-certificate-card,
+    .content-card {
+        animation-delay: 0.35s;
+    }
+}
+
+/* Respect users who prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ===== Student iframe single-scroll fix ===== */
+
+html,
+body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+body {
+    display: flex !important;
+}
+
+.top-header,
+.mobile-top-bar {
+    position: relative !important;
+    top: auto !important;
+}
+
+.main-wrapper {
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    padding-bottom: 40px !important;
+}
+
+body.iframe-mode {
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+body.iframe-mode .main-wrapper {
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+}
+
+#iframeSection,
+.iframe-section,
+body.iframe-mode #iframeSection,
+body.iframe-mode .iframe-section {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 0 40px 32px !important;
+    display: block !important;
+}
+
+.frame-card,
+body.iframe-mode .frame-card {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#contentFrame,
+body.iframe-mode #contentFrame {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    border: none !important;
+    display: block !important;
+    background: transparent !important;
+}
+
+body:not(.iframe-mode) #iframeSection,
+body:not(.iframe-mode) .iframe-section {
+    overflow: visible !important;
+}
+
+@media (max-width: 768px) {
+    #iframeSection,
+    .iframe-section,
+    body.iframe-mode #iframeSection,
+    body.iframe-mode .iframe-section {
+        padding: 0 20px 24px !important;
+    }
+
+    .main-wrapper,
+    body.sidebar-collapsed .main-wrapper {
+        margin-left: 0 !important;
+    }
+}
+
+/* =====================================================
+   TRUE SINGLE SCROLL FIX - Student iframe pages
+   Paste at VERY BOTTOM of student.css
+===================================================== */
+
+html,
+body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+body {
+    display: flex !important;
+    background: #f8fafc !important;
+}
+
+/* Header should NOT be fixed */
+.top-header,
+.mobile-top-bar {
+    position: relative !important;
+    top: auto !important;
+}
+
+/* Main page scrolls normally */
+.main-wrapper {
+    margin-left: 280px !important;
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    padding-bottom: 40px !important;
+}
+
+body.sidebar-collapsed .main-wrapper {
+    margin-left: 85px !important;
+}
+
+/* IMPORTANT: do not lock body in iframe mode */
+body.iframe-mode {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+body.iframe-mode .main-wrapper {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow: visible !important;
+    display: block !important;
+}
+
+/* Remove outer iframe box feeling */
+body.iframe-mode #iframeSection,
+body.iframe-mode .iframe-section {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 40px 40px !important;
+    overflow: visible !important;
+}
+
+/* No rectangle/card around iframe */
+body.iframe-mode .frame-card {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* iframe grows, no inner scrollbar */
+body.iframe-mode #contentFrame {
+    width: 100% !important;
+    height: 1200px;
+    min-height: 700px !important;
+    border: none !important;
+    display: block !important;
+    overflow: hidden !important;
+    background: transparent !important;
+}
+
+/* Dashboard normal */
+body:not(.iframe-mode) .frame-card {
+    background: #ffffff !important;
+    border-radius: 24px !important;
+}
+
+/* Smooth page load animation */
+body.iframe-mode #iframeSection {
+    animation: iframeCleanIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes iframeCleanIn {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .main-wrapper,
+    body.sidebar-collapsed .main-wrapper {
+        margin-left: 0 !important;
+    }
+
+    body.iframe-mode #iframeSection,
+    body.iframe-mode .iframe-section {
+        padding: 0 18px 30px !important;
+    }
+}
+
+/* =====================================================
+   REMOVE INNER IFRAME SCROLLBAR - TRUE OUTER SCROLL ONLY
+===================================================== */
+
+html,
+body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+body.iframe-mode {
+    height: auto !important;
+    overflow-y: auto !important;
+}
+
+body.iframe-mode .main-wrapper {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+}
+
+body.iframe-mode #iframeSection,
+body.iframe-mode .iframe-section {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 40px 40px !important;
+}
+
+body.iframe-mode .frame-card {
+    height: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+body.iframe-mode #contentFrame {
+    width: 100% !important;
+    height: 1400px !important;
+    min-height: 1400px !important;
+    overflow: hidden !important;
+    border: none !important;
+    background: transparent !important;
+    display: block !important;
+}
+
+/* hide iframe scrollbar visually */
+body.iframe-mode #contentFrame::-webkit-scrollbar {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    body.iframe-mode #iframeSection {
+        padding: 0 18px 30px !important;
+    }
+}
+
+/* FINAL: no inner scrollbar, no extra blank space */
+body.iframe-mode #contentFrame {
+    width: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+body.iframe-mode .frame-card,
+body.iframe-mode #iframeSection {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
+/* =====================================================
+   FIX: Do not show iframe scrollbar even for 1 second
+===================================================== */
+
+body.iframe-mode #contentFrame {
+    overflow: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+body.iframe-mode #contentFrame::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+}
+
+/* Hide iframe area until JS finishes first resize */
+body.iframe-mode #iframeSection {
+    opacity: 0;
+    animation: iframeVisibleAfterReady 0.25s ease 0.25s forwards;
+}
+
+@keyframes iframeVisibleAfterReady {
+    to {
+        opacity: 1;
+    }
+}
+
+#iframeSection.iframe-loading {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.iframe-mode #contentFrame {
+    overflow: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+body.iframe-mode #contentFrame::-webkit-scrollbar {
+    display: none !important;
+}

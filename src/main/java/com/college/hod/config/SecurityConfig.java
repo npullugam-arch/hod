@@ -19,13 +19,23 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
 
-                    // ROOT
+                    // ✅ ROOT
                     "/",
                     "/index.html",
 
-                    // ✅ IMPORTANT (SEO FILES)
-                    "/sitemap.xml",
+                    // ✅ SEO FILES (VERY IMPORTANT)
                     "/robots.txt",
+                    "/sitemap.xml",
+
+                    // ✅ ALLOW ALL STATIC RESOURCES (Spring Boot default path)
+                    "/**/*.css",
+                    "/**/*.js",
+                    "/**/*.png",
+                    "/**/*.jpg",
+                    "/**/*.jpeg",
+                    "/**/*.gif",
+                    "/**/*.svg",
+                    "/**/*.ico",
 
                     // ADMIN
                     "/admin",
@@ -60,7 +70,7 @@ public class SecurityConfig {
                     "/pending-request.html",
                     "/certificate-tracking.html",
 
-                    // API
+                    // API (public endpoints if needed)
                     "/auth/**",
                     "/student/**",
                     "/hod/**",
@@ -69,7 +79,7 @@ public class SecurityConfig {
                     "/certificate/**",
                     "/notification/**",
 
-                    // STATIC
+                    // STATIC FOLDERS
                     "/uploads/**",
                     "/css/**",
                     "/js/**",

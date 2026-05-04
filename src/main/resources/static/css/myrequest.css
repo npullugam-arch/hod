@@ -1078,3 +1078,144 @@ body {
     flex-direction: column;
     gap: 8px;
 }
+
+
+/* =====================================================
+   Smooth Slow Loading Animation - My Requests Page
+===================================================== */
+
+:root {
+    --smooth-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Page entry */
+.main-wrapper {
+    animation: pageFadeIn 0.7s var(--smooth-ease) both;
+}
+
+@keyframes pageFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Table card slow reveal */
+.table-card {
+    opacity: 0;
+    transform: translateY(30px) scale(0.97);
+    animation: cardRise 0.8s var(--smooth-ease) 0.2s forwards;
+}
+
+@keyframes cardRise {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Table rows come one by one */
+.requests-table tbody tr {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: rowFade 0.6s var(--smooth-ease) forwards;
+}
+
+/* Stagger effect (important) */
+.requests-table tbody tr:nth-child(1) { animation-delay: 0.2s; }
+.requests-table tbody tr:nth-child(2) { animation-delay: 0.35s; }
+.requests-table tbody tr:nth-child(3) { animation-delay: 0.5s; }
+.requests-table tbody tr:nth-child(4) { animation-delay: 0.65s; }
+.requests-table tbody tr:nth-child(5) { animation-delay: 0.8s; }
+.requests-table tbody tr:nth-child(6) { animation-delay: 0.95s; }
+.requests-table tbody tr:nth-child(7) { animation-delay: 1.1s; }
+
+@keyframes rowFade {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hover smooth feel */
+.requests-table tbody tr {
+    transition: all 0.25s ease;
+}
+
+.requests-table tbody tr:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+/* Button smooth animation */
+button,
+a {
+    transition: all 0.25s ease;
+}
+
+button:hover,
+a:hover {
+    transform: translateY(-2px);
+}
+
+/* Loading shimmer effect (very important for fake speed) */
+.requests-table tbody tr::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        110deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.25) 45%,
+        transparent 70%
+    );
+    transform: translateX(-120%);
+    animation: shimmerMove 2.2s infinite;
+    pointer-events: none;
+}
+
+.requests-table tbody tr {
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes shimmerMove {
+    0% {
+        transform: translateX(-120%);
+    }
+    60% {
+        transform: translateX(120%);
+    }
+    100% {
+        transform: translateX(120%);
+    }
+}
+
+/* Empty row animation */
+.empty-row {
+    animation: pulseText 1.6s ease-in-out infinite;
+}
+
+@keyframes pulseText {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Mobile smooth */
+@media (max-width: 768px) {
+    .table-card {
+        animation-duration: 0.6s;
+    }
+
+    .requests-table tbody tr {
+        animation-delay: 0.2s !important;
+    }
+}
