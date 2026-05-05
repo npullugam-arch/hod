@@ -5,13 +5,12 @@ if (!user) {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+    document.body.classList.add("profile-loading");
     loadProfileData();
 });
 
 async function loadProfileData() {
     try {
-        setStatus("Loading profile...", false);
-
         const userId = user?.id;
 
         if (!userId) {
@@ -28,6 +27,7 @@ async function loadProfileData() {
 
         fillProfile(student);
         setStatus("", false);
+        showProfileContent();
 
     } catch (error) {
         console.error("Profile load error:", error);
@@ -51,7 +51,13 @@ async function loadProfileData() {
 
         fillProfile(fallbackStudent, true);
         setStatus(error.message || "Failed to load profile details.", true);
+        showProfileContent();
     }
+}
+
+function showProfileContent() {
+    document.body.classList.remove("profile-loading");
+    document.body.classList.add("profile-loaded");
 }
 
 function fillProfile(student, isFallback = false) {

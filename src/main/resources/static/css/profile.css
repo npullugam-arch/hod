@@ -355,3 +355,209 @@ body {
         animation-delay: 0.2s !important;
     }
 }
+
+/* ==================================================
+   Student Profile Skeleton Loader
+   Add this at bottom of profile.css
+================================================== */
+
+.profile-loading .profile-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-loading .profile-top,
+.profile-loading .details-section {
+    pointer-events: none;
+}
+
+.profile-loading .profile-image,
+.profile-loading .profile-head-content,
+.profile-loading .details-grid,
+.profile-loading .section-title,
+.profile-loading .top-details {
+    color: transparent !important;
+}
+
+.profile-loading .profile-image *,
+.profile-loading .profile-head-content *,
+.profile-loading .details-grid *,
+.profile-loading .section-title *,
+.profile-loading .top-details * {
+    color: transparent !important;
+}
+
+.profile-loading #profileImage,
+.profile-loading #profileAvatar {
+    display: none !important;
+}
+
+.profile-loading .profile-image::before {
+    content: "";
+    display: block;
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    animation: profilePulse 1.2s ease-in-out infinite;
+}
+
+.profile-loading .student-name,
+.profile-loading .student-role,
+.profile-loading .top-box,
+.profile-loading .detail-label,
+.profile-loading .detail-value,
+.profile-loading .section-title {
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-loading .student-name::before {
+    content: "";
+    display: block;
+    width: 220px;
+    height: 22px;
+    border-radius: 8px;
+    background: #e5e7eb;
+}
+
+.profile-loading .student-role::before {
+    content: "";
+    display: block;
+    width: 80px;
+    height: 10px;
+    margin-top: 8px;
+    border-radius: 6px;
+    background: #edf2f7;
+}
+
+.profile-loading .top-box {
+    width: 105px;
+    height: 30px;
+    border-radius: 10px;
+    background: #eef2ff !important;
+    border: none !important;
+}
+
+.profile-loading .top-box.branch {
+    background: #ecfdf5 !important;
+}
+
+.profile-loading .top-box.idbox {
+    background: #fff7ed !important;
+}
+
+.profile-loading .section-title {
+    width: 160px;
+    height: 18px;
+    border-radius: 7px;
+    background: #e5e7eb;
+}
+
+.profile-loading .detail-item {
+    min-height: 58px;
+    background: #ffffff;
+    border-color: #e5e7eb;
+    overflow: hidden;
+    position: relative;
+}
+
+.profile-loading .detail-label::before {
+    content: "";
+    display: block;
+    width: 80px;
+    height: 8px;
+    border-radius: 5px;
+    background: #edf2f7;
+}
+
+.profile-loading .detail-value::before {
+    content: "";
+    display: block;
+    width: 55%;
+    height: 13px;
+    margin-top: 8px;
+    border-radius: 7px;
+    background: #e5e7eb;
+}
+
+.profile-loading .detail-item:nth-child(2n) .detail-value::before {
+    width: 42%;
+}
+
+.profile-loading .detail-item:nth-child(3n) .detail-value::before {
+    width: 70%;
+}
+
+.profile-loading .detail-item:nth-child(4n) .detail-value::before {
+    width: 35%;
+}
+
+.profile-loading .profile-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        110deg,
+        transparent 0%,
+        transparent 38%,
+        rgba(255, 255, 255, 0.65) 50%,
+        transparent 62%,
+        transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: profileShimmer 1.25s linear infinite;
+    pointer-events: none;
+}
+
+.profile-loaded .profile-card {
+    animation: profileFadeIn 0.35s ease both;
+}
+
+@keyframes profileShimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes profilePulse {
+    0%, 100% {
+        opacity: 0.65;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes profileFadeIn {
+    from {
+        opacity: 0.75;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-loading .student-name::before {
+        width: 170px;
+    }
+
+    .profile-loading .profile-image::before {
+        width: 70px;
+        height: 70px;
+    }
+
+    .profile-loading .top-box {
+        width: 95px;
+        height: 28px;
+    }
+
+    .profile-loading .detail-value::before {
+        width: 70%;
+    }
+}
