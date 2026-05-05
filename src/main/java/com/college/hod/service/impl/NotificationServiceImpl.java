@@ -268,7 +268,7 @@ public class NotificationServiceImpl implements NotificationService {
         try {
             JavaMailSenderImpl fallbackSender = new JavaMailSenderImpl();
             fallbackSender.setHost("smtp.gmail.com");
-            fallbackSender.setPort(587);
+            fallbackSender.setPort(465);
             fallbackSender.setUsername(fromEmail.trim());
             fallbackSender.setPassword(mailPassword);
             fallbackSender.setProtocol("smtp");
@@ -310,7 +310,7 @@ public class NotificationServiceImpl implements NotificationService {
             String message = current.getMessage();
             String className = current.getClass().getName();
 
-            if ((message != null && message.contains("Couldn't connect to host, port: smtp.gmail.com, 587"))
+            if ((message != null && message.contains("Couldn't connect to host, port: smtp.gmail.com, 465"))
                     || className.contains("MailConnectException")) {
                 return true;
             }
