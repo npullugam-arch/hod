@@ -88,10 +88,6 @@ public class AuthController {
             return ResponseEntity.badRequest().body("User ID is required");
         }
 
-        if (request.getOldPassword() == null || request.getOldPassword().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Current password is required");
-        }
-
         if (request.getNewPassword() == null || request.getNewPassword().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("New password is required");
         }
@@ -100,7 +96,6 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Confirm password is required");
         }
 
-        String oldPassword = request.getOldPassword().trim();
         String newPassword = request.getNewPassword().trim();
         String confirmPassword = request.getConfirmPassword().trim();
 
@@ -122,10 +117,6 @@ public class AuthController {
 
         if (Boolean.TRUE.equals(user.getPasswordChanged())) {
             return ResponseEntity.badRequest().body("Password already updated. You cannot change it again.");
-        }
-
-        if (!user.getPassword().equals(oldPassword)) {
-            return ResponseEntity.badRequest().body("Current password is incorrect");
         }
 
         user.setPassword(newPassword);
