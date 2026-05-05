@@ -489,18 +489,25 @@ function getStatusBadge(req) {
 
 function getActionButtons(req) {
     const statusKey = getStatusKey(req);
+    const certificateFileUrl = getCertificateFileUrl(req);
+    const certificateId = getCertificateId(req);
 
-    if (req.certificateFilePath) {
-        const certificateId = req.certificateId;
-
+    if (certificateFileUrl) {
         if (statusKey === "verified") {
-            return `<span class="no-action-text">No action needed</span>`;
+            return `
+                <div class="action-group">
+                    <a href="${escapeAttribute(certificateFileUrl)}" target="_blank" class="hod-action-btn btn-view btn-icon" title="View Certificate">
+                        <i class="fa-solid fa-eye"></i>
+                    </a>
+                    <span class="no-action-text">Verified</span>
+                </div>
+            `;
         }
 
         if (statusKey === "rejected") {
             return `
                 <div class="action-group">
-                    <a href="${escapeAttribute(req.certificateFilePath)}" target="_blank" class="hod-action-btn btn-view btn-icon" title="View Certificate">
+                    <a href="${escapeAttribute(certificateFileUrl)}" target="_blank" class="hod-action-btn btn-view btn-icon" title="View Certificate">
                         <i class="fa-solid fa-eye"></i>
                     </a>
                     <button class="hod-action-btn btn-reject btn-icon" onclick="openRejectModal(${certificateId})" title="Update Remark">
@@ -512,7 +519,7 @@ function getActionButtons(req) {
 
         return `
             <div class="action-group">
-                <a href="${escapeAttribute(req.certificateFilePath)}" target="_blank" class="hod-action-btn btn-view btn-icon" title="View Certificate">
+                <a href="${escapeAttribute(certificateFileUrl)}" target="_blank" class="hod-action-btn btn-view btn-icon" title="View Certificate">
                     <i class="fa-solid fa-eye"></i>
                 </a>
                 <button class="hod-action-btn btn-verify btn-icon" onclick="verifyCertificate(${certificateId})" title="Verify Certificate">
@@ -719,9 +726,14 @@ function getStatusKey(req) {
 
     const endDate = normalizeDate(req.endDate);
     const dueDate = normalizeDate(req.certificateDueDate);
+    const certificateId = getCertificateId(req);
 
-    if (req.certificateId) {
-        const certStatus = String(req.certificateStatus || "").toUpperCase();
+    if (certificateId) {
+        const certStatus = String(
+            req.certificateStatus ||
+            req.certificate?.status ||
+            ""
+        ).toUpperCase();
 
         if (certStatus === "VERIFIED") return "verified";
         if (certStatus === "REJECTED") return "rejected";
@@ -735,7 +747,7 @@ function getStatusKey(req) {
 }
 
 function canSendReminder(req) {
-    if (req.certificateFilePath) return false;
+    if (getCertificateFileUrl(req)) return false;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -800,6 +812,43 @@ function formatShortDate(value) {
     const month = String(date.getMonth() + 1).padStart(2, "0");
 
     return `${day}/${month}`;
+}
+
+function getCertificateId(req) {
+    return req.certificateId || req.certificate?.id || null;
+}
+
+function getCertificateFileUrl(req) {
+    let filePath =
+        req.certificateFilePath ||
+        req.certificate?.filePath ||
+        req.filePath ||
+        "";
+
+    filePath = String(filePath || "").trim();
+
+    if (!filePath) return "";
+
+    if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+        return filePath;
+    }
+
+    filePath = filePath.replace(/\\/g, "/");
+
+    const uploadsIndex = filePath.indexOf("/uploads/");
+    if (uploadsIndex !== -1) {
+        return filePath.substring(uploadsIndex);
+    }
+
+    if (filePath.startsWith("uploads/")) {
+        return "/" + filePath;
+    }
+
+    if (filePath.startsWith("/uploads/")) {
+        return filePath;
+    }
+
+    return filePath.startsWith("/") ? filePath : "/" + filePath;
 }
 
 function escapeHtml(value) {
