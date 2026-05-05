@@ -1219,3 +1219,128 @@ a:hover {
         animation-delay: 0.2s !important;
     }
 }
+
+/* ================================
+   Premium Skeleton Loading - My Requests
+   Add at bottom of myrequest.css
+================================ */
+
+#requestTable .empty-row {
+    position: relative;
+    height: 260px;
+    color: transparent;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+#requestTable .empty-row::before {
+    content: "";
+    position: absolute;
+    inset: 24px;
+    border-radius: 18px;
+    background:
+        linear-gradient(90deg, #eef2f7 25%, #f8fafc 37%, #eef2f7 63%) 0 0 / 400% 100%,
+        linear-gradient(#eef2f7, #eef2f7) 0 0 / 30% 18px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 42% 0 / 18% 18px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 68% 0 / 16% 18px no-repeat,
+
+        linear-gradient(#f1f5f9, #f1f5f9) 0 55px / 24% 16px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 35% 55px / 18% 16px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 62% 55px / 14% 16px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 84% 55px / 12% 16px no-repeat,
+
+        linear-gradient(#eef2f7, #eef2f7) 0 105px / 28% 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 35% 105px / 16% 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 62% 105px / 15% 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 84% 105px / 13% 16px no-repeat,
+
+        linear-gradient(#f1f5f9, #f1f5f9) 0 155px / 25% 16px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 35% 155px / 20% 16px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 62% 155px / 13% 16px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 84% 155px / 12% 16px no-repeat;
+    animation: myRequestSkeleton 1.35s ease-in-out infinite;
+}
+
+#requestTable .empty-row::after {
+    content: "Loading your requests...";
+    position: absolute;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%);
+    font-size: 13px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.2px;
+}
+
+@keyframes myRequestSkeleton {
+    0% {
+        background-position:
+            100% 0,
+            0 0, 42% 0, 68% 0,
+            0 55px, 35% 55px, 62% 55px, 84% 55px,
+            0 105px, 35% 105px, 62% 105px, 84% 105px,
+            0 155px, 35% 155px, 62% 155px, 84% 155px;
+        opacity: 0.75;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        background-position:
+            0 0,
+            0 0, 42% 0, 68% 0,
+            0 55px, 35% 55px, 62% 55px, 84% 55px,
+            0 105px, 35% 105px, 62% 105px, 84% 105px,
+            0 155px, 35% 155px, 62% 155px, 84% 155px;
+        opacity: 0.75;
+    }
+}
+
+@media (max-width: 768px) {
+    #requestTable .empty-row {
+        height: 340px;
+    }
+
+    #requestTable .empty-row::before {
+        inset: 20px;
+        background:
+            linear-gradient(90deg, #eef2f7 25%, #f8fafc 37%, #eef2f7 63%) 0 0 / 400% 100%,
+            linear-gradient(#eef2f7, #eef2f7) 0 0 / 70% 18px no-repeat,
+            linear-gradient(#f1f5f9, #f1f5f9) 0 48px / 55% 15px no-repeat,
+            linear-gradient(#f1f5f9, #f1f5f9) 0 78px / 80% 15px no-repeat,
+            linear-gradient(#eef2f7, #eef2f7) 0 128px / 68% 18px no-repeat,
+            linear-gradient(#f1f5f9, #f1f5f9) 0 176px / 52% 15px no-repeat,
+            linear-gradient(#f1f5f9, #f1f5f9) 0 206px / 82% 15px no-repeat,
+            linear-gradient(#eef2f7, #eef2f7) 0 256px / 60% 18px no-repeat;
+        animation: myRequestSkeletonMobile 1.35s ease-in-out infinite;
+    }
+}
+
+@keyframes myRequestSkeletonMobile {
+    0% {
+        background-position:
+            100% 0,
+            0 0,
+            0 48px,
+            0 78px,
+            0 128px,
+            0 176px,
+            0 206px,
+            0 256px;
+    }
+
+    100% {
+        background-position:
+            0 0,
+            0 0,
+            0 48px,
+            0 78px,
+            0 128px,
+            0 176px,
+            0 206px,
+            0 256px;
+    }
+}
