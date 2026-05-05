@@ -17,6 +17,8 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/certificate")
@@ -65,7 +67,7 @@ public class CertificateController {
 
         try {
             Path uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
-            Path filePath = uploadRoot.resolve(fileName).normalize();
+            Path filePath = resolveCertificatePath(uploadRoot, fileName);
 
             if (!filePath.startsWith(uploadRoot) || !Files.exists(filePath) || !Files.isReadable(filePath)) {
                 throw new RuntimeException("Certificate file not found");
@@ -107,6 +109,53 @@ public class CertificateController {
         }
 
         return fileUrl;
+    }
+
+    private Path resolveCertificatePath(Path uploadRoot, String fileName) {
+        Path directPath = uploadRoot.resolve(fileName).normalize();
+
+        if (Files.exists(directPath) && Files.isReadable(directPath)) {
+            return directPath;
+        }
+
+        String originalNamePart = extractOriginalNamePart(fileName);
+        if (originalNamePart == null || originalNamePart.isBlank()) {
+            return directPath;
+        }
+
+        try (Stream<Path> files = Files.list(uploadRoot)) {
+            return files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> {
+                        String candidate = path.getFileName().toString();
+                        return candidate.equals(fileName) || candidate.endsWith("_" + originalNamePart);
+                    })
+                    .max(Comparator.comparingLong(this::getLastModifiedTimeSafe))
+                    .orElse(directPath);
+        } catch (Exception ex) {
+            return directPath;
+        }
+    }
+
+    private String extractOriginalNamePart(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return null;
+        }
+
+        int firstUnderscore = fileName.indexOf('_');
+        if (firstUnderscore >= 0 && firstUnderscore < fileName.length() - 1) {
+            return fileName.substring(firstUnderscore + 1);
+        }
+
+        return fileName;
+    }
+
+    private long getLastModifiedTimeSafe(Path path) {
+        try {
+            return Files.getLastModifiedTime(path).toMillis();
+        } catch (Exception ex) {
+            return Long.MIN_VALUE;
+        }
     }
 
     private MediaType resolveMediaType(String contentType, String fileName) {
