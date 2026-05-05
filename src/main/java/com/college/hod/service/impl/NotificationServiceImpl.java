@@ -8,21 +8,15 @@ import com.college.hod.enums.RequestStatus;
 import com.college.hod.repository.NotificationRepository;
 import com.college.hod.repository.RequestRepository;
 import com.college.hod.service.NotificationService;
+import com.college.hod.service.ResendEmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 
-import java.net.ConnectException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -50,28 +44,7 @@ public class NotificationServiceImpl implements NotificationService {
     private RequestRepository requestRepository;
 
     @Autowired
-    private JavaMailSender mailSender;
-
-    @Value("${spring.mail.username:}")
-    private String fromEmail;
-
-    @Value("${spring.mail.password:}")
-    private String mailPassword;
-
-    @Value("${spring.mail.host:}")
-    private String mailHost;
-
-    @Value("${spring.mail.port:0}")
-    private int mailPort;
-
-    @Value("${spring.mail.properties.mail.smtp.starttls.enable:false}")
-    private String starttlsEnabled;
-
-    @Value("${spring.mail.properties.mail.smtp.starttls.required:false}")
-    private String starttlsRequired;
-
-    @Value("${spring.mail.properties.mail.smtp.ssl.enable:false}")
-    private String sslEnabled;
+    private ResendEmailService resendEmailService;
 
     @Override
     public void sendNotification(User user, String message) {
@@ -175,16 +148,14 @@ public class NotificationServiceImpl implements NotificationService {
 
         String emailSubject = "Reminder for Certificate Submission";
 
-        String emailBody = "Dear " + studentName + ",\n\n"
-                + "We hope you are doing well.\n\n"
-                + "This is a reminder that you have not yet submitted the certificate for your approved request related to "
-                + reasonText + ".\n\n"
-                + "Kindly upload the required certificate on or before " + dueDateText
-                + " to complete the verification process.\n\n"
-                + "If you have already submitted it, please ignore this email.\n\n"
-                + "Regards,\n"
-                + "HOD Office\n"
-                + "SANCHARA PORTAL";
+        String emailBody = "<p>Dear " + escapeHtml(studentName) + ",</p>"
+                + "<p>We hope you are doing well.</p>"
+                + "<p>This is a reminder that you have not yet submitted the certificate for your approved request related to "
+                + escapeHtml(reasonText) + ".</p>"
+                + "<p>Kindly upload the required certificate on or before <strong>" + escapeHtml(dueDateText)
+                + "</strong> to complete the verification process.</p>"
+                + "<p>If you have already submitted it, please ignore this email.</p>"
+                + "<p>Regards,<br>HOD Office<br>SANCHARA PORTAL</p>";
 
         sendEmail(studentEmail, emailSubject, emailBody);
 
@@ -232,156 +203,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private void sendEmail(String toEmail, String subject, String body) {
-        if (fromEmail == null || fromEmail.isBlank()) {
-            throw new RuntimeException("MAIL_USERNAME is missing in environment variables");
-        }
-
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromEmail.trim());
-        message.setTo(toEmail.trim());
-        message.setSubject(subject);
-        message.setText(body);
-
-        try {
-            logConfiguredSender("primary", mailSender);
-            mailSender.send(message);
-        } catch (MailException e) {
-            if (shouldRetryWithMailFallback(e)) {
-                sendEmailUsingMailFallback(message);
-                return;
-            }
-
-            Throwable root = e;
-            while (root.getCause() != null) {
-                root = root.getCause();
-            }
-
-            throw new RuntimeException(
-                    "Failed to send reminder email: " + e.getMessage()
-                            + " | Root cause: " + root.getClass().getSimpleName()
-                            + " - " + root.getMessage()
-            );
-        } catch (Exception e) {
-            if (shouldRetryWithMailFallback(e)) {
-                sendEmailUsingMailFallback(message);
-                return;
-            }
-
-            Throwable root = e;
-            while (root.getCause() != null) {
-                root = root.getCause();
-            }
-
-            throw new RuntimeException(
-                    "Failed to send reminder email: " + e.getMessage()
-                            + " | Root cause: " + root.getClass().getSimpleName()
-                            + " - " + root.getMessage()
-            );
-        }
-    }
-
-    private void sendEmailUsingMailFallback(SimpleMailMessage message) {
-        if (mailPassword == null || mailPassword.isBlank()) {
-            throw new RuntimeException("MAIL_PASSWORD is missing in environment variables");
-        }
-
-        try {
-            JavaMailSenderImpl fallbackSender = new JavaMailSenderImpl();
-            fallbackSender.setHost("smtp.gmail.com");
-            fallbackSender.setPort(587);
-            fallbackSender.setUsername(fromEmail.trim());
-            fallbackSender.setPassword(mailPassword);
-            fallbackSender.setProtocol("smtp");
-            fallbackSender.setDefaultEncoding("UTF-8");
-
-            Properties properties = fallbackSender.getJavaMailProperties();
-            properties.put("mail.smtp.auth", "true");
-            properties.put("mail.smtp.starttls.enable", "true");
-            properties.put("mail.smtp.starttls.required", "true");
-            properties.put("mail.smtp.ssl.enable", "false");
-            properties.put("mail.smtp.ssl.trust", "smtp.gmail.com");
-            properties.put("mail.smtp.ssl.protocols", "TLSv1.2");
-            properties.put("mail.smtp.connectiontimeout", "60000");
-            properties.put("mail.smtp.timeout", "60000");
-            properties.put("mail.smtp.writetimeout", "60000");
-            properties.put("mail.smtp.quitwait", "false");
-
-            logConfiguredSender("fallback", fallbackSender);
-            fallbackSender.send(message);
-        } catch (MailException e) {
-            Throwable root = e;
-            while (root.getCause() != null) {
-                root = root.getCause();
-            }
-
-            throw new RuntimeException(
-                    "Failed to send reminder email: " + e.getMessage()
-                            + " | Root cause: " + root.getClass().getSimpleName()
-                            + " - " + root.getMessage()
-            );
-        }
-    }
-
-    private boolean shouldRetryWithMailFallback(Throwable throwable) {
-        Throwable current = throwable;
-
-        while (current != null) {
-            if (current instanceof java.net.SocketTimeoutException || current instanceof ConnectException) {
-                return true;
-            }
-
-            String message = current.getMessage();
-            String className = current.getClass().getName();
-
-            if ((message != null && message.contains("Couldn't connect to host: smtp.gmail.com, port: 587"))
-                    || (message != null && message.contains("Couldn't connect to host, port: smtp.gmail.com, 587"))
-                    || (message != null && message.contains("Couldn't connect to host: smtp.gmail.com, port: 465"))
-                    || (message != null && message.contains("Couldn't connect to host, port: smtp.gmail.com, 465"))
-                    || className.contains("MailConnectException")) {
-                return true;
-            }
-
-            current = current.getCause();
-        }
-
-        return false;
-    }
-
-    private void logConfiguredSender(String mode, JavaMailSender sender) {
-        if (sender instanceof JavaMailSenderImpl mailSenderImpl) {
-            Properties props = mailSenderImpl.getJavaMailProperties();
-
-            log.info(
-                    "Reminder mail sender [{}] config: host={}, port={}, starttls={}, starttlsRequired={}, ssl={}, connectionTimeout={}, timeout={}, writeTimeout={}",
-                    mode,
-                    safeValue(mailSenderImpl.getHost(), mailHost),
-                    mailSenderImpl.getPort() > 0 ? mailSenderImpl.getPort() : mailPort,
-                    safeValue(props.getProperty("mail.smtp.starttls.enable"), starttlsEnabled),
-                    safeValue(props.getProperty("mail.smtp.starttls.required"), starttlsRequired),
-                    safeValue(props.getProperty("mail.smtp.ssl.enable"), sslEnabled),
-                    props.getProperty("mail.smtp.connectiontimeout"),
-                    props.getProperty("mail.smtp.timeout"),
-                    props.getProperty("mail.smtp.writetimeout")
-            );
-            return;
-        }
-
-        log.info(
-                "Reminder mail sender [{}] config: host={}, port={}, starttls={}, starttlsRequired={}, ssl={}",
-                mode,
-                mailHost,
-                mailPort,
-                starttlsEnabled,
-                starttlsRequired,
-                sslEnabled
-        );
-    }
-
-    private String safeValue(String primary, String fallback) {
-        if (primary != null && !primary.isBlank()) {
-            return primary;
-        }
-        return fallback;
+        resendEmailService.sendEmail(toEmail, subject, body);
     }
 
     private boolean isCertificateRequired(String reason) {
@@ -393,5 +215,14 @@ public class NotificationServiceImpl implements NotificationService {
                 .trim()
                 .replaceAll("\\s+", " ")
                 .toUpperCase();
+    }
+
+    private String escapeHtml(String value) {
+        return String.valueOf(value == null ? "" : value)
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 }
