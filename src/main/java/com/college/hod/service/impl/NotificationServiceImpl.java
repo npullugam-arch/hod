@@ -226,8 +226,8 @@ public class NotificationServiceImpl implements NotificationService {
         try {
             mailSender.send(message);
         } catch (MailException e) {
-            if (shouldRetryWithSslFallback(e)) {
-                sendEmailUsingSslFallback(message);
+            if (shouldRetryWithMailFallback(e)) {
+                sendEmailUsingMailFallback(message);
                 return;
             }
 
@@ -242,8 +242,8 @@ public class NotificationServiceImpl implements NotificationService {
                             + " - " + root.getMessage()
             );
         } catch (Exception e) {
-            if (shouldRetryWithSslFallback(e)) {
-                sendEmailUsingSslFallback(message);
+            if (shouldRetryWithMailFallback(e)) {
+                sendEmailUsingMailFallback(message);
                 return;
             }
 
@@ -260,7 +260,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    private void sendEmailUsingSslFallback(SimpleMailMessage message) {
+    private void sendEmailUsingMailFallback(SimpleMailMessage message) {
         if (mailPassword == null || mailPassword.isBlank()) {
             throw new RuntimeException("MAIL_PASSWORD is missing in environment variables");
         }
@@ -268,7 +268,7 @@ public class NotificationServiceImpl implements NotificationService {
         try {
             JavaMailSenderImpl fallbackSender = new JavaMailSenderImpl();
             fallbackSender.setHost("smtp.gmail.com");
-            fallbackSender.setPort(465);
+            fallbackSender.setPort(587);
             fallbackSender.setUsername(fromEmail.trim());
             fallbackSender.setPassword(mailPassword);
             fallbackSender.setProtocol("smtp");
@@ -276,12 +276,12 @@ public class NotificationServiceImpl implements NotificationService {
 
             Properties properties = fallbackSender.getJavaMailProperties();
             properties.put("mail.smtp.auth", "true");
-            properties.put("mail.smtp.ssl.enable", "true");
-            properties.put("mail.smtp.starttls.enable", "false");
+            properties.put("mail.smtp.starttls.enable", "true");
+            properties.put("mail.smtp.starttls.required", "true");
+            properties.put("mail.smtp.ssl.enable", "false");
             properties.put("mail.smtp.connectiontimeout", "60000");
             properties.put("mail.smtp.timeout", "60000");
             properties.put("mail.smtp.writetimeout", "60000");
-            properties.put("mail.smtp.ssl.trust", "smtp.gmail.com");
             properties.put("mail.smtp.quitwait", "false");
 
             fallbackSender.send(message);
@@ -299,7 +299,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    private boolean shouldRetryWithSslFallback(Throwable throwable) {
+    private boolean shouldRetryWithMailFallback(Throwable throwable) {
         Throwable current = throwable;
 
         while (current != null) {
@@ -310,7 +310,10 @@ public class NotificationServiceImpl implements NotificationService {
             String message = current.getMessage();
             String className = current.getClass().getName();
 
-            if ((message != null && message.contains("Couldn't connect to host, port: smtp.gmail.com, 465"))
+            if ((message != null && message.contains("Couldn't connect to host: smtp.gmail.com, port: 587"))
+                    || (message != null && message.contains("Couldn't connect to host, port: smtp.gmail.com, 587"))
+                    || (message != null && message.contains("Couldn't connect to host: smtp.gmail.com, port: 465"))
+                    || (message != null && message.contains("Couldn't connect to host, port: smtp.gmail.com, 465"))
                     || className.contains("MailConnectException")) {
                 return true;
             }
