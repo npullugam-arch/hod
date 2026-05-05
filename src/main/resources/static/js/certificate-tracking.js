@@ -489,7 +489,8 @@ function getStatusBadge(req) {
 
 function getActionButtons(req) {
     const statusKey = getStatusKey(req);
-    const certificateFileUrl = getCertificateFileUrl(req);
+
+   const certificateFileUrl = getCertificateViewUrl(req);
     const certificateId = getCertificateId(req);
 
     if (certificateFileUrl) {
@@ -849,6 +850,30 @@ function getCertificateFileUrl(req) {
     }
 
     return filePath.startsWith("/") ? filePath : "/" + filePath;
+}
+
+function getCertificateViewUrl(req) {
+    const directUrl = getCertificateFileUrl(req);
+
+    if (isCertificateImageUrl(directUrl)) {
+        return directUrl;
+    }
+
+    const certificateId = getCertificateId(req);
+
+    if (certificateId) {
+        return `/certificate/view/${certificateId}`;
+    }
+
+    return directUrl;
+}
+
+function isCertificateImageUrl(filePath) {
+    const normalized = String(filePath || "").toLowerCase();
+    return normalized.includes(".jpg")
+        || normalized.includes(".jpeg")
+        || normalized.includes(".png")
+        || normalized.includes("/image/upload/");
 }
 
 function escapeHtml(value) {

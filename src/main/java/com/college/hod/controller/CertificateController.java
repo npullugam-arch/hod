@@ -1,24 +1,15 @@
 package com.college.hod.controller;
 
 import com.college.hod.entity.Certificate;
-import com.college.hod.repository.CertificateRepository;
 import com.college.hod.service.CertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.stream.Stream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 @RestController
 @RequestMapping("/certificate")
@@ -28,27 +19,17 @@ public class CertificateController {
     @Autowired
     private CertificateService certificateService;
 
-    @Autowired
-    private CertificateRepository certificateRepository;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
-    // Upload or replace certificate file
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Certificate uploadCertificate(@RequestParam Long requestId,
                                          @RequestParam("file") MultipartFile file) {
-
         return certificateService.uploadCertificate(requestId, file);
     }
 
-    // Verify certificate
     @PostMapping("/verify/{id}")
     public Certificate verifyCertificate(@PathVariable Long id) {
         return certificateService.verifyCertificate(id);
     }
 
-    // Reject certificate with remark
     @PostMapping("/reject/{id}")
     public Certificate rejectCertificate(@PathVariable Long id,
                                          @RequestParam String remark) {
@@ -56,38 +37,42 @@ public class CertificateController {
     }
 
     @GetMapping("/view/{id}")
-    public ResponseEntity<Resource> viewCertificate(@PathVariable Long id) {
-        Certificate certificate = certificateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Certificate not found"));
-
-        String fileName = extractFileName(certificate.getFilePath());
-        if (fileName == null || fileName.isBlank()) {
-            throw new RuntimeException("Certificate file not found");
-        }
-
+    public ResponseEntity<byte[]> viewCertificate(@PathVariable Long id) {
         try {
-            Path uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
-            Path filePath = resolveCertificatePath(uploadRoot, fileName);
+            Certificate certificate = certificateService.getCertificateById(id);
 
-            if (!filePath.startsWith(uploadRoot) || !Files.exists(filePath) || !Files.isReadable(filePath)) {
+            String fileUrl = certificate.getFilePath();
+            if (fileUrl == null || fileUrl.isBlank()) {
                 throw new RuntimeException("Certificate file not found");
             }
 
-            Resource resource = new UrlResource(filePath.toUri());
-            String contentType = Files.probeContentType(filePath);
+            URL url = new URL(fileUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(20000);
+            connection.setInstanceFollowRedirects(true);
+
+            byte[] fileBytes;
+            try (InputStream inputStream = connection.getInputStream()) {
+                fileBytes = inputStream.readAllBytes();
+            }
+
+            String fileName = extractFileName(fileUrl);
+            String remoteContentType = connection.getContentType();
+            MediaType mediaType = resolveMediaType(remoteContentType, fileName);
+            String inlineFileName = resolveInlineFileName(fileName, mediaType);
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
-                    .contentType(resolveMediaType(contentType, fileName))
-                    .body(resource);
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Certificate file not found", e);
+                    .contentType(mediaType)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + inlineFileName + "\"")
+                    .body(fileBytes);
+
         } catch (Exception e) {
-            throw new RuntimeException("Certificate file not found", e);
+            throw new RuntimeException("Unable to open certificate file", e);
         }
     }
 
-    // Delete certificate by request id
     @DeleteMapping("/request/{requestId}")
     public String deleteCertificateByRequestId(@PathVariable Long requestId) {
         certificateService.deleteCertificateByRequestId(requestId);
@@ -96,11 +81,7 @@ public class CertificateController {
 
     private String extractFileName(String fileUrl) {
         if (fileUrl == null || fileUrl.isBlank()) {
-            return null;
-        }
-
-        if (fileUrl.startsWith("/uploads/")) {
-            return fileUrl.substring("/uploads/".length());
+            return "certificate";
         }
 
         int lastSlash = fileUrl.lastIndexOf("/");
@@ -108,54 +89,7 @@ public class CertificateController {
             return fileUrl.substring(lastSlash + 1);
         }
 
-        return fileUrl;
-    }
-
-    private Path resolveCertificatePath(Path uploadRoot, String fileName) {
-        Path directPath = uploadRoot.resolve(fileName).normalize();
-
-        if (Files.exists(directPath) && Files.isReadable(directPath)) {
-            return directPath;
-        }
-
-        String originalNamePart = extractOriginalNamePart(fileName);
-        if (originalNamePart == null || originalNamePart.isBlank()) {
-            return directPath;
-        }
-
-        try (Stream<Path> files = Files.list(uploadRoot)) {
-            return files
-                    .filter(Files::isRegularFile)
-                    .filter(path -> {
-                        String candidate = path.getFileName().toString();
-                        return candidate.equals(fileName) || candidate.endsWith("_" + originalNamePart);
-                    })
-                    .max(Comparator.comparingLong(this::getLastModifiedTimeSafe))
-                    .orElse(directPath);
-        } catch (Exception ex) {
-            return directPath;
-        }
-    }
-
-    private String extractOriginalNamePart(String fileName) {
-        if (fileName == null || fileName.isBlank()) {
-            return null;
-        }
-
-        int firstUnderscore = fileName.indexOf('_');
-        if (firstUnderscore >= 0 && firstUnderscore < fileName.length() - 1) {
-            return fileName.substring(firstUnderscore + 1);
-        }
-
-        return fileName;
-    }
-
-    private long getLastModifiedTimeSafe(Path path) {
-        try {
-            return Files.getLastModifiedTime(path).toMillis();
-        } catch (Exception ex) {
-            return Long.MIN_VALUE;
-        }
+        return "certificate";
     }
 
     private MediaType resolveMediaType(String contentType, String fileName) {
@@ -166,17 +100,41 @@ public class CertificateController {
         } catch (Exception ignored) {
         }
 
-        String lowerFileName = fileName == null ? "" : fileName.toLowerCase();
-        if (lowerFileName.endsWith(".pdf")) {
+        String lower = fileName == null ? "" : fileName.toLowerCase();
+
+        if (lower.endsWith(".pdf")) {
             return MediaType.APPLICATION_PDF;
         }
-        if (lowerFileName.endsWith(".png")) {
+
+        if (lower.endsWith(".png")) {
             return MediaType.IMAGE_PNG;
         }
-        if (lowerFileName.endsWith(".jpg") || lowerFileName.endsWith(".jpeg")) {
+
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
             return MediaType.IMAGE_JPEG;
         }
 
         return MediaType.APPLICATION_OCTET_STREAM;
+    }
+
+    private String resolveInlineFileName(String fileName, MediaType mediaType) {
+        String safeName = (fileName == null || fileName.isBlank()) ? "certificate" : fileName;
+        String lowerName = safeName.toLowerCase();
+
+        if (MediaType.APPLICATION_PDF.includes(mediaType) && !lowerName.endsWith(".pdf")) {
+            return safeName + ".pdf";
+        }
+
+        if (MediaType.IMAGE_JPEG.includes(mediaType)
+                && !lowerName.endsWith(".jpg")
+                && !lowerName.endsWith(".jpeg")) {
+            return safeName + ".jpg";
+        }
+
+        if (MediaType.IMAGE_PNG.includes(mediaType) && !lowerName.endsWith(".png")) {
+            return safeName + ".png";
+        }
+
+        return safeName;
     }
 }

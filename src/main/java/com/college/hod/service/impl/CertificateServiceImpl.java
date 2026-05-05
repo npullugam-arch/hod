@@ -1,5 +1,7 @@
 package com.college.hod.service.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.college.hod.entity.Certificate;
 import com.college.hod.entity.Request;
 import com.college.hod.enums.CertificateStatus;
@@ -7,13 +9,12 @@ import com.college.hod.repository.CertificateRepository;
 import com.college.hod.repository.RequestRepository;
 import com.college.hod.service.CertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.*;
 import java.time.LocalDate;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -24,6 +25,10 @@ public class CertificateServiceImpl implements CertificateService {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
             "jpg", "jpeg", "png", "pdf"
+    );
+
+    private static final Set<String> IMAGE_EXTENSIONS = Set.of(
+            "jpg", "jpeg", "png"
     );
 
     private static final Set<String> CERTIFICATE_REQUIRED_REASONS = Set.of(
@@ -41,8 +46,14 @@ public class CertificateServiceImpl implements CertificateService {
     @Autowired
     private RequestRepository requestRepository;
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    @Autowired
+    private Cloudinary cloudinary;
+
+    @Override
+public Certificate getCertificateById(Long certificateId) {
+    return certificateRepository.findById(certificateId)
+            .orElseThrow(() -> new RuntimeException("Certificate not found"));
+}
 
     @Override
     public Certificate uploadCertificate(Long requestId, MultipartFile file) {
@@ -55,44 +66,49 @@ public class CertificateServiceImpl implements CertificateService {
         }
 
         if (!isCertificateRequired(request.getReason())) {
+           
             throw new RuntimeException("Certificate upload is not allowed for this request reason");
         }
 
-        if (file == null || file.isEmpty()) {
-            throw new RuntimeException("Please select a file to upload");
-        }
+        
 
-        if (file.getSize() > MAX_FILE_SIZE) {
-            throw new RuntimeException("File size must not be more than 1 MB");
-        }
+        validateFile(file);
 
         String originalFileName = file.getOriginalFilename();
-        if (originalFileName == null || originalFileName.isBlank()) {
-            throw new RuntimeException("Invalid file name");
-        }
-
-        String extension = getFileExtension(originalFileName);
-        if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
-            throw new RuntimeException("Only JPG, JPEG, PNG, and PDF files are allowed");
-        }
+        String extension = getFileExtension(originalFileName).toLowerCase(Locale.ROOT);
+        String resourceType = getCloudinaryResourceType(extension);
 
         try {
-            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-            Files.createDirectories(uploadPath);
-
             Certificate cert = certificateRepository.findByRequestId(requestId)
                     .orElseGet(Certificate::new);
 
-            if (cert.getFilePath() != null && !cert.getFilePath().isBlank()) {
-                deletePhysicalFile(cert.getFilePath());
+            String safeFileName = sanitizeFileName(removeExtension(originalFileName));
+            String publicId = "certificate_" + requestId + "_" + UUID.randomUUID() + "_" + safeFileName;
+
+            Map<String, Object> uploadOptions = ObjectUtils.asMap(
+                    "resource_type", resourceType,
+                    "folder", "hod-certificates",
+                    "use_filename", false,
+                    "unique_filename", false,
+                    "overwrite", true
+            );
+
+            if ("pdf".equals(extension)) {
+                uploadOptions.put("public_id", publicId + ".pdf");
+            } else {
+                uploadOptions.put("public_id", publicId);
             }
 
-            String newFileName = UUID.randomUUID() + "_" + sanitizeFileName(originalFileName);
-            Path targetPath = uploadPath.resolve(newFileName);
+            Map uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    uploadOptions
+            );
 
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            String fileUrl = (String) uploadResult.get("secure_url");
 
-            String fileUrl = "/uploads/" + newFileName;
+            if (fileUrl == null || fileUrl.isBlank()) {
+                throw new RuntimeException("Cloudinary did not return file URL");
+            }
 
             cert.setFilePath(fileUrl);
             cert.setStatus(CertificateStatus.SUBMITTED);
@@ -107,8 +123,9 @@ public class CertificateServiceImpl implements CertificateService {
 
             return savedCertificate;
 
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to upload certificate file", e);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to upload certificate to Cloudinary: " + e.getMessage(), e);
         }
     }
 
@@ -151,14 +168,43 @@ public class CertificateServiceImpl implements CertificateService {
         Certificate cert = certificateRepository.findByRequestId(requestId)
                 .orElseThrow(() -> new RuntimeException("Certificate not found for this request"));
 
-        if (cert.getFilePath() != null && !cert.getFilePath().isBlank()) {
-            deletePhysicalFile(cert.getFilePath());
-        }
-
         request.setCertificate(null);
         requestRepository.save(request);
 
         certificateRepository.delete(cert);
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("Please select a file to upload");
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new RuntimeException("File size must not be more than 1 MB");
+        }
+
+        String originalFileName = file.getOriginalFilename();
+        if (originalFileName == null || originalFileName.isBlank()) {
+            throw new RuntimeException("Invalid file name");
+        }
+
+        String extension = getFileExtension(originalFileName).toLowerCase(Locale.ROOT);
+
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new RuntimeException("Only JPG, JPEG, PNG, and PDF files are allowed");
+        }
+    }
+
+    private String getCloudinaryResourceType(String extension) {
+        if (IMAGE_EXTENSIONS.contains(extension)) {
+            return "image";
+        }
+
+        if ("pdf".equals(extension)) {
+            return "raw";
+        }
+
+        return "auto";
     }
 
     private boolean isCertificateRequired(String reason) {
@@ -180,41 +226,22 @@ public class CertificateServiceImpl implements CertificateService {
         return fileName.substring(lastDotIndex + 1);
     }
 
+    private String removeExtension(String fileName) {
+        if (fileName == null) return "certificate";
+
+        int lastDotIndex = fileName.lastIndexOf(".");
+        if (lastDotIndex == -1) {
+            return fileName;
+        }
+
+        return fileName.substring(0, lastDotIndex);
+    }
+
     private String sanitizeFileName(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return "certificate";
+        }
+
         return fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
-    }
-
-    private void deletePhysicalFile(String fileUrl) {
-        try {
-            String fileName = extractFileNameFromUrl(fileUrl);
-            if (fileName == null || fileName.isBlank()) {
-                return;
-            }
-
-            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-            Path filePath = uploadPath.resolve(fileName).normalize();
-
-            Files.deleteIfExists(filePath);
-
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to delete old certificate file", e);
-        }
-    }
-
-    private String extractFileNameFromUrl(String fileUrl) {
-        if (fileUrl == null || fileUrl.isBlank()) {
-            return null;
-        }
-
-        if (fileUrl.startsWith("/uploads/")) {
-            return fileUrl.substring("/uploads/".length());
-        }
-
-        int lastSlash = fileUrl.lastIndexOf("/");
-        if (lastSlash >= 0 && lastSlash < fileUrl.length() - 1) {
-            return fileUrl.substring(lastSlash + 1);
-        }
-
-        return fileUrl;
     }
 }

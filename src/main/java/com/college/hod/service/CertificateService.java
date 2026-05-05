@@ -12,4 +12,6 @@ public interface CertificateService {
     Certificate rejectCertificate(Long certificateId, String remark);
 
     void deleteCertificateByRequestId(Long requestId);
+
+    Certificate getCertificateById(Long certificateId);
 }

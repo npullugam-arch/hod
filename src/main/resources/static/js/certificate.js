@@ -148,7 +148,8 @@ function buildCertificateRow(req) {
 
         certificatePathHtml = `
             <div class="file-cell-wrap">
-                <a href="${escapeAttribute(req.certificate.filePath)}" target="_blank" class="view-link">View File</a>
+
+<a href="${escapeAttribute(getCertificateViewUrl(req.certificate))}" target="_blank" class="view-link">View File</a>                
                 <div class="inline-student-status">
                     ${getStudentCertificateStatusHtml(certStatus, rejectionRemark)}
                 </div>
@@ -477,4 +478,27 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
     return escapeHtml(value);
+}
+
+function getCertificateViewUrl(certificate) {
+    const filePath = String(certificate?.filePath || "").trim();
+    const certificateId = certificate?.id;
+
+    if (!filePath) {
+        return certificateId ? `/certificate/view/${certificateId}` : "#";
+    }
+
+    if (isCertificateImageUrl(filePath)) {
+        return filePath;
+    }
+
+    return certificateId ? `/certificate/view/${certificateId}` : filePath;
+}
+
+function isCertificateImageUrl(filePath) {
+    const normalized = String(filePath || "").toLowerCase();
+    return normalized.includes(".jpg")
+        || normalized.includes(".jpeg")
+        || normalized.includes(".png")
+        || normalized.includes("/image/upload/");
 }
