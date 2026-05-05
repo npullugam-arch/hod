@@ -8,6 +8,8 @@ import com.college.hod.enums.RequestStatus;
 import com.college.hod.repository.NotificationRepository;
 import com.college.hod.repository.RequestRepository;
 import com.college.hod.service.NotificationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
@@ -26,6 +28,8 @@ import java.util.regex.Pattern;
 
 @Service
 public class NotificationServiceImpl implements NotificationService {
+
+    private static final Logger log = LoggerFactory.getLogger(NotificationServiceImpl.class);
 
     private static final Set<String> CERTIFICATE_REQUIRED_REASONS = Set.of(
             "HACKATHON",
@@ -53,6 +57,21 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Value("${spring.mail.password:}")
     private String mailPassword;
+
+    @Value("${spring.mail.host:}")
+    private String mailHost;
+
+    @Value("${spring.mail.port:0}")
+    private int mailPort;
+
+    @Value("${spring.mail.properties.mail.smtp.starttls.enable:false}")
+    private String starttlsEnabled;
+
+    @Value("${spring.mail.properties.mail.smtp.starttls.required:false}")
+    private String starttlsRequired;
+
+    @Value("${spring.mail.properties.mail.smtp.ssl.enable:false}")
+    private String sslEnabled;
 
     @Override
     public void sendNotification(User user, String message) {
@@ -224,6 +243,7 @@ public class NotificationServiceImpl implements NotificationService {
         message.setText(body);
 
         try {
+            logConfiguredSender("primary", mailSender);
             mailSender.send(message);
         } catch (MailException e) {
             if (shouldRetryWithMailFallback(e)) {
@@ -279,11 +299,14 @@ public class NotificationServiceImpl implements NotificationService {
             properties.put("mail.smtp.starttls.enable", "true");
             properties.put("mail.smtp.starttls.required", "true");
             properties.put("mail.smtp.ssl.enable", "false");
+            properties.put("mail.smtp.ssl.trust", "smtp.gmail.com");
+            properties.put("mail.smtp.ssl.protocols", "TLSv1.2");
             properties.put("mail.smtp.connectiontimeout", "60000");
             properties.put("mail.smtp.timeout", "60000");
             properties.put("mail.smtp.writetimeout", "60000");
             properties.put("mail.smtp.quitwait", "false");
 
+            logConfiguredSender("fallback", fallbackSender);
             fallbackSender.send(message);
         } catch (MailException e) {
             Throwable root = e;
@@ -322,6 +345,43 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         return false;
+    }
+
+    private void logConfiguredSender(String mode, JavaMailSender sender) {
+        if (sender instanceof JavaMailSenderImpl mailSenderImpl) {
+            Properties props = mailSenderImpl.getJavaMailProperties();
+
+            log.info(
+                    "Reminder mail sender [{}] config: host={}, port={}, starttls={}, starttlsRequired={}, ssl={}, connectionTimeout={}, timeout={}, writeTimeout={}",
+                    mode,
+                    safeValue(mailSenderImpl.getHost(), mailHost),
+                    mailSenderImpl.getPort() > 0 ? mailSenderImpl.getPort() : mailPort,
+                    safeValue(props.getProperty("mail.smtp.starttls.enable"), starttlsEnabled),
+                    safeValue(props.getProperty("mail.smtp.starttls.required"), starttlsRequired),
+                    safeValue(props.getProperty("mail.smtp.ssl.enable"), sslEnabled),
+                    props.getProperty("mail.smtp.connectiontimeout"),
+                    props.getProperty("mail.smtp.timeout"),
+                    props.getProperty("mail.smtp.writetimeout")
+            );
+            return;
+        }
+
+        log.info(
+                "Reminder mail sender [{}] config: host={}, port={}, starttls={}, starttlsRequired={}, ssl={}",
+                mode,
+                mailHost,
+                mailPort,
+                starttlsEnabled,
+                starttlsRequired,
+                sslEnabled
+        );
+    }
+
+    private String safeValue(String primary, String fallback) {
+        if (primary != null && !primary.isBlank()) {
+            return primary;
+        }
+        return fallback;
     }
 
     private boolean isCertificateRequired(String reason) {
