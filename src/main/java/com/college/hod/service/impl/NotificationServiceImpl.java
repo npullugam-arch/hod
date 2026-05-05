@@ -268,7 +268,7 @@ public class NotificationServiceImpl implements NotificationService {
         try {
             JavaMailSenderImpl fallbackSender = new JavaMailSenderImpl();
             fallbackSender.setHost("smtp.gmail.com");
-            fallbackSender.setPort(465);
+            fallbackSender.setPort(587);
             fallbackSender.setUsername(fromEmail.trim());
             fallbackSender.setPassword(mailPassword);
             fallbackSender.setProtocol("smtp");
