@@ -32,6 +32,9 @@ import java.util.*;
 @Service
 public class AdminServiceImpl implements AdminService {
 
+    private static final String STUDENT_PHOTO_BASE_URL =
+            "https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/";
+
     @Autowired
     private UserRepository userRepository;
 
@@ -593,6 +596,10 @@ public class AdminServiceImpl implements AdminService {
                 pageable
         );
 
+        resultPage.getContent().forEach(student ->
+                student.setPhotoUrl(buildStudentPhotoUrl(student.getRollNo()))
+        );
+
         return new PaginatedResponse<>(
                 resultPage.getContent(),
                 resultPage.getNumber(),
@@ -605,8 +612,10 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public Student getStudentById(Long studentId) {
-        return studentRepository.findById(studentId)
+        Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
+        student.setPhotoUrl(buildStudentPhotoUrl(student.getRollNo()));
+        return student;
     }
 
     @Override
@@ -1063,6 +1072,15 @@ public class AdminServiceImpl implements AdminService {
             return null;
         }
         return "https://www.iare.ac.in/sites/default/files/" + employeeId.trim() + "_0.png";
+    }
+
+    private String buildStudentPhotoUrl(String rollNo) {
+        if (rollNo == null || rollNo.trim().isEmpty()) {
+            return "";
+        }
+
+        String cleanRollNo = rollNo.trim().toUpperCase().replaceAll("\\s+", "");
+        return STUDENT_PHOTO_BASE_URL + cleanRollNo + "/" + cleanRollNo + ".jpg";
     }
 
     private static class PendingStudentUploadRow {

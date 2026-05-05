@@ -475,3 +475,244 @@ button#loginBtn:disabled {
         margin-left: -80px;
     }
 }
+
+/* =====================================================
+   FIX LOGIN PAGE - NO SCROLL + CLEAN MOBILE VIEW
+===================================================== */
+
+/* Disable ALL scrolling */
+html, body {
+    height: 100%;
+    overflow: hidden !important;
+    margin: 0;
+    padding: 0;
+}
+
+/* Full page fixed layout */
+.page {
+    height: 100vh !important;
+    display: flex;
+    overflow: hidden !important;
+}
+
+/* Panels full height */
+.left-panel,
+.right-panel {
+    height: 100vh !important;
+    overflow: hidden !important;
+}
+
+/* Prevent internal scrolling */
+.login-wrapper,
+.login-container {
+    overflow: hidden !important;
+}
+
+
+/* =====================================================
+   MOBILE CLEAN VIEW (IMPORTANT)
+===================================================== */
+
+@media (max-width: 768px) {
+
+    /* Remove violet / background colors */
+    body,
+    .page,
+    .right-panel {
+        background: #ffffff !important;
+    }
+
+    /* Hide left panel completely */
+    .left-panel {
+        display: none !important;
+    }
+
+    /* Full width right panel */
+    .right-panel {
+        width: 100% !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px !important;
+    }
+
+    /* Remove extra animations/characters */
+    .characters-container {
+        display: none !important;
+    }
+
+    /* Show mobile logo cleanly */
+    .mobile-logo {
+        display: flex !important;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .mobile-brand-image {
+        width: 80px;
+        height: auto;
+    }
+
+    /* Center login card */
+    .login-wrapper {
+        width: 100%;
+        max-width: 360px;
+        margin: 0 auto;
+    }
+
+    .form-card {
+        width: 100%;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border-radius: 16px;
+        padding: 24px !important;
+    }
+
+    /* Remove unnecessary spacing */
+    .login-container {
+        padding: 0 !important;
+    }
+}
+
+
+/* =====================================================
+   EXTRA SAFETY (NO SCROLL EVER)
+===================================================== */
+
+* {
+    overscroll-behavior: none;
+}
+
+/* =====================================================
+   FIX LOGIN PAGE - NO SCROLL + CLEAN MOBILE VIEW
+===================================================== */
+
+/* Disable ALL scrolling */
+html, body {
+    height: 100%;
+    overflow: hidden !important;
+    margin: 0;
+    padding: 0;
+}
+
+/* Full page fixed layout */
+.page {
+    height: 100vh !important;
+    display: flex;
+    overflow: hidden !important;
+}
+
+/* Panels full height */
+.left-panel,
+.right-panel {
+    height: 100vh !important;
+    overflow: hidden !important;
+}
+
+/* Prevent internal scrolling */
+.login-wrapper,
+.login-container {
+    overflow: hidden !important;
+}
+
+
+/* =====================================================
+   MOBILE CLEAN VIEW (IMPORTANT)
+===================================================== */
+
+@media (max-width: 768px) {
+
+    /* Remove violet / background colors */
+    body,
+    .page,
+    .right-panel {
+        background: #ffffff !important;
+    }
+
+    /* Hide left panel completely */
+    .left-panel {
+        display: none !important;
+    }
+
+    /* Full width right panel */
+    .right-panel {
+        width: 100% !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px !important;
+    }
+
+    /* Remove extra animations/characters */
+    .characters-container {
+        display: none !important;
+    }
+
+    /* Show mobile logo cleanly */
+    .mobile-logo {
+        display: flex !important;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .mobile-brand-image {
+        width: 80px;
+        height: auto;
+    }
+
+    /* Center login card */
+    .login-wrapper {
+        width: 100%;
+        max-width: 360px;
+        margin: 0 auto;
+    }
+
+    .form-card {
+        width: 100%;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border-radius: 16px;
+        padding: 24px !important;
+    }
+
+    /* Remove unnecessary spacing */
+    .login-container {
+        padding: 0 !important;
+    }
+}
+
+
+/* =====================================================
+   EXTRA SAFETY (NO SCROLL EVER)
+===================================================== */
+
+* {
+    overscroll-behavior: none;
+}
+
+/* =====================================================
+   MOBILE LOGO FIX (BIG + CLEAN)
+===================================================== */
+
+@media (max-width: 768px) {
+
+    /* Bigger mobile logo */
+    .mobile-brand-image {
+        width: 120px !important;
+        height: auto;
+    }
+
+    /* Add spacing below logo */
+    .mobile-logo {
+        margin-bottom: 24px;
+    }
+
+    /* Center everything properly */
+    .right-panel {
+        align-items: center !important;
+        justify-content: center !important;
+    }
+}
+
+.xy{
+    margin-left: auto;
+    margin-top:1opx;
+}

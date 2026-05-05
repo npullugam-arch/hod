@@ -79,6 +79,7 @@ function setHodInfo() {
     const hodNameEl = document.getElementById("hodName");
     const hodEmployeeIdEl = document.getElementById("hodEmployeeId");
     const hodHeaderPhotoEl = document.getElementById("hodHeaderPhoto");
+    const userProfileCard = document.querySelector(".user-profile-card");
     const updatePasswordNav = document.getElementById("updatePasswordNav");
 
     if (hodNameEl) hodNameEl.textContent = hodName;
@@ -95,6 +96,16 @@ function setHodInfo() {
 
     if (updatePasswordNav && user.passwordChanged === true) {
         updatePasswordNav.style.display = "none";
+    }
+
+    if (userProfileCard) {
+        userProfileCard.onclick = function () {
+            loadPage(
+                { preventDefault: () => {}, currentTarget: document.querySelector('.nav-link[onclick*="hod-profile.html"]') },
+                "hod-profile.html",
+                "HOD Profile"
+            );
+        };
     }
 }
 
@@ -240,44 +251,60 @@ function loadPage(event, pageUrl, title) {
     }
 }
 
-function animateCount(elementId, targetValue) {
+function animateCount(elementId, targetValue, delay = 0) {
     const element = document.getElementById(elementId);
     if (!element) return;
 
     const finalValue = Number(targetValue) || 0;
-    const duration = 900;
-    const startTime = performance.now();
 
-    function update(currentTime) {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easedProgress = 1 - Math.pow(1 - progress, 4);
-        const currentValue = Math.floor(easedProgress * finalValue);
+    setTimeout(() => {
+        element.classList.add("count-animating");
 
-        element.textContent = currentValue;
+        const duration = 2200;
+        const startTime = performance.now();
 
-        if (progress < 1) requestAnimationFrame(update);
-        else element.textContent = finalValue;
-    }
+        function update(currentTime) {
+            const progress = Math.min((currentTime - startTime) / duration, 1);
+            const easedProgress = 1 - Math.pow(1 - progress, 5);
+            const currentValue = Math.floor(easedProgress * finalValue);
 
-    requestAnimationFrame(update);
+            element.textContent = currentValue;
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                element.textContent = finalValue;
+                element.classList.remove("count-animating");
+                element.classList.add("count-finished");
+
+                setTimeout(() => {
+                    element.classList.remove("count-finished");
+                }, 700);
+            }
+        }
+
+        requestAnimationFrame(update);
+    }, delay);
 }
 
-function setDashboardCountsLoading() {
-    ["totalCount", "pendingCount", "certificatePendingCount", "approvedCount", "rejectedCount"]
+function resetDashboardCountsToZero() {
+    ["totalCount", "approvedCount", "pendingCount", "rejectedCount", "certificatePendingCount"]
         .forEach(id => {
             const element = document.getElementById(id);
             if (element) {
-                element.textContent = "Loading...";
+                element.textContent = "0";
+                element.title = "";
             }
         });
 }
 
 function setDashboardCountsError() {
-    ["totalCount", "pendingCount", "certificatePendingCount", "approvedCount", "rejectedCount"]
+    resetDashboardCountsToZero();
+
+    ["totalCount", "approvedCount", "pendingCount", "rejectedCount", "certificatePendingCount"]
         .forEach(id => {
             const element = document.getElementById(id);
             if (element) {
-                element.textContent = "0";
                 element.title = "Unable to load dashboard counts";
             }
         });
@@ -288,7 +315,7 @@ function loadDashboardCounts() {
         return dashboardCountsPromise;
     }
 
-    setDashboardCountsLoading();
+    resetDashboardCountsToZero();
 
     dashboardCountsPromise = fetch(`/hod/${user.id}/dashboard-summary`)
         .then((res) => {
@@ -296,11 +323,11 @@ function loadDashboardCounts() {
             return res.json();
         })
         .then((summary) => {
-            animateCount("totalCount", summary.totalCount);
-            animateCount("pendingCount", summary.pendingCount);
-            animateCount("certificatePendingCount", summary.certificatePendingCount);
-            animateCount("approvedCount", summary.approvedCount);
-            animateCount("rejectedCount", summary.rejectedCount);
+            animateCount("totalCount", summary.totalCount, 300);
+            animateCount("approvedCount", summary.approvedCount, 1200);
+            animateCount("pendingCount", summary.pendingCount, 2100);
+            animateCount("rejectedCount", summary.rejectedCount, 3000);
+            animateCount("certificatePendingCount", summary.certificatePendingCount, 3900);
         })
         .catch(() => {
             setDashboardCountsError();
@@ -311,7 +338,6 @@ function loadDashboardCounts() {
 
     return dashboardCountsPromise;
 }
-
 function logout() {
     localStorage.removeItem("user");
     window.location.href = "index.html";

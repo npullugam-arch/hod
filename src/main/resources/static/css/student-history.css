@@ -628,3 +628,370 @@ body {
         flex-direction: column;
     }
 }
+
+/* ================================
+   Smooth Slow Loading Animations
+   Add at bottom of student-history.css
+================================ */
+
+:root {
+    --soft-blue: #2563eb;
+    --soft-sky: #60a5fa;
+    --soft-green: #22c55e;
+    --soft-red: #ef4444;
+    --soft-yellow: #f59e0b;
+    --glass-bg: rgba(255, 255, 255, 0.88);
+    --soft-border: rgba(148, 163, 184, 0.25);
+    --soft-shadow: 0 24px 60px rgba(15, 23, 42, 0.10);
+}
+
+body {
+    animation: pageSlowReveal 0.9s ease both;
+    background:
+        radial-gradient(circle at top left, rgba(96, 165, 250, 0.18), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(37, 99, 235, 0.12), transparent 36%),
+        linear-gradient(135deg, #f8fafc, #eef6ff);
+}
+
+/* top buttons slow entry */
+.top-bar {
+    animation: slideDownSoft 0.75s ease both;
+}
+
+.btn,
+.primary-btn,
+.secondary-btn {
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        background 0.25s ease,
+        color 0.25s ease;
+}
+
+.btn:hover,
+.primary-btn:hover,
+.secondary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(37, 99, 235, 0.18);
+}
+
+/* profile section */
+.profile-card {
+    position: relative;
+    overflow: hidden;
+    animation: cardFloatIn 0.9s ease both;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.profile-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--soft-shadow);
+}
+
+/* when text says loading */
+.profile-card:has(> text),
+.profile-card {
+    min-height: 120px;
+}
+
+/* shimmer effect while content is simple loading text */
+.profile-card::before,
+.history-card::before,
+.chart-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-120%);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.42),
+        transparent
+    );
+    animation: shimmerSweep 2.4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* stats cards animated one by one */
+.stats {
+    animation: fadeUpSoft 0.9s ease 0.15s both;
+}
+
+.stats > * {
+    animation: statPopIn 0.75s ease both;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stats > *:nth-child(1) { animation-delay: 0.12s; }
+.stats > *:nth-child(2) { animation-delay: 0.24s; }
+.stats > *:nth-child(3) { animation-delay: 0.36s; }
+.stats > *:nth-child(4) { animation-delay: 0.48s; }
+
+.stats > *:hover {
+    transform: translateY(-5px) scale(1.015);
+    box-shadow: 0 20px 42px rgba(15, 23, 42, 0.12);
+}
+
+/* chart card */
+.chart-card {
+    position: relative;
+    overflow: hidden;
+    animation: fadeUpSoft 0.9s ease 0.28s both;
+}
+
+.chart-wrapper {
+    animation: chartBreath 2.8s ease-in-out infinite;
+}
+
+.chart-legend .legend-item {
+    animation: fadeUpSoft 0.75s ease both;
+}
+
+.chart-legend .legend-item:nth-child(1) { animation-delay: 0.25s; }
+.chart-legend .legend-item:nth-child(2) { animation-delay: 0.38s; }
+.chart-legend .legend-item:nth-child(3) { animation-delay: 0.51s; }
+
+.legend-dot {
+    animation: pulseDot 1.8s ease-in-out infinite;
+}
+
+/* history section */
+.history-card {
+    position: relative;
+    overflow: hidden;
+    animation: fadeUpSoft 0.9s ease 0.4s both;
+}
+
+.history-grid > * {
+    animation: requestCardReveal 0.7s ease both;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.history-grid > *:nth-child(1) { animation-delay: 0.08s; }
+.history-grid > *:nth-child(2) { animation-delay: 0.16s; }
+.history-grid > *:nth-child(3) { animation-delay: 0.24s; }
+.history-grid > *:nth-child(4) { animation-delay: 0.32s; }
+.history-grid > *:nth-child(5) { animation-delay: 0.40s; }
+.history-grid > *:nth-child(6) { animation-delay: 0.48s; }
+.history-grid > *:nth-child(7) { animation-delay: 0.56s; }
+.history-grid > *:nth-child(8) { animation-delay: 0.64s; }
+
+.history-grid > *:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.10);
+}
+
+/* page status smooth */
+.page-status {
+    transition: all 0.35s ease;
+}
+
+.page-status.show {
+    animation: statusDrop 0.55s ease both;
+}
+
+/* modal smooth animation */
+.modal-overlay {
+    backdrop-filter: blur(10px);
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.modal-card {
+    animation: modalZoomSoft 0.45s ease both;
+}
+
+.download-options label {
+    transition:
+        transform 0.25s ease,
+        background 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.download-options label:hover {
+    transform: translateX(4px);
+    background: rgba(96, 165, 250, 0.10);
+    border-color: rgba(96, 165, 250, 0.35);
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.10);
+}
+
+.date-range-box {
+    animation: fadeUpSoft 0.35s ease both;
+}
+
+/* soft skeleton utility if JS leaves empty sections briefly */
+#stats:empty,
+#requests:empty {
+    min-height: 130px;
+    border-radius: 22px;
+    background:
+        linear-gradient(90deg, #e2e8f0 25%, #f8fafc 37%, #e2e8f0 63%);
+    background-size: 400% 100%;
+    animation: skeletonMove 1.8s ease infinite;
+}
+
+/* smoother scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* animations */
+@keyframes pageSlowReveal {
+    from {
+        opacity: 0;
+        filter: blur(5px);
+    }
+    to {
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+@keyframes slideDownSoft {
+    from {
+        opacity: 0;
+        transform: translateY(-22px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes cardFloatIn {
+    from {
+        opacity: 0;
+        transform: translateY(26px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes fadeUpSoft {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes statPopIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.94);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes requestCardReveal {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes shimmerSweep {
+    0% {
+        transform: translateX(-120%);
+    }
+    55% {
+        transform: translateX(120%);
+    }
+    100% {
+        transform: translateX(120%);
+    }
+}
+
+@keyframes skeletonMove {
+    0% {
+        background-position: 100% 0;
+    }
+    100% {
+        background-position: 0 0;
+    }
+}
+
+@keyframes chartBreath {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.015);
+    }
+}
+
+@keyframes pulseDot {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.25);
+        opacity: 0.72;
+    }
+}
+
+@keyframes statusDrop {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes modalZoomSoft {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* mobile refinement */
+@media (max-width: 768px) {
+    .top-bar {
+        gap: 12px;
+        animation-duration: 0.65s;
+    }
+
+    .profile-card,
+    .chart-card,
+    .history-card {
+        animation-duration: 0.75s;
+    }
+
+    #stats:empty,
+    #requests:empty {
+        min-height: 100px;
+    }
+}
+
+/* accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

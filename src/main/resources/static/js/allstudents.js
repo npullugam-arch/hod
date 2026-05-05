@@ -7,12 +7,37 @@ if (!user) {
 const STUDENT_PHOTO_BASE_URL = "https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS";
 
 let allRequests = [];
+let filteredRequests = [];
+let currentPage = 1;
+const rowsPerPage = 10;
 
 window.onload = function () {
     loadAllRequests();
 
-    document.getElementById("searchInput").addEventListener("input", renderAllRequests);
-    document.getElementById("statusFilter").addEventListener("change", renderAllRequests);
+    document.getElementById("searchInput").addEventListener("input", function () {
+        currentPage = 1;
+        renderAllRequests();
+    });
+
+    document.getElementById("statusFilter").addEventListener("change", function () {
+        currentPage = 1;
+        renderAllRequests();
+    });
+
+    document.getElementById("prevPageBtn").addEventListener("click", function () {
+        if (currentPage > 1) {
+            currentPage--;
+            renderPageRows();
+        }
+    });
+
+    document.getElementById("nextPageBtn").addEventListener("click", function () {
+        const totalPages = getTotalPages();
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderPageRows();
+        }
+    });
 };
 
 function loadAllRequests() {
@@ -31,7 +56,7 @@ function loadAllRequests() {
         })
         .then(data => {
             allRequests = Array.isArray(data) ? data : [];
-            status.textContent = `Total requests: ${allRequests.length}`;
+            currentPage = 1;
             renderAllRequests();
         })
         .catch(err => {
@@ -44,17 +69,15 @@ function loadAllRequests() {
                     </td>
                 </tr>
             `;
+            updatePagination(0);
         });
 }
 
 function renderAllRequests() {
-    const table = document.getElementById("allRequestsTable");
     const searchText = document.getElementById("searchInput").value.trim().toLowerCase();
     const selectedStatus = document.getElementById("statusFilter").value;
 
-    table.innerHTML = "";
-
-    const filtered = allRequests.filter(req => {
+    filteredRequests = allRequests.filter(req => {
         const studentName = getStudentName(req).toLowerCase();
         const rollNo = getStudentIdentifier(req).toLowerCase();
         const reason = getDisplayValue(req.reason).toLowerCase();
@@ -73,21 +96,77 @@ function renderAllRequests() {
         return matchesStatus && matchesSearch;
     });
 
-    if (filtered.length === 0) {
+    renderPageRows();
+}
+
+function renderPageRows() {
+    const table = document.getElementById("allRequestsTable");
+    const status = document.getElementById("pageStatus");
+
+    table.innerHTML = "";
+
+    if (filteredRequests.length === 0) {
+        status.textContent = `Total requests: ${allRequests.length}`;
         table.innerHTML = `
             <tr>
                 <td colspan="6" class="empty-row">No requests found.</td>
             </tr>
         `;
+        updatePagination(0);
         return;
     }
 
-    filtered.forEach(req => {
+    const totalPages = getTotalPages();
+
+    if (currentPage > totalPages) {
+        currentPage = totalPages;
+    }
+
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const pageItems = filteredRequests.slice(startIndex, endIndex);
+
+    status.textContent = `Total requests: ${allRequests.length} | Filtered: ${filteredRequests.length}`;
+
+    pageItems.forEach(req => {
         const mainRow = buildRequestMainRow(req);
         const remarkRow = buildRemarkRow(req);
-
         table.innerHTML += mainRow + remarkRow;
     });
+
+    updatePagination(filteredRequests.length);
+}
+
+function getTotalPages() {
+    return Math.max(1, Math.ceil(filteredRequests.length / rowsPerPage));
+}
+
+function updatePagination(totalItems) {
+    const paginationBar = document.getElementById("paginationBar");
+    const paginationSummary = document.getElementById("paginationSummary");
+    const pageIndicator = document.getElementById("pageIndicator");
+    const prevBtn = document.getElementById("prevPageBtn");
+    const nextBtn = document.getElementById("nextPageBtn");
+
+    if (!paginationBar || !paginationSummary || !pageIndicator || !prevBtn || !nextBtn) return;
+
+    if (totalItems === 0) {
+        paginationSummary.textContent = "Showing 0 requests";
+        pageIndicator.textContent = "Page 0 of 0";
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        return;
+    }
+
+    const totalPages = getTotalPages();
+    const start = (currentPage - 1) * rowsPerPage + 1;
+    const end = Math.min(currentPage * rowsPerPage, totalItems);
+
+    paginationSummary.textContent = `Showing ${start}-${end} of ${totalItems} requests`;
+    pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= totalPages;
 }
 
 function buildRequestMainRow(req) {

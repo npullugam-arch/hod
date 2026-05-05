@@ -204,4 +204,33 @@ public class Student {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Hod hod;
+
+    public String getPhotoUrl() {
+        if (photoUrl != null && !photoUrl.trim().isEmpty()) {
+            return photoUrl.trim();
+        }
+
+        return buildStudentPhotoUrl(rollNo);
+    }
+
+    public String getPhoto() {
+        return getPhotoUrl();
+    }
+
+    public String getImageUrl() {
+        return getPhotoUrl();
+    }
+
+    private String buildStudentPhotoUrl(String rollNo) {
+        if (rollNo == null || rollNo.trim().isEmpty()) {
+            return "";
+        }
+
+        String cleanRollNo = rollNo.trim().toUpperCase().replaceAll("\\s+", "");
+        return "https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/"
+                + cleanRollNo
+                + "/"
+                + cleanRollNo
+                + ".jpg";
+    }
 }

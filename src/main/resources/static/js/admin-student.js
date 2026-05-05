@@ -243,7 +243,7 @@ function renderStudents(students) {
         const displaySection = normalizeSection(student.section || student.sec) || "-";
         const displaySem = normalizeSemester(student.sem) || "-";
         const initial = displayName.charAt(0).toUpperCase();
-        const imageUrl = getStudentImageUrl(displayRollNo);
+        const imageUrl = getStudentImageUrl(student);
 
         const card = document.createElement("div");
         card.className = "student-card";
@@ -461,9 +461,28 @@ function normalizeSemester(value) {
     return "";
 }
 
-function getStudentImageUrl(rollNo) {
+function getStudentImageUrl(studentOrRollNo) {
+    let rollNo = "";
+
+    if (typeof studentOrRollNo === "object" && studentOrRollNo !== null) {
+        rollNo =
+            studentOrRollNo.rollNo ||
+            studentOrRollNo.roll_no ||
+            studentOrRollNo.rollNumber ||
+            studentOrRollNo.rollnumber ||
+            studentOrRollNo.username ||
+            "";
+    } else {
+        rollNo = studentOrRollNo;
+    }
+
     if (!rollNo || rollNo === "-") return "";
-    const cleanRollNo = String(rollNo).trim().toUpperCase();
+
+    const cleanRollNo = String(rollNo)
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, "");
+
     return `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${cleanRollNo}/${cleanRollNo}.jpg`;
 }
 

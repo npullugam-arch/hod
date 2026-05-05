@@ -385,3 +385,302 @@ tbody tr.main-row:hover {
         text-align: center;
     }
 }
+
+/* =====================================================
+   Full Width + Slow Animation - All Requests Page
+===================================================== */
+
+:root {
+    --smooth-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Start from navbar/content edge */
+html,
+body {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+}
+
+.page-shell {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    animation: allReqPageIn 0.75s var(--smooth-ease) both;
+}
+
+.glass-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+/* Page entry */
+@keyframes allReqPageIn {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header, filters, status, table one by one */
+.page-header,
+.filter-bar,
+.page-status,
+.table-card {
+    opacity: 0;
+    transform: translateY(24px);
+    animation: allReqBlockIn 0.7s var(--smooth-ease) forwards;
+}
+
+.page-header { animation-delay: 0.15s; }
+.filter-bar { animation-delay: 0.32s; }
+.page-status { animation-delay: 0.48s; }
+.table-card { animation-delay: 0.65s; }
+
+@keyframes allReqBlockIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Table rows slow one by one */
+tbody tr {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: allReqRowIn 0.55s var(--smooth-ease) forwards;
+    transition: all 0.25s ease;
+}
+
+tbody tr:nth-child(1) { animation-delay: 0.80s; }
+tbody tr:nth-child(2) { animation-delay: 0.95s; }
+tbody tr:nth-child(3) { animation-delay: 1.10s; }
+tbody tr:nth-child(4) { animation-delay: 1.25s; }
+tbody tr:nth-child(5) { animation-delay: 1.40s; }
+tbody tr:nth-child(6) { animation-delay: 1.55s; }
+tbody tr:nth-child(7) { animation-delay: 1.70s; }
+
+@keyframes allReqRowIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hover smooth */
+tbody tr:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+/* Inputs and select smooth */
+input,
+select,
+button {
+    transition: all 0.25s ease;
+}
+
+input:focus,
+select:focus,
+select:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(59, 130, 246, 0.14);
+}
+
+button:hover {
+    transform: translateY(-2px);
+}
+
+/* Loading/status pulse */
+.page-status:not(:empty) {
+    animation: allReqPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes allReqPulse {
+    0%, 100% {
+        opacity: 0.55;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Modal animation */
+.modal-overlay:not(.hidden) {
+    animation: allReqModalFade 0.3s ease both;
+}
+
+.modal-overlay:not(.hidden) .modal-content {
+    animation: allReqModalPop 0.48s var(--smooth-ease) both;
+}
+
+@keyframes allReqModalFade {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes allReqModalPop {
+    from {
+        opacity: 0;
+        transform: translateY(28px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal details one by one */
+.modal-profile,
+.modal-detail {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: allReqModalItemIn 0.45s var(--smooth-ease) forwards;
+}
+
+.modal-profile { animation-delay: 0.15s; }
+.modal-detail:nth-child(1) { animation-delay: 0.25s; }
+.modal-detail:nth-child(2) { animation-delay: 0.35s; }
+.modal-detail:nth-child(3) { animation-delay: 0.45s; }
+.modal-detail:nth-child(4) { animation-delay: 0.55s; }
+.modal-detail:nth-child(5) { animation-delay: 0.65s; }
+.modal-detail:nth-child(6) { animation-delay: 0.75s; }
+
+@keyframes allReqModalItemIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .page-shell {
+        padding: 0 !important;
+    }
+
+    .glass-panel {
+        border-radius: 0 !important;
+    }
+
+    .page-header,
+    .filter-bar,
+    .page-status,
+    .table-card,
+    tbody tr {
+        animation-delay: 0.2s !important;
+    }
+}
+
+/* =====================================================
+   FIX: Page status should NOT hide (Total requests)
+===================================================== */
+
+.page-status {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+}
+
+/* Optional: small soft fade (fast, not slow) */
+.page-status {
+    animation: quickFade 0.2s ease-in;
+}
+
+@keyframes quickFade {
+    from {
+        opacity: 0.6;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* =====================================================
+   Pagination - All Requests
+===================================================== */
+
+.pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 22px;
+    margin-top: 18px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 18px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+}
+
+.pagination-summary {
+    color: #475569;
+    font-weight: 800;
+    font-size: 14px;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pagination-btn {
+    border: none;
+    background: #2563eb;
+    color: #ffffff;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(37, 99, 235, 0.25);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.page-indicator {
+    font-weight: 800;
+    color: #0f172a;
+    background: #f8fafc;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 768px) {
+    .pagination-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pagination-controls {
+        justify-content: space-between;
+    }
+
+    .pagination-btn {
+        flex: 1;
+    }
+
+    .page-indicator {
+        text-align: center;
+    }
+}

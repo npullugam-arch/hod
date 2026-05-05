@@ -299,6 +299,7 @@ body.sidebar-collapsed .main-wrapper {
     display: flex;
     align-items: center;
     gap: 14px;
+    cursor: pointer;
 }
 
 .profile-info {
@@ -643,4 +644,56 @@ body {
     .iframe-card {
         overflow: visible !important;
     }
+}
+
+.stat-card {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+    animation: statCardEnter 1.4s ease forwards;
+}
+
+.stat-card:nth-child(1) {
+    animation-delay: 0.15s;
+}
+
+.stat-card:nth-child(2) {
+    animation-delay: 0.55s;
+}
+
+.stat-card:nth-child(3) {
+    animation-delay: 0.95s;
+}
+
+.stat-card:nth-child(4) {
+    animation-delay: 1.35s;
+}
+
+.stat-card:nth-child(5) {
+    animation-delay: 1.75s;
+}
+
+@keyframes statCardEnter {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.stat-val {
+    transition: transform 0.5s ease, text-shadow 0.5s ease, opacity 0.5s ease;
+}
+
+.stat-val.count-animating {
+    transform: scale(1.08);
+    opacity: 0.95;
+    text-shadow: 0 10px 25px rgba(37, 99, 235, 0.22);
+}
+
+.stat-val.count-finished {
+    transform: scale(1.14);
+    text-shadow: 0 12px 30px rgba(22, 163, 74, 0.28);
 }

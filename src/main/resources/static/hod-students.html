@@ -30,7 +30,11 @@
 
     <div class="full-wrapper">
         <div class="toolbar">
-            <input type="text" id="searchInput" placeholder="Search by roll number, name, branch, section, phone" />
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by roll number, name, branch, section, phone"
+            />
 
             <select id="branchFilter">
                 <option value="">All Branches</option>
@@ -48,17 +52,26 @@
         <div id="pageStatus" class="page-status"></div>
 
         <div id="studentsContainer" class="students-grid"></div>
-        <div class="pagination-bar">
-            <div id="paginationSummary" class="pagination-summary">Loading students...</div>
-            <div class="pagination-controls">
-                <button type="button" id="prevPageBtn" class="pagination-btn">Previous</button>
-                <span id="pageIndicator" class="page-indicator">Page 1</span>
-                <button type="button" id="nextPageBtn" class="pagination-btn">Next</button>
-            </div>
-        </div>
 
         <div id="emptyState" class="empty-state" style="display:none;">
             No students found.
+        </div>
+
+        <div class="pagination-wrapper" id="paginationWrapper" style="display:none;">
+            <div class="pagination-info" id="paginationInfo"></div>
+
+            <div class="pagination-actions">
+                <button type="button" class="page-btn" id="prevPageBtn">Previous</button>
+                <div class="page-numbers" id="pageNumbers"></div>
+                <button type="button" class="page-btn" id="nextPageBtn">Next</button>
+            </div>
+
+            <select id="pageSizeSelect" class="page-size-select">
+                <option value="12">12 / page</option>
+                <option value="24" selected>24 / page</option>
+                <option value="36">36 / page</option>
+                <option value="48">48 / page</option>
+            </select>
         </div>
     </div>
 

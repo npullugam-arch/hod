@@ -6,9 +6,9 @@ if (!user || user.role !== "HOD") {
 }
 
 let studentsCache = [];
-let currentPage = 0;
-const pageSize = 20;
-let totalPages = 0;
+let filteredStudentsCache = [];
+let currentPage = 1;
+let pageSize = 24;
 
 const VALID_BRANCHES = [
     "CSE", "CSM", "CSD", "CSC", "CSI", "CSIT", "IT",
@@ -16,13 +16,45 @@ const VALID_BRANCHES = [
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
-    populateFilters();
-    document.getElementById("searchInput").addEventListener("input", debounce(resetAndLoadStudents, 300));
-    document.getElementById("branchFilter").addEventListener("change", resetAndLoadStudents);
-    document.getElementById("sectionFilter").addEventListener("change", resetAndLoadStudents);
-    document.getElementById("semFilter").addEventListener("change", resetAndLoadStudents);
-    document.getElementById("prevPageBtn").addEventListener("click", () => changePage(currentPage - 1));
-    document.getElementById("nextPageBtn").addEventListener("click", () => changePage(currentPage + 1));
+    const searchInput = document.getElementById("searchInput");
+    const branchFilter = document.getElementById("branchFilter");
+    const sectionFilter = document.getElementById("sectionFilter");
+    const semFilter = document.getElementById("semFilter");
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const pageSizeSelect = document.getElementById("pageSizeSelect");
+
+    if (searchInput) searchInput.addEventListener("input", () => applyClientFilters(true));
+    if (branchFilter) branchFilter.addEventListener("change", () => applyClientFilters(true));
+    if (sectionFilter) sectionFilter.addEventListener("change", () => applyClientFilters(true));
+    if (semFilter) semFilter.addEventListener("change", () => applyClientFilters(true));
+
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener("click", () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPaginatedStudents();
+            }
+        });
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener("click", () => {
+            const totalPages = getTotalPages();
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPaginatedStudents();
+            }
+        });
+    }
+
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener("change", () => {
+            pageSize = Number(pageSizeSelect.value) || 24;
+            currentPage = 1;
+            renderPaginatedStudents();
+        });
+    }
 
     showLoading();
     loadStudents();
@@ -34,23 +66,24 @@ async function loadStudents() {
 
     try {
         const students = await fetchHodStudents();
-        studentsCache = Array.isArray(students.content) ? students.content : [];
-        currentPage = Number(students.page) || 0;
-        totalPages = Number(students.totalPages) || 0;
+        studentsCache = Array.isArray(students) ? students : [];
 
-        updatePagination(students);
-        renderStudents(studentsCache);
+        populateFilters(studentsCache);
+        applyClientFilters(true);
 
-        if (Number(students.totalElements) === 0) {
+        if (studentsCache.length === 0) {
             setPageStatus("No students are assigned to this HOD.", "info");
         }
     } catch (error) {
+        console.error("Failed to load students:", error);
         studentsCache = [];
-        updatePagination({ page: 0, totalPages: 0, totalElements: 0, last: true });
+        filteredStudentsCache = [];
+        populateFilters([]);
         renderStudents([]);
+        renderPagination();
         setPageStatus(error.message || "Failed to load students", "error");
     } finally {
-        hideLoading();
+        setTimeout(hideLoading, 700);
     }
 }
 
@@ -58,19 +91,11 @@ async function fetchHodStudents() {
     const hodId = await resolveHodId();
 
     if (hodId) {
-        const params = new URLSearchParams({
-            page: String(currentPage),
-            size: String(pageSize),
-            search: document.getElementById("searchInput").value.trim(),
-            branch: document.getElementById("branchFilter").value.trim(),
-            sem: document.getElementById("semFilter").value.trim(),
-            sec: document.getElementById("sectionFilter").value.trim()
-        });
-
-        const response = await fetch(`/student/hod/${hodId}?${params.toString()}`);
+        const response = await fetch(`/hod/${hodId}/students`);
 
         if (response.ok) {
-            return response.json();
+            const data = await response.json();
+            return Array.isArray(data) ? data : [];
         }
 
         throw new Error("Unable to load HOD students.");
@@ -99,6 +124,7 @@ async function resolveHodId() {
 
         return matchedHod?.id || null;
     } catch (error) {
+        console.error("HOD resolve error:", error);
         return null;
     }
 }
@@ -107,71 +133,180 @@ function getCurrentEmployeeId() {
     return String(user.employeeId || user.username || "").trim().toUpperCase();
 }
 
-function populateFilters() {
+function populateFilters(students) {
     const branchFilter = document.getElementById("branchFilter");
     const sectionFilter = document.getElementById("sectionFilter");
     const semFilter = document.getElementById("semFilter");
+
+    if (!branchFilter || !sectionFilter || !semFilter) return;
+
+    const branches = [...new Set(
+        students.map(s => normalizeBranch(s.branch) || safeValue(s.branch)).filter(v => v !== "-")
+    )].sort();
+
+    const sections = [...new Set(
+        students.map(s => normalizeSection(s.section || s.sec) || safeValue(s.section || s.sec)).filter(v => v !== "-")
+    )].sort();
+
+    const semesters = [...new Set(
+        students.map(s => normalizeSemester(s.sem) || safeValue(s.sem)).filter(v => v !== "-")
+    )].sort((a, b) => Number(a) - Number(b));
 
     branchFilter.innerHTML = `<option value="">All Branches</option>`;
     sectionFilter.innerHTML = `<option value="">All Sections</option>`;
     semFilter.innerHTML = `<option value="">All Semesters</option>`;
 
-    VALID_BRANCHES.forEach(branch => {
+    branches.forEach(branch => {
         branchFilter.innerHTML += `<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`;
     });
 
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(section => {
+    sections.forEach(section => {
         sectionFilter.innerHTML += `<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`;
     });
 
-    for (let sem = 1; sem <= 8; sem++) {
+    semesters.forEach(sem => {
         semFilter.innerHTML += `<option value="${escapeHtml(sem)}">${escapeHtml(sem)}</option>`;
-    }
+    });
 }
 
-function resetAndLoadStudents() {
-    currentPage = 0;
-    loadStudents();
+function applyClientFilters(resetPage = false) {
+    const search = document.getElementById("searchInput")?.value.trim().toLowerCase() || "";
+    const branch = document.getElementById("branchFilter")?.value.trim() || "";
+    const section = document.getElementById("sectionFilter")?.value.trim() || "";
+    const sem = document.getElementById("semFilter")?.value.trim() || "";
+
+    filteredStudentsCache = studentsCache.filter(student => {
+        const studentBranch = normalizeBranch(student.branch) || safeValue(student.branch);
+        const studentSection = normalizeSection(student.section || student.sec) || safeValue(student.section || student.sec);
+        const studentSem = normalizeSemester(student.sem) || safeValue(student.sem);
+
+        const searchable = [
+            student.name,
+            student.rollNo,
+            studentBranch,
+            studentSection,
+            studentSem,
+            student.studentPhoneNumber,
+            student.parentPhoneNumber,
+            student.email,
+            student.fatherName,
+            student.gender,
+            student.caste
+        ].join(" ").toLowerCase();
+
+        return (!search || searchable.includes(search)) &&
+            (!branch || studentBranch === branch) &&
+            (!section || studentSection === section) &&
+            (!sem || studentSem === sem);
+    });
+
+    if (resetPage) currentPage = 1;
+
+    renderPaginatedStudents();
 }
 
-function changePage(page) {
-    if (page < 0 || (totalPages > 0 && page >= totalPages)) {
+function renderPaginatedStudents() {
+    const totalPages = getTotalPages();
+
+    if (currentPage > totalPages) currentPage = totalPages || 1;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const pageStudents = filteredStudentsCache.slice(startIndex, endIndex);
+
+    renderStudents(pageStudents);
+    renderPagination();
+}
+
+function getTotalPages() {
+    return Math.ceil(filteredStudentsCache.length / pageSize);
+}
+
+function renderPagination() {
+    const paginationWrapper = document.getElementById("paginationWrapper");
+    const paginationInfo = document.getElementById("paginationInfo");
+    const pageNumbers = document.getElementById("pageNumbers");
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+
+    if (!paginationWrapper || !paginationInfo || !pageNumbers) return;
+
+    const totalStudents = filteredStudentsCache.length;
+    const totalPages = getTotalPages();
+
+    if (totalStudents === 0) {
+        paginationWrapper.style.display = "none";
         return;
     }
 
-    currentPage = page;
-    loadStudents();
+    paginationWrapper.style.display = "flex";
+
+    const start = (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalStudents);
+
+    paginationInfo.textContent = `Showing ${start}-${end} of ${totalStudents} students`;
+
+    if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
+    if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
+
+    pageNumbers.innerHTML = "";
+
+    const pagesToShow = getVisiblePages(currentPage, totalPages);
+
+    pagesToShow.forEach(page => {
+        if (page === "...") {
+            const dots = document.createElement("span");
+            dots.className = "page-dots";
+            dots.textContent = "...";
+            pageNumbers.appendChild(dots);
+            return;
+        }
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `page-number-btn ${page === currentPage ? "active" : ""}`;
+        btn.textContent = page;
+
+        btn.addEventListener("click", () => {
+            currentPage = page;
+            renderPaginatedStudents();
+        });
+
+        pageNumbers.appendChild(btn);
+    });
 }
 
-function updatePagination(result) {
-    const summary = document.getElementById("paginationSummary");
-    const indicator = document.getElementById("pageIndicator");
-    const prevBtn = document.getElementById("prevPageBtn");
-    const nextBtn = document.getElementById("nextPageBtn");
-    const total = Number(result.totalElements) || 0;
-    const page = Number(result.page) || 0;
-    const totalPageCount = Number(result.totalPages) || 0;
-    const start = total === 0 ? 0 : (page * pageSize) + 1;
-    const end = Math.min((page + 1) * pageSize, total);
+function getVisiblePages(current, total) {
+    if (total <= 5) {
+        return Array.from({ length: total }, (_, index) => index + 1);
+    }
 
-    summary.textContent = total === 0 ? "No students found" : `Showing ${start}-${end} of ${total} students`;
-    indicator.textContent = totalPageCount === 0 ? "Page 0 of 0" : `Page ${page + 1} of ${totalPageCount}`;
-    prevBtn.disabled = page <= 0;
-    nextBtn.disabled = totalPageCount === 0 || !!result.last;
+    if (current <= 3) {
+        return [1, 2, 3, 4, "...", total];
+    }
+
+    if (current >= total - 2) {
+        return [1, "...", total - 3, total - 2, total - 1, total];
+    }
+
+    return [1, "...", current - 1, current, current + 1, "...", total];
 }
 
 function renderStudents(students) {
     const container = document.getElementById("studentsContainer");
     const emptyState = document.getElementById("emptyState");
 
+    if (!container) return;
+
     container.innerHTML = "";
 
     if (!students || students.length === 0) {
-        emptyState.style.display = "block";
+        if (emptyState) emptyState.style.display = "block";
         return;
     }
 
-    emptyState.style.display = "none";
+    if (emptyState) emptyState.style.display = "none";
 
     students.forEach(student => {
         const displayName = safeValue(student.name) === "-" ? "Student" : safeValue(student.name);
@@ -179,59 +314,47 @@ function renderStudents(students) {
         const displayBranch = normalizeBranch(student.branch) || safeValue(student.branch);
         const displaySection = normalizeSection(student.section || student.sec) || safeValue(student.section || student.sec);
         const displaySem = normalizeSemester(student.sem) || safeValue(student.sem);
-        const displayPhone = safeValue(student.studentPhoneNumber);
-        const displayParentPhone = safeValue(student.parentPhoneNumber);
-        const displayEmail = safeValue(student.email);
-        const displayFatherName = safeValue(student.fatherName);
-        const displayGender = safeValue(student.gender);
-        const displayCaste = safeValue(student.caste);
 
         const initials = getInitials(displayName);
-        const imageUrl = getStudentImageUrl(displayRollNo);
+        const imageUrl = student.photoUrl || student.photo || getStudentImageUrl(displayRollNo);
 
         const card = document.createElement("div");
         card.className = "student-card";
 
         card.innerHTML = `
-    <div class="card-header">
-        <div class="initials-box" id="avatar-${student.id}">${escapeHtml(initials)}</div>
-        <img class="student-photo" id="photo-${student.id}" alt="${escapeHtml(displayName)}" loading="lazy" />
+            <div class="card-header">
+                <div class="initials-box">${escapeHtml(initials)}</div>
+                <img class="student-photo" alt="${escapeHtml(displayName)}" style="display:none;" />
 
-        <div class="student-info">
-            <h3>${escapeHtml(displayName)}</h3>
-            <p>${escapeHtml(displayRollNo)}</p>
-        </div>
-    </div>
+                <div class="student-info">
+                    <h3>${escapeHtml(displayName)}</h3>
+                    <p>${escapeHtml(displayRollNo)}</p>
+                </div>
+            </div>
 
-    <div class="stats-container">
-        <div class="stat-pill">
-            <small>Semester</small>
-            <strong>${escapeHtml(displaySem)}</strong>
-        </div>
+            <div class="stats-container">
+                <div class="stat-pill">
+                    <small>Semester</small>
+                    <strong>${escapeHtml(displaySem)}</strong>
+                </div>
+                <div class="stat-pill">
+                    <small>Section</small>
+                    <strong>${escapeHtml(displayBranch)}-${escapeHtml(displaySection)}</strong>
+                </div>
+            </div>
 
-        <div class="stat-pill">
-            <small>Section</small>
-            <strong>${escapeHtml(displayBranch)}-${escapeHtml(displaySection)}</strong>
-        </div>
-    </div>
-
-    <div class="btn-group">
-        <button type="button" class="btn btn-primary" data-view-student-id="${student.id}">
-            Details
-        </button>
-
-        <button type="button" class="btn btn-secondary" data-history-student-id="${student.id}">
-            History
-        </button>
-    </div>
-`;
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary details-btn">Details</button>
+                <button type="button" class="btn btn-secondary history-btn">History</button>
+            </div>
+        `;
 
         container.appendChild(card);
 
-        const photoEl = card.querySelector(`#photo-${student.id}`);
-        const avatarEl = card.querySelector(`#avatar-${student.id}`);
+        const photoEl = card.querySelector(".student-photo");
+        const avatarEl = card.querySelector(".initials-box");
 
-        if (imageUrl) {
+        if (imageUrl && photoEl && avatarEl) {
             photoEl.onload = () => {
                 photoEl.style.display = "block";
                 avatarEl.style.display = "none";
@@ -245,40 +368,24 @@ function renderStudents(students) {
             photoEl.src = imageUrl;
         }
 
-        card.querySelector("[data-view-student-id]").addEventListener("click", () => {
+        card.querySelector(".details-btn").addEventListener("click", () => {
             window.location.href = `student-details.html?id=${student.id}`;
         });
 
-        card.querySelector("[data-history-student-id]").addEventListener("click", () => {
-            window.location.href = `student-history.html?id=${student.id}&from=students`;
+        card.querySelector(".history-btn").addEventListener("click", () => {
+            window.location.href = `student-history.html?id=${student.id}`;
         });
     });
 }
 
-
-
-function getInitials(name) {
-    if (!name || name === "-") return "S";
-
-    return String(name)
-        .trim()
-        .split(/\s+/)
-        .map(word => word.charAt(0))
-        .join("")
-        .slice(0, 2)
-        .toUpperCase();
-}
-
 function normalizeBranch(value) {
     if (!value) return "";
-
     const branch = String(value).trim().toUpperCase();
     return VALID_BRANCHES.includes(branch) ? branch : "";
 }
 
 function normalizeSection(value) {
     if (!value) return "";
-
     const section = String(value).trim().toUpperCase();
 
     if (/^[A-Z]$/.test(section)) return section;
@@ -309,30 +416,42 @@ function getStudentImageUrl(rollNo) {
     return `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${cleanRollNo}/${cleanRollNo}.jpg`;
 }
 
+function getInitials(name) {
+    if (!name || name === "-") return "S";
+
+    return String(name)
+        .trim()
+        .split(/\s+/)
+        .map(word => word[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
+}
+
 function setPageStatus(message, type) {
     const status = document.getElementById("pageStatus");
+    if (!status) return;
+
     status.textContent = message;
     status.className = "page-status show " + type;
 }
 
 function clearPageStatus() {
     const status = document.getElementById("pageStatus");
+    if (!status) return;
+
     status.textContent = "";
     status.className = "page-status";
 }
 
 function showLoading() {
     const loadingLayer = document.getElementById("loadingLayer");
-    if (loadingLayer) {
-        loadingLayer.classList.remove("hidden");
-    }
+    if (loadingLayer) loadingLayer.classList.remove("hidden");
 }
 
 function hideLoading() {
     const loadingLayer = document.getElementById("loadingLayer");
-    if (loadingLayer) {
-        loadingLayer.classList.add("hidden");
-    }
+    if (loadingLayer) loadingLayer.classList.add("hidden");
 }
 
 function escapeHtml(value) {
@@ -342,13 +461,4 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-}
-
-function debounce(fn, delay) {
-    let timeoutId = null;
-
-    return function () {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn.apply(this, arguments), delay);
-    };
 }

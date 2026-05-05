@@ -38,7 +38,16 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             s.sem,
             s.studentPhoneNumber,
             s.email,
-            s.photoUrl
+            CASE
+                WHEN s.rollNo IS NULL OR TRIM(s.rollNo) = '' THEN ''
+                ELSE CONCAT(
+                    'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/',
+                    UPPER(REPLACE(TRIM(s.rollNo), ' ', '')),
+                    '/',
+                    UPPER(REPLACE(TRIM(s.rollNo), ' ', '')),
+                    '.jpg'
+                )
+            END
         )
         FROM Student s
         WHERE (:search = '' OR
@@ -77,7 +86,16 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             s.sem,
             s.studentPhoneNumber,
             s.email,
-            s.photoUrl
+            CASE
+                WHEN s.rollNo IS NULL OR TRIM(s.rollNo) = '' THEN ''
+                ELSE CONCAT(
+                    'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/',
+                    UPPER(REPLACE(TRIM(s.rollNo), ' ', '')),
+                    '/',
+                    UPPER(REPLACE(TRIM(s.rollNo), ' ', '')),
+                    '.jpg'
+                )
+            END
         )
         FROM Student s
         WHERE EXISTS (

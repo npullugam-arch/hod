@@ -91,7 +91,16 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
             s.fatherName,
             s.admissionType,
             s.caste,
-            s.photoUrl
+            CASE
+                WHEN s.rollNo IS NULL OR TRIM(s.rollNo) = '' THEN ''
+                ELSE CONCAT(
+                    'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/',
+                    UPPER(REPLACE(TRIM(s.rollNo), ' ', '')),
+                    '/',
+                    UPPER(REPLACE(TRIM(s.rollNo), ' ', '')),
+                    '.jpg'
+                )
+            END
         )
         FROM Request r
         JOIN r.student s
@@ -129,7 +138,16 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
             s.fatherName,
             s.admissionType,
             s.caste,
-            s.photoUrl
+            CASE
+                WHEN s.rollNo IS NULL OR TRIM(s.rollNo) = '' THEN ''
+                ELSE CONCAT(
+                    'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/',
+                    UPPER(REPLACE(TRIM(s.rollNo), ' ', '')),
+                    '/',
+                    UPPER(REPLACE(TRIM(s.rollNo), ' ', '')),
+                    '.jpg'
+                )
+            END
         )
         FROM Request r
         JOIN r.student s
