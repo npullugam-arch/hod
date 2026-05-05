@@ -120,7 +120,10 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
             r.requestDate,
             r.certificateDueDate,
             c.id,
-            c.filePath,
+            CASE
+                WHEN c.id IS NULL THEN ''
+                ELSE CONCAT('/certificate/view/', c.id)
+            END,
             c.status,
             c.rejectionRemark,
             s.id,
