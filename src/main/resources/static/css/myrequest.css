@@ -1344,3 +1344,177 @@ a:hover {
             0 256px;
     }
 }
+
+/* ==================================================
+   My Requests - Row Wise Skeleton Loading
+   Add this at bottom of myrequest.css
+================================================== */
+
+#requestTable .empty-row {
+    position: relative;
+    height: 430px;
+    padding: 0 !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+#requestTable .empty-row::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.75) 50%, transparent 100%) -220px 0 / 220px 100% no-repeat,
+
+        /* row 1 */
+        linear-gradient(#eef2f7, #eef2f7) 18px 28px / 110px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 250px 28px / 85px 16px no-repeat,
+        linear-gradient(#dcfce7, #dcfce7) 440px 22px / 105px 30px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 650px 28px / 80px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 815px 28px / 80px 16px no-repeat,
+        linear-gradient(#e0e7ff, #e0e7ff) 1035px 22px / 95px 28px no-repeat,
+        linear-gradient(#fee2e2, #fee2e2) 1225px 18px / 95px 38px no-repeat,
+
+        /* row 2 */
+        linear-gradient(#eef2f7, #eef2f7) 18px 92px / 135px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 250px 92px / 85px 16px no-repeat,
+        linear-gradient(#fef3c7, #fef3c7) 440px 86px / 105px 30px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 650px 92px / 80px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 815px 92px / 35px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 1035px 92px / 100px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 1225px 92px / 145px 16px no-repeat,
+
+        /* row 3 */
+        linear-gradient(#eef2f7, #eef2f7) 18px 156px / 125px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 250px 156px / 85px 16px no-repeat,
+        linear-gradient(#fef3c7, #fef3c7) 440px 150px / 105px 30px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 650px 156px / 80px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 815px 156px / 35px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 1035px 156px / 100px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 1225px 156px / 145px 16px no-repeat,
+
+        /* row 4 */
+        linear-gradient(#eef2f7, #eef2f7) 18px 220px / 145px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 250px 220px / 85px 16px no-repeat,
+        linear-gradient(#fef3c7, #fef3c7) 440px 214px / 105px 30px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 650px 220px / 80px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 815px 220px / 35px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 1035px 220px / 100px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 1225px 220px / 145px 16px no-repeat,
+
+        /* row 5 */
+        linear-gradient(#eef2f7, #eef2f7) 18px 284px / 120px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 250px 284px / 85px 16px no-repeat,
+        linear-gradient(#dcfce7, #dcfce7) 440px 278px / 105px 30px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 650px 284px / 80px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 815px 284px / 80px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 1035px 284px / 100px 16px no-repeat,
+        linear-gradient(#fee2e2, #fee2e2) 1225px 274px / 95px 38px no-repeat,
+
+        /* row 6 */
+        linear-gradient(#eef2f7, #eef2f7) 18px 348px / 130px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 250px 348px / 85px 16px no-repeat,
+        linear-gradient(#fef3c7, #fef3c7) 440px 342px / 105px 30px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 650px 348px / 80px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 815px 348px / 35px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 1035px 348px / 100px 16px no-repeat,
+        linear-gradient(#eef2f7, #eef2f7) 1225px 348px / 145px 16px no-repeat;
+
+    animation: requestSkeletonShimmer 1.25s ease-in-out infinite;
+}
+
+#requestTable .empty-row::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(#f1f5f9, #f1f5f9) 0 64px / 100% 1px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 0 128px / 100% 1px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 0 192px / 100% 1px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 0 256px / 100% 1px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 0 320px / 100% 1px no-repeat,
+        linear-gradient(#f1f5f9, #f1f5f9) 0 384px / 100% 1px no-repeat;
+    pointer-events: none;
+}
+
+@keyframes requestSkeletonShimmer {
+    0% {
+        background-position:
+            -260px 0,
+            18px 28px, 250px 28px, 440px 22px, 650px 28px, 815px 28px, 1035px 22px, 1225px 18px,
+            18px 92px, 250px 92px, 440px 86px, 650px 92px, 815px 92px, 1035px 92px, 1225px 92px,
+            18px 156px, 250px 156px, 440px 150px, 650px 156px, 815px 156px, 1035px 156px, 1225px 156px,
+            18px 220px, 250px 220px, 440px 214px, 650px 220px, 815px 220px, 1035px 220px, 1225px 220px,
+            18px 284px, 250px 284px, 440px 278px, 650px 284px, 815px 284px, 1035px 284px, 1225px 274px,
+            18px 348px, 250px 348px, 440px 342px, 650px 348px, 815px 348px, 1035px 348px, 1225px 348px;
+    }
+
+    100% {
+        background-position:
+            calc(100% + 260px) 0,
+            18px 28px, 250px 28px, 440px 22px, 650px 28px, 815px 28px, 1035px 22px, 1225px 18px,
+            18px 92px, 250px 92px, 440px 86px, 650px 92px, 815px 92px, 1035px 92px, 1225px 92px,
+            18px 156px, 250px 156px, 440px 150px, 650px 156px, 815px 156px, 1035px 156px, 1225px 156px,
+            18px 220px, 250px 220px, 440px 214px, 650px 220px, 815px 220px, 1035px 220px, 1225px 220px,
+            18px 284px, 250px 284px, 440px 278px, 650px 284px, 815px 284px, 1035px 284px, 1225px 274px,
+            18px 348px, 250px 348px, 440px 342px, 650px 348px, 815px 348px, 1035px 348px, 1225px 348px;
+    }
+}
+
+/* Mobile skeleton */
+@media (max-width: 768px) {
+    #requestTable .empty-row {
+        height: 520px;
+    }
+
+    #requestTable .empty-row::before {
+        background:
+            linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%) -220px 0 / 220px 100% no-repeat,
+
+            linear-gradient(#eef2f7, #eef2f7) 18px 26px / 55% 17px no-repeat,
+            linear-gradient(#dcfce7, #dcfce7) 18px 58px / 32% 28px no-repeat,
+            linear-gradient(#eef2f7, #eef2f7) 18px 102px / 76% 14px no-repeat,
+
+            linear-gradient(#eef2f7, #eef2f7) 18px 154px / 62% 17px no-repeat,
+            linear-gradient(#fef3c7, #fef3c7) 18px 186px / 34% 28px no-repeat,
+            linear-gradient(#eef2f7, #eef2f7) 18px 230px / 80% 14px no-repeat,
+
+            linear-gradient(#eef2f7, #eef2f7) 18px 282px / 58% 17px no-repeat,
+            linear-gradient(#fef3c7, #fef3c7) 18px 314px / 34% 28px no-repeat,
+            linear-gradient(#eef2f7, #eef2f7) 18px 358px / 75% 14px no-repeat,
+
+            linear-gradient(#eef2f7, #eef2f7) 18px 410px / 60% 17px no-repeat,
+            linear-gradient(#fef3c7, #fef3c7) 18px 442px / 34% 28px no-repeat,
+            linear-gradient(#eef2f7, #eef2f7) 18px 486px / 72% 14px no-repeat;
+
+        animation: requestSkeletonMobileShimmer 1.25s ease-in-out infinite;
+    }
+
+    #requestTable .empty-row::after {
+        background:
+            linear-gradient(#f1f5f9, #f1f5f9) 0 128px / 100% 1px no-repeat,
+            linear-gradient(#f1f5f9, #f1f5f9) 0 256px / 100% 1px no-repeat,
+            linear-gradient(#f1f5f9, #f1f5f9) 0 384px / 100% 1px no-repeat;
+    }
+}
+
+@keyframes requestSkeletonMobileShimmer {
+    0% {
+        background-position:
+            -260px 0,
+            18px 26px, 18px 58px, 18px 102px,
+            18px 154px, 18px 186px, 18px 230px,
+            18px 282px, 18px 314px, 18px 358px,
+            18px 410px, 18px 442px, 18px 486px;
+    }
+
+    100% {
+        background-position:
+            calc(100% + 260px) 0,
+            18px 26px, 18px 58px, 18px 102px,
+            18px 154px, 18px 186px, 18px 230px,
+            18px 282px, 18px 314px, 18px 358px,
+            18px 410px, 18px 442px, 18px 486px;
+    }
+}

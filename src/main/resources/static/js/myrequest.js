@@ -18,12 +18,14 @@ async function loadRequests() {
 
         const data = await res.json();
         const table = document.getElementById("requestTable");
-        table.innerHTML = "";
+
+        // Keep skeleton until final rows are ready
+        let rowsHtml = "";
 
         if (!Array.isArray(data) || data.length === 0) {
             table.innerHTML = `
                 <tr>
-                    <td colspan="7" class="empty-row">No requests found.</td>
+                    <td colspan="7" class="no-data-row">No requests found.</td>
                 </tr>
             `;
             return;
@@ -37,7 +39,7 @@ async function loadRequests() {
             const certificateStatus = getCertificateStatusHtml(req);
             const documentAction = getDocumentActionHtml(req);
 
-            table.innerHTML += `
+            rowsHtml += `
                 <tr>
                     <td data-label="Event / Reason">${escapeHtml(req.reason || "-")}</td>
                     <td data-label="HOD">${hodName}</td>
@@ -49,11 +51,15 @@ async function loadRequests() {
                 </tr>
             `;
         });
+
+        // Replace skeleton only after all rows are ready
+        table.innerHTML = rowsHtml;
+
     } catch (err) {
         console.error(err);
         document.getElementById("requestTable").innerHTML = `
             <tr>
-                <td colspan="7" class="empty-row">Unable to load requests.</td>
+                <td colspan="7" class="no-data-row">Unable to load requests.</td>
             </tr>
         `;
     }
