@@ -54,6 +54,8 @@ function bindSidebarEvents() {
     if (sidebarOverlay) {
         sidebarOverlay.addEventListener("click", closeMobileSidebar);
     }
+
+    window.closeMobileSidebar = closeMobileSidebar;
 }
 
 function updatePasswordMenuVisibility() {
@@ -186,6 +188,10 @@ function showDashboard(event) {
     loadDashboardCertificateUploads();
     loadUnreadReminderCount();
     updatePasswordMenuVisibility();
+
+    if (window.innerWidth <= 900 && typeof window.closeMobileSidebar === "function") {
+        window.closeMobileSidebar();
+    }
 
     window.scrollTo({ top: 0, behavior: "auto" });
 }
@@ -335,6 +341,10 @@ function loadPage(event, pageUrl, title) {
         frame.setAttribute("scrolling", "no");
 
         frame.src = resolvedPageUrl.pathname + "?t=" + new Date().getTime();
+    }
+
+    if (window.innerWidth <= 900 && typeof window.closeMobileSidebar === "function") {
+        window.closeMobileSidebar();
     }
 }
 
