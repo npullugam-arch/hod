@@ -50,9 +50,7 @@ function loadPendingRequests() {
 
     fetch(url)
         .then(res => {
-            if (!res.ok) {
-                throw new Error("Failed to load requests");
-            }
+            if (!res.ok) throw new Error("Failed to load requests");
             return res.json();
         })
         .then(data => {
@@ -67,6 +65,7 @@ function loadPendingRequests() {
 
             renderPendingTable();
             updatePendingPagination();
+            updatePendingTotalCount(totalElements);
         })
         .catch(err => {
             console.error(err);
@@ -75,6 +74,7 @@ function loadPendingRequests() {
             totalElements = 0;
             renderPendingErrorState();
             updatePendingPagination();
+            updatePendingTotalCount(0);
         })
         .finally(() => {
             isPendingLoading = false;
@@ -85,9 +85,8 @@ function renderPendingLoadingState() {
     const table = document.getElementById("pendingTable");
     const status = document.getElementById("pendingStatus");
 
-    if (status) {
-        status.textContent = "Loading pending requests...";
-    }
+    if (status) status.textContent = "Loading pending requests...";
+    updatePendingTotalCount(totalElements);
 
     if (table) {
         table.innerHTML = `
@@ -102,9 +101,7 @@ function renderPendingErrorState() {
     const table = document.getElementById("pendingTable");
     const status = document.getElementById("pendingStatus");
 
-    if (status) {
-        status.textContent = "Unable to load pending requests.";
-    }
+    if (status) status.textContent = "Unable to load pending requests.";
 
     if (table) {
         table.innerHTML = `
@@ -120,7 +117,6 @@ function renderPendingTable() {
     const status = document.getElementById("pendingStatus");
 
     if (!table) return;
-
     table.innerHTML = "";
 
     if (currentPendingRequests.length === 0) {
@@ -146,6 +142,7 @@ function renderPendingTable() {
 
     currentPendingRequests.forEach((req, index) => {
         const studentData = buildPendingStudentData(req);
+
         const studentPhotoHtml = studentData.photo
             ? `<img src="${escapeAttribute(studentData.photo)}" alt="${escapeAttribute(studentData.name)}" class="student-photo" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
                <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentData.initial)}</div>`
@@ -173,7 +170,6 @@ function renderPendingTable() {
                     <button
                         class="description-btn"
                         onclick="openDescriptionModal('${escapeJsString(studentData.name)}', '${escapeJsString(studentData.rollNo)}', '${escapeJsString(req.description || "No description provided.")}')"
-                        title="View Description"
                     >
                         View
                     </button>
@@ -193,23 +189,22 @@ function renderPendingTable() {
     });
 }
 
+function updatePendingTotalCount(count) {
+    const totalCountEl = document.getElementById("pendingTotalCount");
+    if (totalCountEl) totalCountEl.textContent = Number(count) || 0;
+}
+
 function updatePendingPagination() {
     const prevBtn = document.getElementById("pendingPrevBtn");
     const nextBtn = document.getElementById("pendingNextBtn");
     const pageInfo = document.getElementById("pendingPageInfo");
 
-    if (prevBtn) {
-        prevBtn.disabled = isPendingLoading || currentPage <= 0;
-    }
-
-    if (nextBtn) {
-        nextBtn.disabled = isPendingLoading || totalPages === 0 || currentPage >= totalPages - 1;
-    }
+    if (prevBtn) prevBtn.disabled = isPendingLoading || currentPage <= 0;
+    if (nextBtn) nextBtn.disabled = isPendingLoading || totalPages === 0 || currentPage >= totalPages - 1;
 
     if (pageInfo) {
         const displayPage = totalPages === 0 ? 0 : currentPage + 1;
-        const safeTotalPages = totalPages === 0 ? 0 : totalPages;
-        pageInfo.textContent = `Page ${displayPage} of ${safeTotalPages}`;
+        pageInfo.textContent = `Page ${displayPage} of ${totalPages}`;
     }
 }
 

@@ -4,20 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pending Requests</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/pending-request.css" />
 </head>
 <body>
-    <div class="page-wrap">
-        <section class="content-card">
-            <div class="card-header">
-                <div>
-                    <h2>Pending Requests</h2>
-                    <p>Review and approve or reject student requests.</p>
-                </div>
+    <main class="pending-page">
+        <section class="hero-card">
+            <div class="hero-content">
+                <span class="eyebrow">HOD Review Desk</span>
+                <h1>Pending Requests</h1>
+                <p>Review student permission requests, verify details, approve valid requests, or reject with a clear remark.</p>
             </div>
 
-            <div class="table-toolbar">
-                <div id="pendingStatus" class="table-status">Loading pending requests...</div>
+            <div class="hero-stat">
+                <span id="pendingTotalCount" class="hero-number">0</span>
+                <span class="hero-label">Pending</span>
+            </div>
+        </section>
+
+        <section class="request-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Requests Waiting for Action</h2>
+                    <p id="pendingStatus">Loading pending requests...</p>
+                </div>
+
                 <div class="pagination-controls">
                     <button id="pendingPrevBtn" type="button" class="page-btn">Previous</button>
                     <span id="pendingPageInfo" class="page-info">Page 1 of 1</span>
@@ -25,8 +38,8 @@
                 </div>
             </div>
 
-            <div class="table-wrap">
-                <table>
+            <div class="table-card">
+                <table class="pending-table">
                     <thead>
                         <tr>
                             <th>Student</th>
@@ -42,13 +55,16 @@
                 </table>
             </div>
         </section>
-    </div>
+    </main>
 
     <div id="descriptionModal" class="modal-overlay hidden">
         <div class="modal-box">
             <div class="modal-header">
-                <h3>Student Description</h3>
-                <button class="modal-close" onclick="closeDescriptionModal()">&times;</button>
+                <div>
+                    <span class="modal-kicker">Request Note</span>
+                    <h3>Student Description</h3>
+                </div>
+                <button class="modal-close" type="button" onclick="closeDescriptionModal()">&times;</button>
             </div>
 
             <div class="modal-body">
@@ -57,9 +73,7 @@
                     <div id="modalStudentRollNo" class="modal-student-roll">-</div>
                 </div>
 
-                <div id="modalDescriptionText" class="description-content">
-                    No description provided.
-                </div>
+                <div id="modalDescriptionText" class="description-content">No description provided.</div>
             </div>
         </div>
     </div>
@@ -67,8 +81,11 @@
     <div id="studentDetailsModal" class="modal-overlay hidden">
         <div class="modal-box student-modal-box">
             <div class="modal-header">
-                <h3>Student Details</h3>
-                <button class="modal-close" onclick="closeStudentDetailsModal()">&times;</button>
+                <div>
+                    <span class="modal-kicker">Student Profile</span>
+                    <h3>Student Details</h3>
+                </div>
+                <button class="modal-close" type="button" onclick="closeStudentDetailsModal()">&times;</button>
             </div>
 
             <div class="modal-body">
