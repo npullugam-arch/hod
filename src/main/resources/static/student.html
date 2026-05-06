@@ -93,6 +93,21 @@
         <div class="mobile-top-bar">
             <button class="mobile-hamburger" id="mobileMenuBtn" type="button">☰</button>
             <img src="https://i.postimg.cc/vB9nm9tV/sanchara-logo-clean.png" style="width: 130px;">
+            <div class="mobile-top-actions">
+            <button class="bell-btn mobile-icon-btn" type="button" onclick="loadPage(event, 'reminders.html', 'Reminders')" title="Reminders">
+                <i class="fa-solid fa-bell"></i>
+                <span id="mobileReminderBadge" class="reminder-badge">0</span>
+            </button>
+
+            <button class="mobile-profile-btn" type="button" onclick="loadProfilePage(event)" title="Profile">
+                <div class="user-avatar mobile-avatar" id="mobileUserInitial">S</div>
+                <img
+                    id="mobileStudentProfileImage"
+                    alt="Student Profile"
+                    style="display: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;"
+                />
+            </button>
+            </div>
         </div>
 
         <header class="top-header">

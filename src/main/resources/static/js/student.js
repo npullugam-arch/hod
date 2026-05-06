@@ -108,9 +108,11 @@ async function setStudentInfo() {
 
 function setStudentHeaderProfileImage(rollNo, initial) {
     const imageEl = document.getElementById("studentProfileImage");
+    const mobileImageEl = document.getElementById("mobileStudentProfileImage");
     const avatarEl = document.getElementById("userInitial");
+    const mobileAvatarEl = document.getElementById("mobileUserInitial");
 
-    if (!imageEl || !avatarEl) return;
+    if (!imageEl || !avatarEl || !mobileImageEl || !mobileAvatarEl) return;
 
     if (!rollNo || rollNo === "-") {
         showStudentHeaderAvatar(initial);
@@ -125,23 +127,40 @@ function setStudentHeaderProfileImage(rollNo, initial) {
         avatarEl.style.display = "none";
     };
 
+    mobileImageEl.onload = function () {
+        mobileImageEl.style.display = "block";
+        mobileAvatarEl.style.display = "none";
+    };
+
     imageEl.onerror = function () {
         showStudentHeaderAvatar(initial);
     };
 
+    mobileImageEl.onerror = function () {
+        showStudentHeaderAvatar(initial);
+    };
+
     imageEl.src = imageUrl;
+    mobileImageEl.src = imageUrl;
 }
 
 function showStudentHeaderAvatar(initial) {
     const imageEl = document.getElementById("studentProfileImage");
+    const mobileImageEl = document.getElementById("mobileStudentProfileImage");
     const avatarEl = document.getElementById("userInitial");
+    const mobileAvatarEl = document.getElementById("mobileUserInitial");
 
-    if (!imageEl || !avatarEl) return;
+    if (!imageEl || !avatarEl || !mobileImageEl || !mobileAvatarEl) return;
 
     avatarEl.textContent = initial || "S";
     avatarEl.style.display = "flex";
     imageEl.style.display = "none";
     imageEl.removeAttribute("src");
+
+    mobileAvatarEl.textContent = initial || "S";
+    mobileAvatarEl.style.display = "flex";
+    mobileImageEl.style.display = "none";
+    mobileImageEl.removeAttribute("src");
 }
 
 function setActiveNav(clickedLink) {
@@ -492,6 +511,7 @@ function loadUnreadReminderCount() {
         })
         .then(data => {
             const badge = document.getElementById("reminderBadge");
+            const mobileBadge = document.getElementById("mobileReminderBadge");
             if (!badge) return;
 
             const unreadCount = Array.isArray(data) ? data.length : 0;
@@ -499,17 +519,30 @@ function loadUnreadReminderCount() {
             if (unreadCount > 0) {
                 badge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
                 badge.style.display = "inline-block";
+                if (mobileBadge) {
+                    mobileBadge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
+                    mobileBadge.style.display = "inline-block";
+                }
             } else {
                 badge.textContent = "0";
                 badge.style.display = "none";
+                if (mobileBadge) {
+                    mobileBadge.textContent = "0";
+                    mobileBadge.style.display = "none";
+                }
             }
         })
         .catch(error => {
             console.error(error);
             const badge = document.getElementById("reminderBadge");
+            const mobileBadge = document.getElementById("mobileReminderBadge");
             if (badge) {
                 badge.textContent = "0";
                 badge.style.display = "none";
+            }
+            if (mobileBadge) {
+                mobileBadge.textContent = "0";
+                mobileBadge.style.display = "none";
             }
         });
 }

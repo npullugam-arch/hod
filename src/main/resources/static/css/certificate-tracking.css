@@ -741,6 +741,13 @@ body {
 }
 
 @media (max-width: 900px) {
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
     .filter-bar {
         flex-direction: column;
         align-items: stretch;
@@ -749,10 +756,12 @@ body {
 
     .filter-options {
         flex-direction: column;
+        width: 100%;
     }
 
     .filter-select {
         width: 100%;
+        max-width: 100%;
     }
 
     .requests-table,
@@ -801,6 +810,7 @@ body {
     .timeline-tracker {
         width: 100%;
         max-width: 320px;
+        min-width: 0;
     }
 
     .table-footer {
@@ -814,6 +824,35 @@ body {
 
     .student-details-grid {
         grid-template-columns: 1fr;
+    }
+
+    .standalone-wrapper,
+    .filter-bar,
+    .table-card,
+    .search-box,
+    .student-profile,
+    .student-info,
+    .action-group,
+    .table-footer,
+    .pagination-controls {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .search-box {
+        min-width: 0;
+    }
+
+    .student-profile,
+    .action-group {
+        flex-wrap: wrap;
+    }
+
+    .student-info .name,
+    .student-info .roll,
+    .detail-card b {
+        word-break: break-word;
     }
 }
 

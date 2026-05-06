@@ -363,6 +363,13 @@ tbody tr.main-row:hover {
 }
 
 @media (max-width: 768px) {
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden !important;
+    }
+
     body {
         padding: 12px;
     }
@@ -372,8 +379,37 @@ tbody tr.main-row:hover {
         align-items: stretch;
     }
 
+    .page-shell,
+    .glass-panel,
+    .filter-bar,
+    .table-card,
+    .student-cell,
+    .description-wrap,
+    .modal-content,
+    .modal-inner {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
     .filter-bar input {
         max-width: none;
+    }
+
+    .table-card {
+        overflow-x: auto;
+    }
+
+    .student-cell {
+        flex-wrap: wrap;
+    }
+
+    .student-name,
+    .student-roll,
+    .reason-text,
+    .description-wrap,
+    .desc-text {
+        word-break: break-word;
     }
 
     .modal-grid {

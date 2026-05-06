@@ -79,6 +79,7 @@ function setHodInfo() {
     const hodNameEl = document.getElementById("hodName");
     const hodEmployeeIdEl = document.getElementById("hodEmployeeId");
     const hodHeaderPhotoEl = document.getElementById("hodHeaderPhoto");
+    const mobileHodHeaderPhotoEl = document.getElementById("mobileHodHeaderPhoto");
     const userProfileCard = document.querySelector(".user-profile-card");
     const updatePasswordNav = document.getElementById("updatePasswordNav");
 
@@ -94,19 +95,36 @@ function setHodInfo() {
         };
     }
 
+    if (mobileHodHeaderPhotoEl) {
+        mobileHodHeaderPhotoEl.loading = "lazy";
+        mobileHodHeaderPhotoEl.src = photoUrl;
+        mobileHodHeaderPhotoEl.onerror = function () {
+            this.onerror = null;
+            this.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(hodName) + "&background=2563eb&color=fff";
+        };
+    }
+
     if (updatePasswordNav && user.passwordChanged === true) {
         updatePasswordNav.style.display = "none";
     }
 
     if (userProfileCard) {
         userProfileCard.onclick = function () {
-            loadPage(
-                { preventDefault: () => {}, currentTarget: document.querySelector('.nav-link[onclick*="hod-profile.html"]') },
-                "hod-profile.html",
-                "HOD Profile"
-            );
+            loadHodProfilePage();
         };
     }
+}
+
+function loadHodProfilePage(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
+    loadPage(
+        { preventDefault: () => {}, currentTarget: document.querySelector('.nav-link[onclick*="hod-profile.html"]') },
+        "hod-profile.html",
+        "HOD Profile"
+    );
 }
 
 function setActiveNav(clickedItem) {

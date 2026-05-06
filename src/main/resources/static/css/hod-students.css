@@ -362,17 +362,23 @@ body {
     }
 
     .students-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
         gap: 10px;
+        width: 100%;
     }
 
     .student-card {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
         padding: 15px;
         border-radius: 20px;
+        overflow: hidden;
     }
 
     .card-header {
         gap: 10px;
+        align-items: flex-start;
     }
 
     .initials-box,
@@ -384,6 +390,25 @@ body {
 
     .student-info h3 {
         font-size: 13px;
+        word-break: break-word;
+    }
+
+    .student-info,
+    .stats-container,
+    .btn-group,
+    .btn {
+        min-width: 0;
+    }
+
+    .stats-container,
+    .btn-group {
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        flex: 1 1 100%;
+        white-space: normal;
+        text-align: center;
     }
 
     .btn {
@@ -500,6 +525,29 @@ body {
 }
 
 @media (max-width: 768px) {
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    .toolbar,
+    .students-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .full-wrapper,
+    .toolbar,
+    .students-grid,
+    .student-card,
+    .pagination-wrapper,
+    .pagination-actions {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
     .pagination-wrapper {
         justify-content: center;
         text-align: center;

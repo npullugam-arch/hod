@@ -88,6 +88,9 @@ async function getStudentIdForRequests() {
 async function downloadRequestPdf(requestId, event) {
     if (event) event.preventDefault();
 
+    const downloadButton = event?.currentTarget || null;
+    setDownloadButtonState(downloadButton, true);
+
     try {
         const studentId = await getStudentIdForRequests();
         const res = await fetch(`/request/student/${studentId}`);
@@ -108,14 +111,35 @@ async function downloadRequestPdf(requestId, event) {
         }
 
         if (isGatePassReason(req.reason)) {
-            generateGatePassPdf(req);
+            await generateGatePassPdf(req);
         } else {
-            generatePermissionLetterPdf(req);
+            await generatePermissionLetterPdf(req);
         }
     } catch (err) {
         console.error(err);
         alert("Unable to generate PDF.");
+    } finally {
+        setDownloadButtonState(downloadButton, false);
     }
+}
+
+function setDownloadButtonState(button, isDownloading) {
+    if (!button) return;
+
+    if (isDownloading) {
+        button.disabled = true;
+        button.innerHTML = `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Downloading...
+        `;
+        return;
+    }
+
+    button.disabled = false;
+    button.innerHTML = `
+        <i class="fa-solid fa-file-pdf"></i>
+        Download
+    `;
 }
 
 function isGatePassReason(reason) {
@@ -224,10 +248,12 @@ function getDocumentActionHtml(req) {
 
 
 function generatePermissionLetterPdf(req) {
+    return new Promise((resolve, reject) => {
     const jspdfLib = window.jspdf;
 
     if (!jspdfLib || !jspdfLib.jsPDF) {
         alert("PDF library not loaded.");
+        reject(new Error("PDF library not loaded."));
         return;
     }
 
@@ -412,6 +438,7 @@ function generatePermissionLetterPdf(req) {
         const fileName = `Permission_Letter_${safeRollNo}_${req.id}.pdf`;
 
         doc.save(fileName);
+        resolve();
     };
 
     logoImg.onload = () => finalizePdf(true);
@@ -422,13 +449,16 @@ function generatePermissionLetterPdf(req) {
     };
 
     logoImg.src = logoUrl;
+    });
 }
 
 function generateGatePassPdf(req) {
+    return new Promise((resolve, reject) => {
     const jspdfLib = window.jspdf;
 
     if (!jspdfLib || !jspdfLib.jsPDF) {
         alert("PDF library not loaded.");
+        reject(new Error("PDF library not loaded."));
         return;
     }
 
@@ -554,6 +584,7 @@ function generateGatePassPdf(req) {
         const fileName = `Gate_Pass_${safeRollNo}_${req.id}.pdf`;
 
         doc.save(fileName);
+        resolve();
     };
 
     logoImg.onload = () => finalizePdf(true);
@@ -564,6 +595,7 @@ function generateGatePassPdf(req) {
     };
 
     logoImg.src = logoUrl;
+    });
 }
 
 function getStudentName(req) {

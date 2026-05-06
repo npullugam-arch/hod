@@ -995,3 +995,21 @@ html {
         scroll-behavior: auto !important;
     }
 }
+
+/* iframe height cleanup */
+html,
+body {
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+body {
+    padding-bottom: 12px !important;
+}
+
+.history-card:last-child,
+.chart-card:last-child,
+.profile-card:last-child,
+.stats:last-child {
+    margin-bottom: 0 !important;
+}

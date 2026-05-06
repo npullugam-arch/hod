@@ -227,10 +227,10 @@ function buildRequestMainRow(req) {
                 </div>
             </td>
 
-            <td>${getStatusBadge(req.status)}</td>
-
             <td>${formatDate(req.startDate)}</td>
             <td>${formatDate(req.endDate)}</td>
+
+            <td>${getStatusBadge(req.status)}</td>
         </tr>
     `;
 }

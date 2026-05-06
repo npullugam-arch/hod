@@ -2,44 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes" />
     <title>Pending Requests</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="css/pending-request.css" />
+
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
+
 <body>
-    <main class="pending-page">
-        <section class="hero-card">
-            <div class="hero-content">
-                <span class="eyebrow">HOD Review Desk</span>
-                <h1>Pending Requests</h1>
-                <p>Review student permission requests, verify details, approve valid requests, or reject with a clear remark.</p>
-            </div>
-
-            <div class="hero-stat">
-                <span id="pendingTotalCount" class="hero-number">0</span>
-                <span class="hero-label">Pending</span>
-            </div>
-        </section>
-
-        <section class="request-panel">
-            <div class="panel-header">
-                <div>
-                    <h2>Requests Waiting for Action</h2>
-                    <p id="pendingStatus">Loading pending requests...</p>
-                </div>
+    <div class="page">
+        <div class="table-card">
+            <div class="table-toolbar">
+                <div id="pendingStatus" class="table-status">Loading pending requests...</div>
 
                 <div class="pagination-controls">
-                    <button id="pendingPrevBtn" type="button" class="page-btn">Previous</button>
+                    <button id="pendingPrevBtn" type="button" class="page-btn">
+                        <i class="fa-solid fa-chevron-left"></i>
+                        Previous
+                    </button>
+
                     <span id="pendingPageInfo" class="page-info">Page 1 of 1</span>
-                    <button id="pendingNextBtn" type="button" class="page-btn">Next</button>
+
+                    <button id="pendingNextBtn" type="button" class="page-btn">
+                        Next
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
                 </div>
             </div>
 
-            <div class="table-card">
-                <table class="pending-table">
+            <div class="table-wrap">
+                <table>
                     <thead>
                         <tr>
                             <th>Student</th>
@@ -51,66 +48,105 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
+
                     <tbody id="pendingTable"></tbody>
                 </table>
-            </div>
-        </section>
-    </main>
-
-    <div id="descriptionModal" class="modal-overlay hidden">
-        <div class="modal-box">
-            <div class="modal-header">
-                <div>
-                    <span class="modal-kicker">Request Note</span>
-                    <h3>Student Description</h3>
-                </div>
-                <button class="modal-close" type="button" onclick="closeDescriptionModal()">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <div class="modal-student-info">
-                    <div id="modalStudentName" class="modal-student-name">-</div>
-                    <div id="modalStudentRollNo" class="modal-student-roll">-</div>
-                </div>
-
-                <div id="modalDescriptionText" class="description-content">No description provided.</div>
             </div>
         </div>
     </div>
 
-    <div id="studentDetailsModal" class="modal-overlay hidden">
-        <div class="modal-box student-modal-box">
+    <!-- Student Details Modal -->
+    <div class="overlay" id="studentOverlay">
+        <div class="modal">
             <div class="modal-header">
-                <div>
-                    <span class="modal-kicker">Student Profile</span>
-                    <h3>Student Details</h3>
-                </div>
-                <button class="modal-close" type="button" onclick="closeStudentDetailsModal()">&times;</button>
+                <div class="modal-title">Student Details</div>
+                <button class="close-btn" onclick="closeOverlayWithAnimation('studentOverlay')" type="button">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
 
-            <div class="modal-body">
-                <div class="student-profile-top">
-                    <img id="studentDetailsPhoto" class="student-details-photo" src="" alt="Student Photo" />
-                    <div class="student-profile-meta">
-                        <div id="studentDetailsName" class="modal-student-name">-</div>
-                        <div id="studentDetailsRollNo" class="modal-student-roll">-</div>
-                    </div>
+            <div class="student-modal-body" id="studentModalBody"></div>
+        </div>
+    </div>
+
+    <!-- Description Modal -->
+    <div class="overlay" id="descriptionOverlay">
+        <div class="modal description-modal">
+            <div class="modal-header">
+                <div class="modal-title">Student Description</div>
+                <button class="close-btn" onclick="closeOverlayWithAnimation('descriptionOverlay')" type="button">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="description-content" id="descriptionModalBody"></div>
+        </div>
+    </div>
+
+    <!-- Reject Remark Modal -->
+    <div class="overlay" id="rejectRemarkOverlay">
+        <div class="modal remark-modal">
+            <div class="modal-header">
+                <div class="modal-title">Rejection Remark</div>
+                <button class="close-btn" onclick="closeOverlayWithAnimation('rejectRemarkOverlay')" type="button">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="remark-body">
+                <div class="remark-group">
+                    <label class="remark-label">
+                        Provide a reason for rejection <span>*</span>
+                    </label>
+                    <textarea
+                        id="rejectionRemarkText"
+                        rows="3"
+                        class="remark-textarea"
+                        placeholder="Eg: Incomplete documents, insufficient justification, missing prerequisites..."
+                    ></textarea>
                 </div>
 
-                <div class="student-details-grid">
-                    <div class="detail-card"><div class="detail-label">Email</div><div id="studentDetailsEmail" class="detail-value">-</div></div>
-                    <div class="detail-card"><div class="detail-label">Branch</div><div id="studentDetailsBranch" class="detail-value">-</div></div>
-                    <div class="detail-card"><div class="detail-label">Section</div><div id="studentDetailsSection" class="detail-value">-</div></div>
-                    <div class="detail-card"><div class="detail-label">Semester</div><div id="studentDetailsSem" class="detail-value">-</div></div>
-                    <div class="detail-card"><div class="detail-label">Gender</div><div id="studentDetailsGender" class="detail-value">-</div></div>
-                    <div class="detail-card"><div class="detail-label">Date of Birth</div><div id="studentDetailsDob" class="detail-value">-</div></div>
-                    <div class="detail-card"><div class="detail-label">Student Phone</div><div id="studentDetailsStudentPhone" class="detail-value">-</div></div>
-                    <div class="detail-card"><div class="detail-label">Parent Phone</div><div id="studentDetailsParentPhone" class="detail-value">-</div></div>
-                    <div class="detail-card"><div class="detail-label">Father Name</div><div id="studentDetailsFatherName" class="detail-value">-</div></div>
-                    <div class="detail-card"><div class="detail-label">Admission Type</div><div id="studentDetailsAdmissionType" class="detail-value">-</div></div>
-                    <div class="detail-card"><div class="detail-label">Caste</div><div id="studentDetailsCaste" class="detail-value">-</div></div>
+                <div class="remark-buttons">
+                    <button class="remark-btn remark-btn-cancel" onclick="closeOverlayWithAnimation('rejectRemarkOverlay')" type="button">
+                        Cancel
+                    </button>
+                    <button class="remark-btn remark-btn-submit" id="confirmRejectBtn" type="button">
+                        Confirm Rejection
+                    </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Approve Success Modal -->
+    <div class="overlay" id="approveOverlay">
+        <div class="result-lottie-modal">
+            <div class="modal-icon-wrapper">
+                <dotlottie-wc src="https://lottie.host/58a2824f-7b40-4856-942b-3960faa89a20/MIbr0DRH6i.lottie" autoplay loop></dotlottie-wc>
+            </div>
+
+            <h3 class="modal-title-lottie success-title">Request Approved</h3>
+            <p class="modal-desc">The student's request has been successfully approved and updated in the system.</p>
+
+            <button class="modal-close-btn success" onclick="closeOverlayWithAnimation('approveOverlay')" type="button">
+                Done
+            </button>
+        </div>
+    </div>
+
+    <!-- Reject Success Modal -->
+    <div class="overlay" id="rejectOverlay">
+        <div class="result-lottie-modal">
+            <div class="modal-icon-wrapper">
+                <dotlottie-wc src="https://lottie.host/e42c7517-f9bb-4908-98bf-ed8ac832084c/Lg5BdIPPEf.lottie" autoplay loop></dotlottie-wc>
+            </div>
+
+            <h3 class="modal-title-lottie danger-title">Request Rejected</h3>
+            <p class="modal-desc" id="rejectFinalMessage">This request has been denied. The student will be notified accordingly.</p>
+
+            <button class="modal-close-btn danger" onclick="closeOverlayWithAnimation('rejectOverlay')" type="button">
+                Close
+            </button>
         </div>
     </div>
 

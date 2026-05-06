@@ -134,6 +134,12 @@
         <h1 class="mobile-logo">
             <img src="https://i.postimg.cc/vB9nm9tV/sanchara-logo-clean.png" style="width: 200px;">
         </h1>
+
+        <div class="mobile-top-actions">
+            <button class="mobile-profile-btn" type="button" onclick="loadHodProfilePage(event)" title="Profile">
+                <img id="mobileHodHeaderPhoto" class="hod-header-photo" src="" alt="HOD Photo" loading="lazy" />
+            </button>
+        </div>
     </div>
 
     <header class="top-header">
@@ -161,39 +167,59 @@
 
     <section id="dashboardSection">
 
-        <div class="stats-grid">
+       <div class="stats-grid">
 
-            <div class="stat-card card-total">
-                <div class="stat-icon">
-                    <dotlottie-wc src="https://lottie.host/18d9adb3-f267-49a5-9460-871688368c05/DrrrY5m7x7.lottie" style="width:60px;height:60px" autoplay loop></dotlottie-wc>
-                </div>
-                <div>
-                    <div class="stat-val" id="totalCount">00</div>
-                    <div class="stat-label">Total Requests</div>
-                </div>
-            </div>
-
-            <div class="stat-card card-approved">
-                <div class="stat-val" id="approvedCount">00</div>
-                <div class="stat-label">Approved</div>
-            </div>
-
-            <div class="stat-card card-pending">
-                <div class="stat-val" id="pendingCount">00</div>
-                <div class="stat-label">Pending</div>
-            </div>
-
-            <div class="stat-card card-rejected">
-                <div class="stat-val" id="rejectedCount">00</div>
-                <div class="stat-label">Rejected</div>
-            </div>
-
-            <div class="stat-card card-cert">
-                <div class="stat-val" id="certificatePendingCount">00</div>
-                <div class="stat-label">Certificates Pending</div>
-            </div>
-
+    <div class="stat-card card-total">
+        <div class="stat-icon">
+            <dotlottie-wc src="https://lottie.host/18d9adb3-f267-49a5-9460-871688368c05/DrrrY5m7x7.lottie" style="width:60px;height:60px" autoplay loop></dotlottie-wc>
         </div>
+        <div>
+            <div class="stat-val" id="totalCount">00</div>
+            <div class="stat-label">Total Requests</div>
+        </div>
+    </div>
+
+    <div class="stat-card card-approved">
+        <div class="stat-icon">
+            <dotlottie-wc src="https://lottie.host/58a2824f-7b40-4856-942b-3960faa89a20/MIbr0DRH6i.lottie" style="width:60px;height:60px" autoplay loop></dotlottie-wc>
+        </div>
+        <div>
+            <div class="stat-val" id="approvedCount">00</div>
+            <div class="stat-label">Approved</div>
+        </div>
+    </div>
+
+    <div class="stat-card card-pending">
+        <div class="stat-icon">
+            <dotlottie-wc src="https://lottie.host/d6b8e14e-296b-438c-8021-45f302ff9be0/T0wF6Cjttt.lottie" style="width:60px;height:60px" autoplay loop></dotlottie-wc>
+        </div>
+        <div>
+            <div class="stat-val" id="pendingCount">00</div>
+            <div class="stat-label">Pending</div>
+        </div>
+    </div>
+
+    <div class="stat-card card-rejected">
+        <div class="stat-icon">
+            <dotlottie-wc src="https://lottie.host/22f76931-e732-46c1-8bf0-1fbf6ec78868/w0z4LHH3eD.lottie" style="width:60px;height:60px" autoplay loop></dotlottie-wc>
+        </div>
+        <div>
+            <div class="stat-val" id="rejectedCount">00</div>
+            <div class="stat-label">Rejected</div>
+        </div>
+    </div>
+
+    <div class="stat-card card-cert">
+        <div class="stat-icon">
+            <dotlottie-wc src="https://lottie.host/36132b7c-fc6c-4c8f-9e07-b34f5fcd7942/LKdksCDuRP.lottie" style="width:60px;height:60px" autoplay loop></dotlottie-wc>
+        </div>
+        <div>
+            <div class="stat-val" id="certificatePendingCount">00</div>
+            <div class="stat-label">Certificates Pending</div>
+        </div>
+    </div>
+
+</div>
 
     </section>
 

@@ -12,9 +12,11 @@ let totalPages = 0;
 let totalElements = 0;
 let currentPendingRequests = [];
 let isPendingLoading = false;
+let pendingRejectId = null;
 
 window.onload = function () {
     bindPendingPagination();
+    bindRejectConfirmButton();
     loadPendingRequests();
 };
 
@@ -41,6 +43,14 @@ function bindPendingPagination() {
     }
 }
 
+function bindRejectConfirmButton() {
+    const confirmBtn = document.getElementById("confirmRejectBtn");
+
+    if (confirmBtn) {
+        confirmBtn.addEventListener("click", executeRejectWithRemark);
+    }
+}
+
 function loadPendingRequests() {
     isPendingLoading = true;
     renderPendingLoadingState();
@@ -50,7 +60,10 @@ function loadPendingRequests() {
 
     fetch(url)
         .then(res => {
-            if (!res.ok) throw new Error("Failed to load requests");
+            if (!res.ok) {
+                throw new Error("Failed to load requests");
+            }
+
             return res.json();
         })
         .then(data => {
@@ -65,7 +78,6 @@ function loadPendingRequests() {
 
             renderPendingTable();
             updatePendingPagination();
-            updatePendingTotalCount(totalElements);
         })
         .catch(err => {
             console.error(err);
@@ -74,10 +86,10 @@ function loadPendingRequests() {
             totalElements = 0;
             renderPendingErrorState();
             updatePendingPagination();
-            updatePendingTotalCount(0);
         })
         .finally(() => {
             isPendingLoading = false;
+            updatePendingPagination();
         });
 }
 
@@ -85,8 +97,9 @@ function renderPendingLoadingState() {
     const table = document.getElementById("pendingTable");
     const status = document.getElementById("pendingStatus");
 
-    if (status) status.textContent = "Loading pending requests...";
-    updatePendingTotalCount(totalElements);
+    if (status) {
+        status.textContent = "Loading pending requests...";
+    }
 
     if (table) {
         table.innerHTML = `
@@ -101,7 +114,9 @@ function renderPendingErrorState() {
     const table = document.getElementById("pendingTable");
     const status = document.getElementById("pendingStatus");
 
-    if (status) status.textContent = "Unable to load pending requests.";
+    if (status) {
+        status.textContent = "Unable to load pending requests.";
+    }
 
     if (table) {
         table.innerHTML = `
@@ -117,6 +132,7 @@ function renderPendingTable() {
     const status = document.getElementById("pendingStatus");
 
     if (!table) return;
+
     table.innerHTML = "";
 
     if (currentPendingRequests.length === 0) {
@@ -144,43 +160,66 @@ function renderPendingTable() {
         const studentData = buildPendingStudentData(req);
 
         const studentPhotoHtml = studentData.photo
-            ? `<img src="${escapeAttribute(studentData.photo)}" alt="${escapeAttribute(studentData.name)}" class="student-photo" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-               <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentData.initial)}</div>`
+            ? `
+                <img
+                    src="${escapeAttribute(studentData.photo)}"
+                    alt="${escapeAttribute(studentData.name)}"
+                    class="avatar"
+                    loading="lazy"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                />
+                <div class="student-avatar-fallback" style="display:none;">${escapeHtml(studentData.initial)}</div>
+              `
             : `<div class="student-avatar-fallback">${escapeHtml(studentData.initial)}</div>`;
 
         const historyButton = req.studentId
-            ? `<button class="history-btn" onclick="viewStudentHistory(${req.studentId})">View History</button>`
-            : `<button class="history-btn disabled" disabled>View History</button>`;
+            ? `
+                <button class="btn btn-history" onclick="viewStudentHistory(${req.studentId})" type="button">
+                    <i class="fa-solid fa-eye"></i>
+                    <span>View History</span>
+                </button>
+              `
+            : `
+                <button class="btn btn-history disabled" disabled type="button">
+                    <i class="fa-solid fa-eye"></i>
+                    <span>View History</span>
+                </button>
+              `;
 
         table.innerHTML += `
             <tr>
-                <td>
-                    <div class="student-cell clickable-student" onclick="openStudentDetailsModalByIndex(${index})" title="View Student Details">
-                        <div class="student-photo-wrap">
-                            ${studentPhotoHtml}
-                        </div>
+                <td data-label="Student">
+                    <div class="student-box" onclick="openStudentDetailsModalByIndex(${index})" title="View Student Details">
+                        ${studentPhotoHtml}
                         <div class="student-meta">
                             <div class="student-name">${escapeHtml(studentData.name)}</div>
-                            <div class="student-roll">${escapeHtml(studentData.rollNo)}</div>
+                            <div class="student-id">${escapeHtml(studentData.rollNo)}</div>
                         </div>
                     </div>
                 </td>
-                <td>${escapeHtml(req.reason || "-")}</td>
-                <td>
-                    <button
-                        class="description-btn"
-                        onclick="openDescriptionModal('${escapeJsString(studentData.name)}', '${escapeJsString(studentData.rollNo)}', '${escapeJsString(req.description || "No description provided.")}')"
-                    >
-                        View
-                    </button>
+
+                <td data-label="Reason / Event">${escapeHtml(req.reason || "-")}</td>
+
+                <td data-label="Description">
+                    ${formatDescription(req.description || "No description provided.", req.id || index)}
                 </td>
-                <td>${formatDate(req.startDate)}</td>
-                <td>${formatDate(req.endDate)}</td>
-                <td>${formatDate(req.requestDate)}</td>
-                <td>
+
+                <td data-label="Start Date" class="date-cell">${formatDate(req.startDate)}</td>
+                <td data-label="End Date" class="date-cell">${formatDate(req.endDate)}</td>
+                <td data-label="Request Date" class="date-cell">${formatDate(req.requestDate)}</td>
+
+                <td data-label="Actions">
                     <div class="action-group">
-                        <button class="approve-btn" onclick="approveRequest(${req.id})">Approve</button>
-                        <button class="reject-btn" onclick="rejectRequest(${req.id})">Reject</button>
+                        <button class="btn btn-approve" onclick="approveRequest(${req.id})" type="button">
+                            <i class="fa-regular fa-circle-check"></i>
+                            <span>Approve</span>
+                        </button>
+
+                        <button class="btn btn-reject" onclick="openRejectRemark(${req.id})" type="button">
+                            <i class="fa-regular fa-circle-xmark"></i>
+                            <span>Reject</span>
+                        </button>
+
                         ${historyButton}
                     </div>
                 </td>
@@ -189,22 +228,52 @@ function renderPendingTable() {
     });
 }
 
-function updatePendingTotalCount(count) {
-    const totalCountEl = document.getElementById("pendingTotalCount");
-    if (totalCountEl) totalCountEl.textContent = Number(count) || 0;
-}
-
 function updatePendingPagination() {
     const prevBtn = document.getElementById("pendingPrevBtn");
     const nextBtn = document.getElementById("pendingNextBtn");
     const pageInfo = document.getElementById("pendingPageInfo");
 
-    if (prevBtn) prevBtn.disabled = isPendingLoading || currentPage <= 0;
-    if (nextBtn) nextBtn.disabled = isPendingLoading || totalPages === 0 || currentPage >= totalPages - 1;
+    if (prevBtn) {
+        prevBtn.disabled = isPendingLoading || currentPage <= 0;
+    }
+
+    if (nextBtn) {
+        nextBtn.disabled = isPendingLoading || totalPages === 0 || currentPage >= totalPages - 1;
+    }
 
     if (pageInfo) {
         const displayPage = totalPages === 0 ? 0 : currentPage + 1;
-        pageInfo.textContent = `Page ${displayPage} of ${totalPages}`;
+        const safeTotalPages = totalPages === 0 ? 0 : totalPages;
+        pageInfo.textContent = `Page ${displayPage} of ${safeTotalPages}`;
+    }
+}
+
+function formatDescription(desc, rowId) {
+    const safeDesc = desc || "No description provided.";
+    const isLong = safeDesc.length > 95;
+
+    return `
+        <div class="desc-box">
+            <div id="desc-text-${rowId}" class="desc-text truncated">${escapeHtml(safeDesc)}</div>
+            ${isLong ? `<span id="readmore-btn-${rowId}" class="read-more" onclick="toggleDescription(${rowId})">Read more</span>` : ""}
+        </div>
+    `;
+}
+
+function toggleDescription(rowId) {
+    const descTextEl = document.getElementById(`desc-text-${rowId}`);
+    const readMoreSpan = document.getElementById(`readmore-btn-${rowId}`);
+
+    if (!descTextEl || !readMoreSpan) return;
+
+    if (descTextEl.classList.contains("truncated")) {
+        descTextEl.classList.remove("truncated");
+        descTextEl.classList.add("full");
+        readMoreSpan.innerHTML = "Read less";
+    } else {
+        descTextEl.classList.remove("full");
+        descTextEl.classList.add("truncated");
+        readMoreSpan.innerHTML = "Read more";
     }
 }
 
@@ -240,11 +309,13 @@ function getStudentPhoto(req) {
     }
 
     const rollNo = req.studentRollNo || "";
+
     if (!rollNo || !String(rollNo).trim()) {
         return "";
     }
 
     const cleanRollNo = String(rollNo).trim().toUpperCase();
+
     return `${STUDENT_PHOTO_BASE_URL}/${encodeURIComponent(cleanRollNo)}/${encodeURIComponent(cleanRollNo)}.jpg`;
 }
 
@@ -257,7 +328,10 @@ function formatDate(value) {
     if (!value) return "-";
 
     const date = new Date(value);
-    if (isNaN(date.getTime())) return escapeHtml(value);
+
+    if (isNaN(date.getTime())) {
+        return escapeHtml(value);
+    }
 
     return date.toLocaleDateString("en-GB");
 }
@@ -279,65 +353,161 @@ function viewStudentHistory(studentId) {
     window.location.href = `student-history.html?id=${studentId}&from=pending`;
 }
 
-function openDescriptionModal(studentName, studentId, description) {
-    document.getElementById("modalStudentName").textContent = studentName || "N/A";
-    document.getElementById("modalStudentRollNo").textContent = studentId || "N/A";
-    document.getElementById("modalDescriptionText").textContent = description || "No description provided.";
-    document.getElementById("descriptionModal").classList.remove("hidden");
-}
-
-function closeDescriptionModal() {
-    document.getElementById("descriptionModal").classList.add("hidden");
-}
-
 function openStudentDetailsModalByIndex(index) {
     const student = buildPendingStudentData(currentPendingRequests[index] || {});
     openStudentDetailsModal(student);
 }
 
 function openStudentDetailsModal(student) {
-    document.getElementById("studentDetailsName").textContent = student.name || "-";
-    document.getElementById("studentDetailsRollNo").textContent = student.rollNo || "-";
-    document.getElementById("studentDetailsEmail").textContent = student.email || "-";
-    document.getElementById("studentDetailsBranch").textContent = student.branch || "-";
-    document.getElementById("studentDetailsSection").textContent = student.section || "-";
-    document.getElementById("studentDetailsSem").textContent = student.sem || "-";
-    document.getElementById("studentDetailsGender").textContent = student.gender || "-";
-    document.getElementById("studentDetailsDob").textContent = student.dob || "-";
-    document.getElementById("studentDetailsStudentPhone").textContent = student.studentPhone || "-";
-    document.getElementById("studentDetailsParentPhone").textContent = student.parentPhone || "-";
-    document.getElementById("studentDetailsFatherName").textContent = student.fatherName || "-";
-    document.getElementById("studentDetailsAdmissionType").textContent = student.admissionType || "-";
-    document.getElementById("studentDetailsCaste").textContent = student.caste || "-";
+    const studentModalBody = document.getElementById("studentModalBody");
 
-    const photoEl = document.getElementById("studentDetailsPhoto");
-    photoEl.src = student.photo || "";
-    photoEl.alt = student.name || "Student Photo";
-    photoEl.onerror = function () {
-        this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.initial || "S")}&background=2563eb&color=ffffff&size=160`;
-    };
+    if (!studentModalBody) return;
 
-    document.getElementById("studentDetailsModal").classList.remove("hidden");
+    const photoHtml = student.photo
+        ? `
+            <img
+                src="${escapeAttribute(student.photo)}"
+                class="avatar"
+                alt="${escapeAttribute(student.name)}"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            />
+            <div class="student-avatar-fallback" style="display:none;">${escapeHtml(student.initial)}</div>
+          `
+        : `<div class="student-avatar-fallback">${escapeHtml(student.initial)}</div>`;
+
+    studentModalBody.innerHTML = `
+        <div class="student-top">
+            ${photoHtml}
+            <div>
+                <div class="student-top-name">${escapeHtml(student.name)}</div>
+                <div class="student-top-id">${escapeHtml(student.rollNo)}</div>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-field">
+                <div class="info-label">Email</div>
+                <div class="info-value small">${escapeHtml(student.email)}</div>
+            </div>
+
+            <div class="info-field">
+                <div class="info-label">Branch</div>
+                <div class="info-value">${escapeHtml(student.branch)}</div>
+            </div>
+
+            <div class="info-field">
+                <div class="info-label">Section</div>
+                <div class="info-value">${escapeHtml(student.section)}</div>
+            </div>
+
+            <div class="info-field">
+                <div class="info-label">Semester</div>
+                <div class="info-value">${escapeHtml(student.sem)}</div>
+            </div>
+
+            <div class="info-field">
+                <div class="info-label">Gender</div>
+                <div class="info-value">${escapeHtml(student.gender)}</div>
+            </div>
+
+            <div class="info-field">
+                <div class="info-label">Date of Birth</div>
+                <div class="info-value">${escapeHtml(student.dob)}</div>
+            </div>
+
+            <div class="info-field">
+                <div class="info-label">Student Phone</div>
+                <div class="info-value">${escapeHtml(student.studentPhone)}</div>
+            </div>
+
+            <div class="info-field">
+                <div class="info-label">Parent Phone</div>
+                <div class="info-value">${escapeHtml(student.parentPhone)}</div>
+            </div>
+
+            <div class="info-field">
+                <div class="info-label">Father Name</div>
+                <div class="info-value">${escapeHtml(student.fatherName)}</div>
+            </div>
+
+            <div class="info-field">
+                <div class="info-label">Admission Type</div>
+                <div class="info-value">${escapeHtml(student.admissionType)}</div>
+            </div>
+
+            <div class="info-field">
+                <div class="info-label">Caste</div>
+                <div class="info-value">${escapeHtml(student.caste)}</div>
+            </div>
+        </div>
+    `;
+
+    openOverlay("studentOverlay");
 }
 
-function closeStudentDetailsModal() {
-    document.getElementById("studentDetailsModal").classList.add("hidden");
-}
+function openRejectRemark(id) {
+    if (!id) return;
 
-window.addEventListener("click", function (event) {
-    const descriptionModal = document.getElementById("descriptionModal");
-    const studentDetailsModal = document.getElementById("studentDetailsModal");
+    pendingRejectId = id;
 
-    if (event.target === descriptionModal) closeDescriptionModal();
-    if (event.target === studentDetailsModal) closeStudentDetailsModal();
-});
+    const textarea = document.getElementById("rejectionRemarkText");
 
-window.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") {
-        closeDescriptionModal();
-        closeStudentDetailsModal();
+    if (textarea) {
+        textarea.value = "";
     }
-});
+
+    openOverlay("rejectRemarkOverlay");
+}
+
+function executeRejectWithRemark() {
+    if (pendingRejectId === null) return;
+
+    const textarea = document.getElementById("rejectionRemarkText");
+    const remarkText = textarea ? textarea.value.trim() : "";
+
+    if (remarkText === "") {
+        alert("Please provide a reason for rejection before confirming.");
+        return;
+    }
+
+    const requestId = pendingRejectId;
+
+    fetch(`/request/reject/${requestId}?remark=${encodeURIComponent(remarkText)}`, {
+        method: "PUT"
+    })
+        .then(async res => {
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Reject API error:", errorText);
+                throw new Error("Failed to reject request");
+            }
+
+            return res.json();
+        })
+        .then(() => {
+            pendingRejectId = null;
+
+            closeOverlayWithAnimation("rejectRemarkOverlay");
+
+            const finalMsgSpan = document.getElementById("rejectFinalMessage");
+
+            if (finalMsgSpan) {
+                finalMsgSpan.innerHTML = `Request rejected with remark: "${escapeHtml(remarkText)}" <br> The student will be notified.`;
+            }
+
+            openOverlay("rejectOverlay");
+
+            if (currentPendingRequests.length === 1 && currentPage > 0) {
+                currentPage -= 1;
+            }
+
+            loadPendingRequests();
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Error while rejecting request.");
+        });
+}
 
 function approveRequest(id) {
     fetch(`/request/approve/${id}`, {
@@ -353,7 +523,7 @@ function approveRequest(id) {
             return res.json();
         })
         .then(() => {
-            alert("The leave request has been approved successfully.");
+            openOverlay("approveOverlay");
 
             if (currentPendingRequests.length === 1 && currentPage > 0) {
                 currentPage -= 1;
@@ -367,42 +537,49 @@ function approveRequest(id) {
         });
 }
 
-function rejectRequest(id) {
-    const remark = prompt("Enter remark for rejection:");
+function openOverlay(id) {
+    const overlay = document.getElementById(id);
 
-    if (remark === null) return;
-
-    if (remark.trim() === "") {
-        alert("Rejection remark is required.");
-        return;
+    if (overlay) {
+        overlay.classList.add("show");
     }
-
-    fetch(`/request/reject/${id}?remark=${encodeURIComponent(remark.trim())}`, {
-        method: "PUT"
-    })
-        .then(async res => {
-            if (!res.ok) {
-                const errorText = await res.text();
-                console.error("Reject API error:", errorText);
-                throw new Error("Failed to reject request");
-            }
-
-            return res.json();
-        })
-        .then(() => {
-            alert("The leave request has been rejected successfully.");
-
-            if (currentPendingRequests.length === 1 && currentPage > 0) {
-                currentPage -= 1;
-            }
-
-            loadPendingRequests();
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Error while rejecting request.");
-        });
 }
+
+function closeOverlayWithAnimation(id) {
+    const overlay = document.getElementById(id);
+
+    if (!overlay) return;
+
+    overlay.classList.remove("show");
+}
+
+window.addEventListener("click", function (event) {
+    const overlays = [
+        "studentOverlay",
+        "descriptionOverlay",
+        "approveOverlay",
+        "rejectOverlay",
+        "rejectRemarkOverlay"
+    ];
+
+    overlays.forEach(id => {
+        const overlay = document.getElementById(id);
+
+        if (event.target === overlay) {
+            overlay.classList.remove("show");
+        }
+    });
+});
+
+window.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+        closeOverlayWithAnimation("studentOverlay");
+        closeOverlayWithAnimation("descriptionOverlay");
+        closeOverlayWithAnimation("approveOverlay");
+        closeOverlayWithAnimation("rejectOverlay");
+        closeOverlayWithAnimation("rejectRemarkOverlay");
+    }
+});
 
 function escapeHtml(value) {
     return String(value ?? "")
@@ -419,13 +596,4 @@ function escapeAttribute(value) {
         .replace(/"/g, "&quot;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
-}
-
-function escapeJsString(value) {
-    return String(value ?? "")
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-        .replace(/\r/g, "")
-        .replace(/\n/g, "\\n");
 }
