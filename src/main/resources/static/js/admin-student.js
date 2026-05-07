@@ -243,7 +243,7 @@ function renderStudents(students) {
         const displaySection = normalizeSection(student.section || student.sec) || "-";
         const displaySem = normalizeSemester(student.sem) || "-";
         const initial = displayName.charAt(0).toUpperCase();
-        const imageUrl = getStudentImageUrl(student);
+        const imageUrl = student.photoUrl || student.photo || getStudentImageUrl(displayRollNo);
 
         const card = document.createElement("div");
         card.className = "student-card";
@@ -463,6 +463,20 @@ function normalizeSemester(value) {
 
 function getStudentImageUrl(studentOrRollNo) {
     let rollNo = "";
+
+    if (typeof studentOrRollNo === "object" && studentOrRollNo !== null) {
+        const directPhoto =
+            studentOrRollNo.photoUrl ||
+            studentOrRollNo.photo ||
+            studentOrRollNo.imageUrl ||
+            studentOrRollNo.profilePhoto ||
+            studentOrRollNo.profileImage ||
+            "";
+
+        if (String(directPhoto).trim() !== "") {
+            return String(directPhoto).trim();
+        }
+    }
 
     if (typeof studentOrRollNo === "object" && studentOrRollNo !== null) {
         rollNo =

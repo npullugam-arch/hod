@@ -26,6 +26,7 @@ public class SecurityConfig {
                     // ✅ SEO FILES (VERY IMPORTANT)
                     "/robots.txt",
                     "/sitemap.xml",
+                    "/favicon.ico",
 
                     // ✅ ALLOW ALL STATIC RESOURCES (Spring Boot default path)
                     "/**/*.css",
