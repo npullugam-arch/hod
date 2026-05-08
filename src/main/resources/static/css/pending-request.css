@@ -945,3 +945,111 @@ tbody tr {
         transform: translateY(0);
     }
 }
+/* ================================
+   STUDENT DETAILS MODAL FULL WIDTH FIX
+   Add at bottom of pending-request.css
+================================ */
+
+#studentOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.58);
+    backdrop-filter: blur(8px);
+}
+
+#studentOverlay.active,
+#studentOverlay.show {
+    display: flex;
+}
+
+#studentOverlay .modal {
+    width: min(1180px, 96vw);
+    max-width: 1180px;
+    max-height: 90vh;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #ffffff;
+    box-shadow: 0 30px 90px rgba(15, 23, 42, 0.35);
+}
+
+#studentOverlay .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: #ffffff;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+#studentOverlay .student-modal-body {
+    max-height: calc(90vh - 78px);
+    overflow-y: auto;
+    padding: 24px;
+}
+
+/* If JS creates profile/details grid inside modal */
+#studentModalBody {
+    width: 100%;
+}
+
+#studentModalBody .student-details-card,
+#studentModalBody .student-profile-card,
+#studentModalBody .details-card {
+    width: 100%;
+}
+
+#studentModalBody .student-details-grid,
+#studentModalBody .details-grid,
+#studentModalBody .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+#studentModalBody .detail-item,
+#studentModalBody .info-item {
+    min-height: 72px;
+    padding: 14px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+#studentModalBody img {
+    max-width: 150px;
+    max-height: 150px;
+    object-fit: cover;
+    border-radius: 18px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    #studentOverlay {
+        padding: 12px;
+    }
+
+    #studentOverlay .modal {
+        width: 100%;
+        max-height: 92vh;
+        border-radius: 18px;
+    }
+
+    #studentOverlay .student-modal-body {
+        padding: 16px;
+        max-height: calc(92vh - 70px);
+    }
+
+    #studentModalBody .student-details-grid,
+    #studentModalBody .details-grid,
+    #studentModalBody .info-grid {
+        grid-template-columns: 1fr;
+    }
+}
