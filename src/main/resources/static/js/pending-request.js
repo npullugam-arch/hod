@@ -1,4 +1,13 @@
 const user = JSON.parse(localStorage.getItem("user"));
+const DASHBOARD_CACHE_PREFIX = "sanchara_dashboard_cache_";
+const CERTIFICATE_REQUIRED_REASONS = [
+    "HACKATHON",
+    "SEMINAR",
+    "MEDICAL LEAVE",
+    "SPORTS EVENT",
+    "WORKSHOP / TRAINING",
+    "INTERNSHIP"
+];
 
 if (!user) {
     window.top.location.href = "index.html";
@@ -486,6 +495,8 @@ function executeRejectWithRemark() {
         })
         .then(() => {
             pendingRejectId = null;
+            patchHodDashboardCacheAfterReject(requestId);
+            clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}STUDENT_`);
 
             closeOverlayWithAnimation("rejectRemarkOverlay");
 
@@ -524,6 +535,8 @@ function approveRequest(id) {
         })
         .then(() => {
             openOverlay("approveOverlay");
+            patchHodDashboardCacheAfterApprove(id);
+            clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}STUDENT_`);
 
             if (currentPendingRequests.length === 1 && currentPage > 0) {
                 currentPage -= 1;
@@ -570,6 +583,95 @@ window.addEventListener("click", function (event) {
         }
     });
 });
+
+function getHodDashboardCacheKey() {
+    return `${DASHBOARD_CACHE_PREFIX}HOD_${String(user?.id || "anonymous")}`;
+}
+
+function getDashboardCache(key) {
+    try {
+        const rawValue = localStorage.getItem(key);
+        return rawValue ? JSON.parse(rawValue) : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function saveDashboardCache(key, cache) {
+    try {
+        localStorage.setItem(key, JSON.stringify(cache));
+    } catch (error) {
+        console.warn("Dashboard cache save failed:", error);
+    }
+}
+
+function clearDashboardCache(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (error) {
+        console.warn("Dashboard cache clear failed:", error);
+    }
+}
+
+function clearDashboardCachesByPrefix(prefix) {
+    try {
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+            const key = localStorage.key(index);
+            if (key && key.startsWith(prefix)) {
+                localStorage.removeItem(key);
+            }
+        }
+    } catch (error) {
+        console.warn("Dashboard cache prefix clear failed:", error);
+    }
+}
+
+function normalizeCacheReason(reason) {
+    return String(reason || "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toUpperCase();
+}
+
+function isCertificateRequiredForCache(reason) {
+    return CERTIFICATE_REQUIRED_REASONS.includes(normalizeCacheReason(reason));
+}
+
+function patchHodDashboardCacheAfterApprove(requestId) {
+    const cacheKey = getHodDashboardCacheKey();
+    const cache = getDashboardCache(cacheKey);
+    const request = currentPendingRequests.find(item => Number(item?.id) === Number(requestId));
+
+    if (!cache?.data?.summary) {
+        clearDashboardCache(cacheKey);
+        return;
+    }
+
+    cache.data.summary.pendingCount = Math.max(0, (Number(cache.data.summary.pendingCount) || 0) - 1);
+    cache.data.summary.approvedCount = (Number(cache.data.summary.approvedCount) || 0) + 1;
+
+    if (request && isCertificateRequiredForCache(request.reason)) {
+        cache.data.summary.certificatePendingCount = (Number(cache.data.summary.certificatePendingCount) || 0) + 1;
+    }
+
+    cache.savedAt = Date.now();
+    saveDashboardCache(cacheKey, cache);
+}
+
+function patchHodDashboardCacheAfterReject(requestId) {
+    const cacheKey = getHodDashboardCacheKey();
+    const cache = getDashboardCache(cacheKey);
+
+    if (!cache?.data?.summary) {
+        clearDashboardCache(cacheKey);
+        return;
+    }
+
+    cache.data.summary.pendingCount = Math.max(0, (Number(cache.data.summary.pendingCount) || 0) - 1);
+    cache.data.summary.rejectedCount = (Number(cache.data.summary.rejectedCount) || 0) + 1;
+    cache.savedAt = Date.now();
+    saveDashboardCache(cacheKey, cache);
+}
 
 window.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {

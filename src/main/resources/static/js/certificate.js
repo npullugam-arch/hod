@@ -1,4 +1,5 @@
 const user = JSON.parse(localStorage.getItem("user"));
+const DASHBOARD_CACHE_PREFIX = "sanchara_dashboard_cache_";
 const fileActionMap = {};
 let deleteRequestId = null;
 let resolvedStudentId = null;
@@ -378,6 +379,8 @@ function uploadCertificate(requestId) {
             }
 
             delete fileActionMap[requestId];
+            updateStudentDashboardCacheAfterCertificateUpload(requestId);
+            clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}HOD_`);
             showSuccessModal(successMessage);
             loadCertificateRequests();
         })
@@ -406,6 +409,8 @@ function performDeleteCertificate(requestId) {
         .then(() => {
             delete fileActionMap[requestId];
             deleteRequestId = null;
+            clearDashboardCache(getStudentDashboardCacheKey());
+            clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}HOD_`);
             closeModal("deleteConfirmModal");
             showSuccessModal("Certificate deleted successfully!");
             loadCertificateRequests();
@@ -501,4 +506,68 @@ function isCertificateImageUrl(filePath) {
         || normalized.includes(".jpeg")
         || normalized.includes(".png")
         || normalized.includes("/image/upload/");
+}
+
+function getStudentDashboardCacheKey() {
+    return `${DASHBOARD_CACHE_PREFIX}STUDENT_${String(user?.id || "anonymous")}`;
+}
+
+function getDashboardCache(key) {
+    try {
+        const rawValue = localStorage.getItem(key);
+        return rawValue ? JSON.parse(rawValue) : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function saveDashboardCache(key, cache) {
+    try {
+        localStorage.setItem(key, JSON.stringify(cache));
+    } catch (error) {
+        console.warn("Dashboard cache save failed:", error);
+    }
+}
+
+function clearDashboardCache(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (error) {
+        console.warn("Dashboard cache clear failed:", error);
+    }
+}
+
+function clearDashboardCachesByPrefix(prefix) {
+    try {
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+            const key = localStorage.key(index);
+            if (key && key.startsWith(prefix)) {
+                localStorage.removeItem(key);
+            }
+        }
+    } catch (error) {
+        console.warn("Dashboard cache prefix clear failed:", error);
+    }
+}
+
+function updateStudentDashboardCacheAfterCertificateUpload(requestId) {
+    const cacheKey = getStudentDashboardCacheKey();
+    const cache = getDashboardCache(cacheKey);
+
+    if (!cache?.data?.summary) {
+        return;
+    }
+
+    cache.data.summary.certificatePendingCount = Math.max(
+        0,
+        (Number(cache.data.summary.certificatePendingCount) || 0) - 1
+    );
+
+    if (Array.isArray(cache.data.pendingCertificateRequests)) {
+        cache.data.pendingCertificateRequests = cache.data.pendingCertificateRequests
+            .filter(item => Number(item?.requestId) !== Number(requestId));
+    }
+
+    cache.savedAt = Date.now();
+    saveDashboardCache(cacheKey, cache);
 }

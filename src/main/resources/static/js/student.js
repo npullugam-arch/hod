@@ -1,6 +1,9 @@
 const user = JSON.parse(localStorage.getItem("user"));
 let resolvedStudent = null;
 let resolvedStudentPromise = null;
+const DASHBOARD_CACHE_PREFIX = "sanchara_dashboard_cache_";
+const DASHBOARD_CACHE_TTL_MS = 5 * 60 * 1000;
+const STUDENT_DASHBOARD_ROLE = "STUDENT";
 
 const CERTIFICATE_REQUIRED_REASONS = [
     "HACKATHON",
@@ -75,31 +78,112 @@ function hidePasswordMenuAfterUpdate() {
     updatePasswordMenuVisibility();
 }
 
-async function setStudentInfo() {
+function getStudentDashboardCacheKey() {
+    return `${DASHBOARD_CACHE_PREFIX}${STUDENT_DASHBOARD_ROLE}_${String(user?.id || "anonymous")}`;
+}
+
+function saveDashboardCache(key, data, role = STUDENT_DASHBOARD_ROLE) {
+    try {
+        localStorage.setItem(key, JSON.stringify({
+            userId: String(user?.id || ""),
+            role,
+            savedAt: Date.now(),
+            data
+        }));
+    } catch (error) {
+        console.warn("Dashboard cache save failed:", error);
+    }
+}
+
+function getDashboardCache(key) {
+    try {
+        const rawValue = localStorage.getItem(key);
+        if (!rawValue) return null;
+        return JSON.parse(rawValue);
+    } catch (error) {
+        console.warn("Dashboard cache read failed:", error);
+        return null;
+    }
+}
+
+function clearDashboardCache(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (error) {
+        console.warn("Dashboard cache clear failed:", error);
+    }
+}
+
+function clearDashboardCachesByPrefix(prefix = DASHBOARD_CACHE_PREFIX) {
+    try {
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+            const key = localStorage.key(index);
+            if (key && key.startsWith(prefix)) {
+                localStorage.removeItem(key);
+            }
+        }
+    } catch (error) {
+        console.warn("Dashboard cache prefix clear failed:", error);
+    }
+}
+
+function isDashboardCacheValid(cache, role = STUDENT_DASHBOARD_ROLE) {
+    return Boolean(
+        cache &&
+        cache.data &&
+        String(cache.userId || "") === String(user?.id || "") &&
+        String(cache.role || "") === role &&
+        Number(cache.savedAt || 0) > 0 &&
+        (Date.now() - Number(cache.savedAt || 0)) <= DASHBOARD_CACHE_TTL_MS
+    );
+}
+
+function areDashboardDataEqual(previousData, nextData) {
+    try {
+        return JSON.stringify(previousData || null) === JSON.stringify(nextData || null);
+    } catch (error) {
+        return false;
+    }
+}
+
+function applyStudentIdentity(displayName, displayId, initial) {
     const studentNameEl = document.getElementById("studentName");
     const studentIdEl = document.getElementById("studentId");
     const userInitialEl = document.getElementById("userInitial");
-
-    let displayName = user?.username || user?.name || "Student";
-    let displayId = user?.rollNumber || user?.studentId || user?.id || "-";
-    const initial = String(displayName).charAt(0).toUpperCase();
+    const mobileUserInitialEl = document.getElementById("mobileUserInitial");
 
     if (studentNameEl) studentNameEl.textContent = displayName;
     if (studentIdEl) studentIdEl.textContent = displayId;
     if (userInitialEl) userInitialEl.textContent = initial;
+    if (mobileUserInitialEl) mobileUserInitialEl.textContent = initial;
+}
+
+function applyResolvedStudentInfo(student) {
+    const displayName = student?.name || user?.username || user?.name || "Student";
+    const displayId = student?.rollNo || student?.rollNumber || user?.rollNumber || user?.studentId || user?.id || "-";
+    const initial = String(displayName).charAt(0).toUpperCase();
+
+    applyStudentIdentity(displayName, displayId, initial);
+    setStudentHeaderProfileImage(displayId, initial);
+}
+
+async function setStudentInfo() {
+    let displayName = user?.username || user?.name || "Student";
+    let displayId = user?.rollNumber || user?.studentId || user?.id || "-";
+    const initial = String(displayName).charAt(0).toUpperCase();
+
+    applyStudentIdentity(displayName, displayId, initial);
+
+    const cachedDashboard = getDashboardCache(getStudentDashboardCacheKey());
+    if (cachedDashboard?.data?.student) {
+        resolvedStudent = cachedDashboard.data.student;
+        applyResolvedStudentInfo(resolvedStudent);
+        return;
+    }
 
     try {
         const student = await getResolvedStudent();
-
-        displayName = student?.name || user?.username || user?.name || "Student";
-        displayId = student?.rollNo || student?.rollNumber || user?.rollNumber || user?.studentId || user?.id || "-";
-        const updatedInitial = String(displayName).charAt(0).toUpperCase();
-
-        if (studentNameEl) studentNameEl.textContent = displayName;
-        if (studentIdEl) studentIdEl.textContent = displayId;
-        if (userInitialEl) userInitialEl.textContent = updatedInitial;
-
-        setStudentHeaderProfileImage(displayId, updatedInitial);
+        applyResolvedStudentInfo(student);
     } catch (error) {
         console.error("Header profile load error:", error);
         showStudentHeaderAvatar(initial);
@@ -163,6 +247,168 @@ function showStudentHeaderAvatar(initial) {
     mobileImageEl.removeAttribute("src");
 }
 
+function setCounterValue(elementId, target) {
+    const counter = document.getElementById(elementId);
+    if (!counter) return;
+
+    const safeTarget = Number(target) || 0;
+    counter.setAttribute("data-target", String(safeTarget));
+    counter.textContent = safeTarget < 10 ? "0" + safeTarget : String(safeTarget);
+}
+
+function renderStudentDashboardSummary(summary, animate = false) {
+    const safeSummary = summary || {};
+
+    if (animate) {
+        animateCounter("approvedCount", safeSummary.approvedCount);
+        animateCounter("pendingCount", safeSummary.pendingCount);
+        animateCounter("certificateCount", safeSummary.certificatePendingCount);
+        animateCounter("totalCount", safeSummary.totalCount);
+        return;
+    }
+
+    setCounterValue("approvedCount", safeSummary.approvedCount);
+    setCounterValue("pendingCount", safeSummary.pendingCount);
+    setCounterValue("certificateCount", safeSummary.certificatePendingCount);
+    setCounterValue("totalCount", safeSummary.totalCount);
+}
+
+function renderReminderBadge(unreadCount) {
+    const badge = document.getElementById("reminderBadge");
+    const mobileBadge = document.getElementById("mobileReminderBadge");
+    const safeUnreadCount = Number(unreadCount) || 0;
+    const label = safeUnreadCount > 99 ? "99+" : String(safeUnreadCount);
+
+    if (badge) {
+        badge.textContent = label;
+        badge.style.display = safeUnreadCount > 0 ? "inline-block" : "none";
+    }
+
+    if (mobileBadge) {
+        mobileBadge.textContent = label;
+        mobileBadge.style.display = safeUnreadCount > 0 ? "inline-block" : "none";
+    }
+}
+
+function renderDashboardCertificateUploads(pendingCertificateRequests) {
+    const card = document.getElementById("dashboardCertificateCard");
+    const list = document.getElementById("dashboardCertificateList");
+    const statusBox = document.getElementById("dashboardCertificateStatus");
+
+    if (!card || !list || !statusBox) return;
+
+    const safeRequests = Array.isArray(pendingCertificateRequests) ? pendingCertificateRequests : [];
+
+    if (safeRequests.length === 0) {
+        card.style.display = "none";
+        list.innerHTML = "";
+        statusBox.textContent = "";
+        return;
+    }
+
+    card.style.display = "block";
+    statusBox.innerHTML = `
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        ${safeRequests.length} certificate upload pending.
+    `;
+    list.innerHTML = safeRequests.map(req => buildDashboardCertificateItem(req)).join("");
+}
+
+function applyStudentDashboardCacheData(data, options = {}) {
+    if (!data) return;
+
+    const animateCounts = options.animateCounts === true;
+
+    if (data.student) {
+        resolvedStudent = data.student;
+        applyResolvedStudentInfo(data.student);
+    }
+
+    renderStudentDashboardSummary(data.summary, animateCounts);
+    renderDashboardCertificateUploads(data.pendingCertificateRequests);
+    renderReminderBadge(data.unreadReminderCount);
+}
+
+async function refreshStudentDashboardCache(options = {}) {
+    const silent = options.silent === true;
+    const force = options.force === true;
+    const cacheKey = getStudentDashboardCacheKey();
+    const existingCache = getDashboardCache(cacheKey);
+
+    if (!force && isDashboardCacheValid(existingCache) && existingCache?.data) {
+        if (!silent) {
+            applyStudentDashboardCacheData(existingCache.data, { animateCounts: false });
+        }
+        return existingCache.data;
+    }
+
+    try {
+        const student = await getResolvedStudent(force);
+        const studentId = student?.id || user?.id;
+
+        if (!studentId) {
+            throw new Error("Student ID not found");
+        }
+
+        const [summaryRes, pendingRes, reminderRes] = await Promise.all([
+            fetch(`/request/student/${studentId}/summary`),
+            fetch(`/request/student/${studentId}/certificate-pending`),
+            fetch(`/notification/unread/${user.id}`)
+        ]);
+
+        if (!summaryRes.ok) {
+            throw new Error("Failed to load dashboard data");
+        }
+
+        if (!pendingRes.ok) {
+            throw new Error("Unable to load certificate pending requests");
+        }
+
+        if (!reminderRes.ok) {
+            throw new Error("Failed to load unread reminders");
+        }
+
+        const [summary, pendingCertificateRequests, reminderData] = await Promise.all([
+            summaryRes.json(),
+            pendingRes.json(),
+            reminderRes.json()
+        ]);
+
+        const dashboardData = {
+            student,
+            summary: summary || {},
+            pendingCertificateRequests: Array.isArray(pendingCertificateRequests) ? pendingCertificateRequests : [],
+            unreadReminderCount: Array.isArray(reminderData) ? reminderData.length : 0
+        };
+
+        const hasChanged = !areDashboardDataEqual(existingCache?.data, dashboardData);
+        saveDashboardCache(cacheKey, dashboardData, STUDENT_DASHBOARD_ROLE);
+
+        if (!silent || hasChanged || !existingCache?.data) {
+            applyStudentDashboardCacheData(dashboardData, {
+                animateCounts: !existingCache?.data && !silent
+            });
+        }
+
+        return dashboardData;
+    } catch (error) {
+        console.error("Student dashboard refresh error:", error);
+
+        if (!existingCache?.data) {
+            renderStudentDashboardSummary({
+                approvedCount: 0,
+                pendingCount: 0,
+                certificatePendingCount: 0,
+                totalCount: 0
+            }, false);
+            renderDashboardCertificateUploads([]);
+            renderReminderBadge(0);
+        }
+
+        throw error;
+    }
+}
+
 function setActiveNav(clickedLink) {
     document.querySelectorAll(".nav-link").forEach(link => {
         link.classList.remove("active");
@@ -203,10 +449,19 @@ function showDashboard(event) {
         contentFrame.removeAttribute("src");
     }
 
-    loadDashboardCounts();
-    loadDashboardCertificateUploads();
-    loadUnreadReminderCount();
     updatePasswordMenuVisibility();
+
+    const cache = getDashboardCache(getStudentDashboardCacheKey());
+
+    if (cache?.data) {
+        applyStudentDashboardCacheData(cache.data, { animateCounts: false });
+
+        if (!isDashboardCacheValid(cache)) {
+            refreshStudentDashboardCache({ silent: true, force: true }).catch(() => {});
+        }
+    } else {
+        refreshStudentDashboardCache({ silent: false, force: true }).catch(() => {});
+    }
 
     if (window.innerWidth <= 900 && typeof window.closeMobileSidebar === "function") {
         window.closeMobileSidebar();
@@ -406,38 +661,15 @@ function hasUploadedCertificate(req) {
 }
 
 function loadDashboardCounts() {
-    getResolvedStudent()
-        .then(student => {
-            const studentId = student?.id || user?.id;
-
-            if (!studentId) {
-                throw new Error("Student ID not found");
-            }
-
-            return fetch(`/request/student/${studentId}/summary`);
-        })
-        .then(res => {
-            if (!res.ok) {
-                throw new Error("Failed to load dashboard data");
-            }
-            return res.json();
-        })
-        .then(summary => {
-            animateCounter("approvedCount", summary.approvedCount);
-            animateCounter("pendingCount", summary.pendingCount);
-            animateCounter("certificateCount", summary.certificatePendingCount);
-            animateCounter("totalCount", summary.totalCount);
-        })
-        .catch(error => {
-            console.error(error);
-            animateCounter("approvedCount", 0);
-            animateCounter("pendingCount", 0);
-            animateCounter("certificateCount", 0);
-            animateCounter("totalCount", 0);
-        });
+    return refreshStudentDashboardCache({ silent: false, force: true });
 }
 
-async function getResolvedStudent() {
+async function getResolvedStudent(forceRefresh = false) {
+    if (forceRefresh) {
+        resolvedStudent = null;
+        resolvedStudentPromise = null;
+    }
+
     if (resolvedStudent) {
         return resolvedStudent;
     }
@@ -502,96 +734,11 @@ function animateCounter(elementId, target) {
 }
 
 function loadUnreadReminderCount() {
-    fetch(`/notification/unread/${user.id}`)
-        .then(res => {
-            if (!res.ok) {
-                throw new Error("Failed to load unread reminders");
-            }
-            return res.json();
-        })
-        .then(data => {
-            const badge = document.getElementById("reminderBadge");
-            const mobileBadge = document.getElementById("mobileReminderBadge");
-            if (!badge) return;
-
-            const unreadCount = Array.isArray(data) ? data.length : 0;
-
-            if (unreadCount > 0) {
-                badge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
-                badge.style.display = "inline-block";
-                if (mobileBadge) {
-                    mobileBadge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
-                    mobileBadge.style.display = "inline-block";
-                }
-            } else {
-                badge.textContent = "0";
-                badge.style.display = "none";
-                if (mobileBadge) {
-                    mobileBadge.textContent = "0";
-                    mobileBadge.style.display = "none";
-                }
-            }
-        })
-        .catch(error => {
-            console.error(error);
-            const badge = document.getElementById("reminderBadge");
-            const mobileBadge = document.getElementById("mobileReminderBadge");
-            if (badge) {
-                badge.textContent = "0";
-                badge.style.display = "none";
-            }
-            if (mobileBadge) {
-                mobileBadge.textContent = "0";
-                mobileBadge.style.display = "none";
-            }
-        });
+    return refreshStudentDashboardCache({ silent: true, force: true });
 }
 
 async function loadDashboardCertificateUploads() {
-    const card = document.getElementById("dashboardCertificateCard");
-    const list = document.getElementById("dashboardCertificateList");
-    const statusBox = document.getElementById("dashboardCertificateStatus");
-
-    if (!card || !list || !statusBox) return;
-
-    card.style.display = "none";
-    list.innerHTML = "";
-    statusBox.textContent = "";
-
-    try {
-        const student = await getResolvedStudent();
-        const studentId = student?.id || user?.id;
-
-        if (!studentId) {
-            throw new Error("Student ID not found");
-        }
-
-        const res = await fetch(`/request/student/${studentId}/certificate-pending`);
-
-        if (!res.ok) {
-            throw new Error("Unable to load certificate pending requests");
-        }
-
-        const pendingCertificateRequests = await res.json();
-        const safeRequests = Array.isArray(pendingCertificateRequests) ? pendingCertificateRequests : [];
-
-        if (safeRequests.length === 0) {
-            card.style.display = "none";
-            return;
-        }
-
-        card.style.display = "block";
-
-        statusBox.innerHTML = `
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            ${safeRequests.length} certificate upload pending.
-        `;
-
-        list.innerHTML = safeRequests.map(req => buildDashboardCertificateItem(req)).join("");
-
-    } catch (error) {
-        console.error("Dashboard certificate load error:", error);
-    }
+    return refreshStudentDashboardCache({ silent: true, force: true });
 }
 
 function buildDashboardCertificateItem(req) {
@@ -669,8 +816,8 @@ function uploadDashboardCertificate(requestId) {
         })
         .then(() => {
             alert("Certificate uploaded successfully!");
-            loadDashboardCounts();
-            loadDashboardCertificateUploads();
+            clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}HOD_`);
+            refreshStudentDashboardCache({ silent: false, force: true }).catch(() => {});
         })
         .catch(error => {
             console.error(error);
@@ -692,6 +839,7 @@ function formatDashboardDate(value) {
 }
 
 function logout() {
+    clearDashboardCache(getStudentDashboardCacheKey());
     localStorage.removeItem("user");
     window.location.href = "index.html";
 }

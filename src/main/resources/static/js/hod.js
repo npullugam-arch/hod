@@ -7,6 +7,9 @@ const HOD_PHOTO_MAP = {
 };
 
 let dashboardCountsPromise = null;
+const DASHBOARD_CACHE_PREFIX = "sanchara_dashboard_cache_";
+const DASHBOARD_CACHE_TTL_MS = 5 * 60 * 1000;
+const HOD_DASHBOARD_ROLE = "HOD";
 
 if (!user) {
     window.location.href = "index.html";
@@ -38,6 +41,61 @@ function getHodPhotoUrl() {
     }
 
     return `https://www.iare.ac.in/sites/default/files/${encodeURIComponent(empId)}_0.png`;
+}
+
+function getHodDashboardCacheKey() {
+    return `${DASHBOARD_CACHE_PREFIX}${HOD_DASHBOARD_ROLE}_${String(user?.id || "anonymous")}`;
+}
+
+function saveDashboardCache(key, data, role = HOD_DASHBOARD_ROLE) {
+    try {
+        localStorage.setItem(key, JSON.stringify({
+            userId: String(user?.id || ""),
+            role,
+            savedAt: Date.now(),
+            data
+        }));
+    } catch (error) {
+        console.warn("Dashboard cache save failed:", error);
+    }
+}
+
+function getDashboardCache(key) {
+    try {
+        const rawValue = localStorage.getItem(key);
+        if (!rawValue) return null;
+        return JSON.parse(rawValue);
+    } catch (error) {
+        console.warn("Dashboard cache read failed:", error);
+        return null;
+    }
+}
+
+function clearDashboardCache(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (error) {
+        console.warn("Dashboard cache clear failed:", error);
+    }
+}
+
+function isDashboardCacheValid(cache, role = HOD_DASHBOARD_ROLE) {
+    return Boolean(
+        cache &&
+        cache.data &&
+        String(cache.userId || "") === String(user?.id || "") &&
+        String(cache.role || "") === role &&
+        Number(cache.savedAt || 0) > 0 &&
+        (Date.now() - Number(cache.savedAt || 0)) <= DASHBOARD_CACHE_TTL_MS
+    );
+}
+
+function areDashboardDataEqual(previousData, nextData) {
+    try {
+        return JSON.stringify(previousData || null) === JSON.stringify(nextData || null);
+    } catch (error) {
+        return false;
+    }
 }
 
 function initializeSidebar() {
@@ -151,7 +209,17 @@ function showDashboard(event) {
     document.getElementById("iframeSection").classList.add("hidden");
     document.getElementById("contentFrame").src = "";
 
-    loadDashboardCounts();
+    const cache = getDashboardCache(getHodDashboardCacheKey());
+
+    if (cache?.data) {
+        applyHodDashboardCacheData(cache.data, { animateCounts: false });
+
+        if (!isDashboardCacheValid(cache)) {
+            refreshDashboardCache({ silent: true, force: true }).catch(() => {});
+        }
+    } else {
+        refreshDashboardCache({ silent: false, force: true }).catch(() => {});
+    }
 
     if (window.innerWidth <= 900 && typeof window.closeMobileSidebar === "function") {
         window.closeMobileSidebar();
@@ -328,12 +396,88 @@ function setDashboardCountsError() {
         });
 }
 
-function loadDashboardCounts() {
+function setCounterValue(elementId, targetValue) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const safeValue = Number(targetValue) || 0;
+    element.textContent = safeValue;
+}
+
+function renderHodDashboardSummary(summary, animate = false) {
+    const safeSummary = summary || {};
+
+    if (animate) {
+        animateCount("totalCount", safeSummary.totalCount, 300);
+        animateCount("approvedCount", safeSummary.approvedCount, 1200);
+        animateCount("pendingCount", safeSummary.pendingCount, 2100);
+        animateCount("rejectedCount", safeSummary.rejectedCount, 3000);
+        animateCount("certificatePendingCount", safeSummary.certificatePendingCount, 3900);
+        return;
+    }
+
+    setCounterValue("totalCount", safeSummary.totalCount);
+    setCounterValue("approvedCount", safeSummary.approvedCount);
+    setCounterValue("pendingCount", safeSummary.pendingCount);
+    setCounterValue("rejectedCount", safeSummary.rejectedCount);
+    setCounterValue("certificatePendingCount", safeSummary.certificatePendingCount);
+}
+
+function applyHodDashboardCacheData(data, options = {}) {
+    if (!data) return;
+
+    if (data.profile) {
+        const hodNameEl = document.getElementById("hodName");
+        const hodEmployeeIdEl = document.getElementById("hodEmployeeId");
+        const hodHeaderPhotoEl = document.getElementById("hodHeaderPhoto");
+        const mobileHodHeaderPhotoEl = document.getElementById("mobileHodHeaderPhoto");
+
+        if (hodNameEl && data.profile.hodName) hodNameEl.textContent = data.profile.hodName;
+        if (hodEmployeeIdEl && data.profile.employeeId) hodEmployeeIdEl.textContent = data.profile.employeeId;
+
+        if (hodHeaderPhotoEl && data.profile.photoUrl) {
+            hodHeaderPhotoEl.src = data.profile.photoUrl;
+        }
+
+        if (mobileHodHeaderPhotoEl && data.profile.photoUrl) {
+            mobileHodHeaderPhotoEl.src = data.profile.photoUrl;
+        }
+    }
+
+    renderHodDashboardSummary(data.summary, options.animateCounts === true);
+}
+
+function buildHodDashboardCacheData(summary) {
+    return {
+        profile: {
+            hodName: getHodName(),
+            employeeId: getHodEmployeeId(),
+            photoUrl: getHodPhotoUrl()
+        },
+        summary: summary || {}
+    };
+}
+
+function refreshDashboardCache(options = {}) {
+    const silent = options.silent === true;
+    const force = options.force === true;
+    const cacheKey = getHodDashboardCacheKey();
+    const existingCache = getDashboardCache(cacheKey);
+
+    if (!force && isDashboardCacheValid(existingCache) && existingCache?.data) {
+        if (!silent) {
+            applyHodDashboardCacheData(existingCache.data, { animateCounts: false });
+        }
+        return Promise.resolve(existingCache.data);
+    }
+
     if (dashboardCountsPromise) {
         return dashboardCountsPromise;
     }
 
-    resetDashboardCountsToZero();
+    if (!silent || !existingCache?.data) {
+        resetDashboardCountsToZero();
+    }
 
     dashboardCountsPromise = fetch(`/hod/${user.id}/dashboard-summary`)
         .then((res) => {
@@ -341,14 +485,24 @@ function loadDashboardCounts() {
             return res.json();
         })
         .then((summary) => {
-            animateCount("totalCount", summary.totalCount, 300);
-            animateCount("approvedCount", summary.approvedCount, 1200);
-            animateCount("pendingCount", summary.pendingCount, 2100);
-            animateCount("rejectedCount", summary.rejectedCount, 3000);
-            animateCount("certificatePendingCount", summary.certificatePendingCount, 3900);
+            const dashboardData = buildHodDashboardCacheData(summary);
+            const hasChanged = !areDashboardDataEqual(existingCache?.data, dashboardData);
+
+            saveDashboardCache(cacheKey, dashboardData, HOD_DASHBOARD_ROLE);
+
+            if (!silent || hasChanged || !existingCache?.data) {
+                applyHodDashboardCacheData(dashboardData, {
+                    animateCounts: !existingCache?.data && !silent
+                });
+            }
+
+            return dashboardData;
         })
-        .catch(() => {
-            setDashboardCountsError();
+        .catch((error) => {
+            if (!existingCache?.data) {
+                setDashboardCountsError();
+            }
+            throw error;
         })
         .finally(() => {
             dashboardCountsPromise = null;
@@ -356,7 +510,12 @@ function loadDashboardCounts() {
 
     return dashboardCountsPromise;
 }
+
+function loadDashboardCounts() {
+    return refreshDashboardCache({ silent: false, force: true });
+}
 function logout() {
+    clearDashboardCache(getHodDashboardCacheKey());
     localStorage.removeItem("user");
     window.location.href = "index.html";
 }

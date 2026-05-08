@@ -1,4 +1,5 @@
 const user = JSON.parse(localStorage.getItem("user"));
+const DASHBOARD_CACHE_PREFIX = "sanchara_dashboard_cache_";
 
 const CERTIFICATE_REQUIRED_REASONS = [
     "HACKATHON",
@@ -568,6 +569,8 @@ function verifyCertificate(certificateId) {
         })
         .then(() => {
             openModal("verifyModal");
+            patchHodDashboardCacheAfterCertificateDecision();
+            clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}STUDENT_`);
 
             if (currentTrackingItems.length === 1 && currentPage > 0) {
                 currentPage -= 1;
@@ -620,6 +623,8 @@ function submitReject() {
         .then(() => {
             closeModal("rejectModal");
             currentRejectCertificateId = null;
+            patchHodDashboardCacheAfterCertificateDecision();
+            clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}STUDENT_`);
 
             if (currentTrackingItems.length === 1 && currentPage > 0) {
                 currentPage -= 1;
@@ -866,6 +871,65 @@ function getCertificateViewUrl(req) {
     }
 
     return directUrl;
+}
+
+function getHodDashboardCacheKey() {
+    return `${DASHBOARD_CACHE_PREFIX}HOD_${String(user?.id || "anonymous")}`;
+}
+
+function getDashboardCache(key) {
+    try {
+        const rawValue = localStorage.getItem(key);
+        return rawValue ? JSON.parse(rawValue) : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function saveDashboardCache(key, cache) {
+    try {
+        localStorage.setItem(key, JSON.stringify(cache));
+    } catch (error) {
+        console.warn("Dashboard cache save failed:", error);
+    }
+}
+
+function clearDashboardCache(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (error) {
+        console.warn("Dashboard cache clear failed:", error);
+    }
+}
+
+function clearDashboardCachesByPrefix(prefix) {
+    try {
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+            const key = localStorage.key(index);
+            if (key && key.startsWith(prefix)) {
+                localStorage.removeItem(key);
+            }
+        }
+    } catch (error) {
+        console.warn("Dashboard cache prefix clear failed:", error);
+    }
+}
+
+function patchHodDashboardCacheAfterCertificateDecision() {
+    const cacheKey = getHodDashboardCacheKey();
+    const cache = getDashboardCache(cacheKey);
+
+    if (!cache?.data?.summary) {
+        clearDashboardCache(cacheKey);
+        return;
+    }
+
+    cache.data.summary.certificatePendingCount = Math.max(
+        0,
+        (Number(cache.data.summary.certificatePendingCount) || 0) - 1
+    );
+    cache.savedAt = Date.now();
+    saveDashboardCache(cacheKey, cache);
 }
 
 function isCertificateImageUrl(filePath) {

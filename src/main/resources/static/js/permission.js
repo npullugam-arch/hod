@@ -1,4 +1,5 @@
 const user = JSON.parse(localStorage.getItem("user"));
+const DASHBOARD_CACHE_PREFIX = "sanchara_dashboard_cache_";
 const HOD_PHOTO_MAP = {
     IARE10044: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCMZwwMTjidtPfcEX_ENvNeuBjJVB_5bdipg&s",
     IARE10862: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYYUJj3qxUm_1sbOIcIzwEGbSbrxnjfYhjZQ&s",
@@ -217,6 +218,8 @@ async function createRequest() {
         }
 
         await res.json();
+        updateStudentDashboardCacheAfterRequestCreate();
+        clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}HOD_`);
         openSuccessModal();
         clearForm();
     } catch (err) {
@@ -326,4 +329,53 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+}
+
+function getStudentDashboardCacheKey() {
+    return `${DASHBOARD_CACHE_PREFIX}STUDENT_${String(user?.id || "anonymous")}`;
+}
+
+function getDashboardCache(key) {
+    try {
+        const rawValue = localStorage.getItem(key);
+        return rawValue ? JSON.parse(rawValue) : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function saveDashboardCache(key, cache) {
+    try {
+        localStorage.setItem(key, JSON.stringify(cache));
+    } catch (error) {
+        console.warn("Dashboard cache save failed:", error);
+    }
+}
+
+function clearDashboardCachesByPrefix(prefix) {
+    try {
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+            const key = localStorage.key(index);
+            if (key && key.startsWith(prefix)) {
+                localStorage.removeItem(key);
+            }
+        }
+    } catch (error) {
+        console.warn("Dashboard cache prefix clear failed:", error);
+    }
+}
+
+function updateStudentDashboardCacheAfterRequestCreate() {
+    const cacheKey = getStudentDashboardCacheKey();
+    const cache = getDashboardCache(cacheKey);
+
+    if (!cache?.data?.summary) {
+        return;
+    }
+
+    cache.data.summary.totalCount = (Number(cache.data.summary.totalCount) || 0) + 1;
+    cache.data.summary.pendingCount = (Number(cache.data.summary.pendingCount) || 0) + 1;
+    cache.savedAt = Date.now();
+
+    saveDashboardCache(cacheKey, cache);
 }
