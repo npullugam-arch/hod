@@ -29,6 +29,7 @@
                 <button class="menu-btn" data-section="manualSection">Manual Student Create</button>
                 <button class="menu-btn" data-section="excelSection">Student Excel Upload</button>
                 <button class="menu-btn" data-section="hodExcelSection">HOD Excel Upload</button>
+                <button class="menu-btn" data-section="promotionSection">Semester Promotion</button>
                 <button class="menu-btn" data-section="studentsPage">Students</button>
             </nav>
 
@@ -79,6 +80,12 @@
                         <h2>HOD Excel Upload</h2>
                         <p>Upload bulk HOD details and generate HOD login accounts.</p>
                         <button class="primary-btn secondary-btn" type="button" onclick="showAdminSection('hodExcelSection')">Open HOD Upload</button>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <h2>Semester Promotion</h2>
+                        <p>Promote all students from one semester to the next in one academic action.</p>
+                        <button class="primary-btn secondary-btn" type="button" onclick="showAdminSection('promotionSection')">Open Promotion</button>
                     </div>
                 </div>
             </section>
@@ -151,6 +158,53 @@
 
                 <div id="hodExcelStatus" class="status-box"></div>
                 <div id="hodUploadSummary" class="summary-box"></div>
+            </section>
+
+            <section id="promotionSection" class="content-card">
+                <h2>Semester Promotion</h2>
+
+                <div class="upload-info promotion-info">
+                    <p>Select the current semester and the semester to promote students into.</p>
+                    <p>This action updates every student in the selected current semester. No branch or section filters are used.</p>
+                </div>
+
+                <form id="promotionForm" class="promotion-form">
+                    <div class="promotion-grid">
+                        <div class="promotion-field">
+                            <label for="currentSemester">Current Semester</label>
+                            <select id="currentSemester" required>
+                                <option value="">Select Current Semester</option>
+                                <option value="1">Semester 1</option>
+                                <option value="2">Semester 2</option>
+                                <option value="3">Semester 3</option>
+                                <option value="4">Semester 4</option>
+                                <option value="5">Semester 5</option>
+                                <option value="6">Semester 6</option>
+                                <option value="7">Semester 7</option>
+                                <option value="8">Semester 8</option>
+                            </select>
+                        </div>
+
+                        <div class="promotion-field">
+                            <label for="newSemester">Promote To Semester</label>
+                            <select id="newSemester" required>
+                                <option value="">Select Promote To Semester</option>
+                                <option value="1">Semester 1</option>
+                                <option value="2">Semester 2</option>
+                                <option value="3">Semester 3</option>
+                                <option value="4">Semester 4</option>
+                                <option value="5">Semester 5</option>
+                                <option value="6">Semester 6</option>
+                                <option value="7">Semester 7</option>
+                                <option value="8">Semester 8</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="primary-btn promotion-btn">Promote Students</button>
+                </form>
+
+                <div id="promotionStatus" class="status-box"></div>
             </section>
 
             <section id="iframeSection" class="content-card iframe-card">

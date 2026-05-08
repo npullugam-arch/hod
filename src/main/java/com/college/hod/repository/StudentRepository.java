@@ -6,6 +6,7 @@ import com.college.hod.entity.Student;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -26,6 +27,15 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     Optional<Student> findByRollNo(String rollNo);
 
     boolean existsByRollNo(String rollNo);
+
+    long countBySem(Integer sem);
+
+    @Modifying
+    @Query("UPDATE Student s SET s.sem = :newSemester WHERE s.sem = :currentSemester")
+    int promoteStudentsToSemester(
+            @Param("currentSemester") Integer currentSemester,
+            @Param("newSemester") Integer newSemester
+    );
 
     @Query("""
         SELECT new com.college.hod.dto.AdminStudentListItem(

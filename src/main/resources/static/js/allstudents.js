@@ -64,7 +64,7 @@ function loadAllRequests() {
             status.textContent = "";
             table.innerHTML = `
                 <tr>
-                    <td colspan="6" class="empty-row">
+                    <td colspan="7" class="empty-row">
                         Unable to load all requests. Please add backend API: GET /request/all
                     </td>
                 </tr>
@@ -109,7 +109,7 @@ function renderPageRows() {
         status.textContent = `Total requests: ${allRequests.length}`;
         table.innerHTML = `
             <tr>
-                <td colspan="6" class="empty-row">No requests found.</td>
+                <td colspan="7" class="empty-row">No requests found.</td>
             </tr>
         `;
         updatePagination(0);
@@ -229,6 +229,7 @@ function buildRequestMainRow(req) {
 
             <td>${formatDate(req.startDate)}</td>
             <td>${formatDate(req.endDate)}</td>
+            <td>${formatDate(req.requestDate)}</td>
 
             <td>${getStatusBadge(req.status)}</td>
         </tr>
@@ -245,13 +246,24 @@ function buildRemarkRow(req) {
         || req.certificate?.rejectionRemark
         || "";
 
+    if (status === "EXPIRED") {
+        return `
+            <tr class="remark-row remark-row-expired">
+                <td colspan="7">
+                    <span class="remark-label">Status Note:</span>
+                    This permission request expired because approval was not completed before the scheduled start date.
+                </td>
+            </tr>
+        `;
+    }
+
     if (status !== "REJECTED" || !remark) {
         return "";
     }
 
     return `
         <tr class="remark-row">
-            <td colspan="6">
+            <td colspan="7">
                 <span class="remark-label">HOD Remark:</span>
                 ${escapeHtml(remark)}
             </td>
@@ -331,6 +343,10 @@ function getStatusBadge(status) {
 
     if (finalStatus === "REJECTED") {
         return `<span class="status-badge status-rejected">REJECTED</span>`;
+    }
+
+    if (finalStatus === "EXPIRED") {
+        return `<span class="status-badge status-expired">EXPIRED</span>`;
     }
 
     return `<span class="status-badge status-pending">PENDING</span>`;

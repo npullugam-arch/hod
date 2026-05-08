@@ -122,34 +122,29 @@
     </div>
 </div>
 
-<!-- Student Details Modal -->
-<div class="modal-overlay" id="studentDetailsModal">
-    <div class="modal-box student-modal-box">
-        <div class="student-modal-header">
-            <h3>Student Details</h3>
-            <button class="student-close-btn" onclick="closeModal('studentDetailsModal')">&times;</button>
+<!-- Student hover details card -->
+<div class="student-hover-card" id="studentHoverCard" aria-hidden="true">
+    <div class="student-profile-top">
+        <img id="studentHoverPhoto" class="student-details-photo" src="" alt="Student Photo" />
+        <div>
+            <div id="studentHoverName" class="modal-student-name">-</div>
+            <div id="studentHoverRollNo" class="modal-student-roll">-</div>
         </div>
+    </div>
 
-        <div class="student-profile-top">
-            <img id="studentDetailsPhoto" class="student-details-photo" src="" alt="Student Photo" />
-            <div>
-                <div id="studentDetailsName" class="modal-student-name">-</div>
-                <div id="studentDetailsRollNo" class="modal-student-roll">-</div>
-            </div>
-        </div>
-
+    <div class="student-hover-card-body">
         <div class="student-details-grid">
-            <div class="detail-card"><span>Email</span><b id="studentDetailsEmail">-</b></div>
-            <div class="detail-card"><span>Branch</span><b id="studentDetailsBranch">-</b></div>
-            <div class="detail-card"><span>Section</span><b id="studentDetailsSection">-</b></div>
-            <div class="detail-card"><span>Semester</span><b id="studentDetailsSem">-</b></div>
-            <div class="detail-card"><span>Gender</span><b id="studentDetailsGender">-</b></div>
-            <div class="detail-card"><span>Date of Birth</span><b id="studentDetailsDob">-</b></div>
-            <div class="detail-card"><span>Student Phone</span><b id="studentDetailsStudentPhone">-</b></div>
-            <div class="detail-card"><span>Parent Phone</span><b id="studentDetailsParentPhone">-</b></div>
-            <div class="detail-card"><span>Father Name</span><b id="studentDetailsFatherName">-</b></div>
-            <div class="detail-card"><span>Admission Type</span><b id="studentDetailsAdmissionType">-</b></div>
-            <div class="detail-card"><span>Caste</span><b id="studentDetailsCaste">-</b></div>
+            <div class="detail-card"><span>Email</span><b id="studentHoverEmail">-</b></div>
+            <div class="detail-card"><span>Branch</span><b id="studentHoverBranch">-</b></div>
+            <div class="detail-card"><span>Section</span><b id="studentHoverSection">-</b></div>
+            <div class="detail-card"><span>Semester</span><b id="studentHoverSem">-</b></div>
+            <div class="detail-card"><span>Gender</span><b id="studentHoverGender">-</b></div>
+            <div class="detail-card"><span>Date of Birth</span><b id="studentHoverDob">-</b></div>
+            <div class="detail-card"><span>Student Phone</span><b id="studentHoverStudentPhone">-</b></div>
+            <div class="detail-card"><span>Parent Phone</span><b id="studentHoverParentPhone">-</b></div>
+            <div class="detail-card"><span>Father Name</span><b id="studentHoverFatherName">-</b></div>
+            <div class="detail-card"><span>Admission Type</span><b id="studentHoverAdmissionType">-</b></div>
+            <div class="detail-card"><span>Caste</span><b id="studentHoverCaste">-</b></div>
         </div>
     </div>
 </div>

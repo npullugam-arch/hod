@@ -79,6 +79,7 @@ function loadPendingRequests() {
             currentPendingRequests = Array.isArray(data.content) ? data.content : [];
             totalPages = Number(data.totalPages) || 0;
             totalElements = Number(data.totalElements) || 0;
+            clearDashboardCachesForExpiredRows(currentPendingRequests);
 
             if (totalPages > 0 && currentPage >= totalPages) {
                 currentPage = totalPages - 1;
@@ -167,6 +168,7 @@ function renderPendingTable() {
 
     currentPendingRequests.forEach((req, index) => {
         const studentData = buildPendingStudentData(req);
+        const isExpired = isExpiredPendingRequest(req);
 
         const studentPhotoHtml = studentData.photo
             ? `
@@ -181,7 +183,7 @@ function renderPendingTable() {
               `
             : `<div class="student-avatar-fallback">${escapeHtml(studentData.initial)}</div>`;
 
-        const historyButton = req.studentId
+        const historyButton = req.studentId && !isExpired
             ? `
                 <button class="btn btn-history" onclick="viewStudentHistory(${req.studentId})" type="button">
                     <i class="fa-solid fa-eye"></i>
@@ -211,6 +213,7 @@ function renderPendingTable() {
 
                 <td data-label="Description">
                     ${formatDescription(req.description || "No description provided.", req.id || index)}
+                    ${isExpired ? `<div class="expired-inline-note">This request has expired because the event start date has already passed without approval.</div>` : ""}
                 </td>
 
                 <td data-label="Start Date" class="date-cell">${formatDate(req.startDate)}</td>
@@ -218,19 +221,30 @@ function renderPendingTable() {
                 <td data-label="Request Date" class="date-cell">${formatDate(req.requestDate)}</td>
 
                 <td data-label="Actions">
-                    <div class="action-group">
-                        <button class="btn btn-approve" onclick="approveRequest(${req.id})" type="button">
-                            <i class="fa-regular fa-circle-check"></i>
-                            <span>Approve</span>
-                        </button>
+                    ${isExpired ? `
+                        <div class="expired-action-box">
+                            <span class="expired-badge">EXPIRED</span>
+                            <div class="expired-message">This request has expired because the event start date has already passed without approval.</div>
+                            <button class="btn btn-clear-expired" onclick="clearExpiredRequest(${req.id})" type="button">
+                                <i class="fa-solid fa-trash-can"></i>
+                                <span>Clear Expired</span>
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="action-group">
+                            <button class="btn btn-approve" onclick="approveRequest(${req.id})" type="button">
+                                <i class="fa-regular fa-circle-check"></i>
+                                <span>Approve</span>
+                            </button>
 
-                        <button class="btn btn-reject" onclick="openRejectRemark(${req.id})" type="button">
-                            <i class="fa-regular fa-circle-xmark"></i>
-                            <span>Reject</span>
-                        </button>
+                            <button class="btn btn-reject" onclick="openRejectRemark(${req.id})" type="button">
+                                <i class="fa-regular fa-circle-xmark"></i>
+                                <span>Reject</span>
+                            </button>
 
-                        ${historyButton}
-                    </div>
+                            ${historyButton}
+                        </div>
+                    `}
                 </td>
             </tr>
         `;
@@ -516,7 +530,7 @@ function executeRejectWithRemark() {
         })
         .catch(err => {
             console.error(err);
-            alert("Error while rejecting request.");
+            alert(err.message || "Error while rejecting request.");
         });
 }
 
@@ -546,7 +560,40 @@ function approveRequest(id) {
         })
         .catch(err => {
             console.error(err);
-            alert("Error while approving request.");
+            alert(err.message || "Error while approving request.");
+        });
+}
+
+function clearExpiredRequest(id) {
+    const confirmed = confirm("Remove this expired request from the pending list?");
+    if (!confirmed) {
+        return;
+    }
+
+    fetch(`/request/clear-expired/${id}`, {
+        method: "POST"
+    })
+        .then(async res => {
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(errorText || "Failed to clear expired request");
+            }
+
+            return res.json();
+        })
+        .then(() => {
+            clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}HOD_`);
+            clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}STUDENT_`);
+
+            if (currentPendingRequests.length === 1 && currentPage > 0) {
+                currentPage -= 1;
+            }
+
+            loadPendingRequests();
+        })
+        .catch(err => {
+            console.error(err);
+            alert(err.message || "Error while clearing expired request.");
         });
 }
 
@@ -671,6 +718,40 @@ function patchHodDashboardCacheAfterReject(requestId) {
     cache.data.summary.rejectedCount = (Number(cache.data.summary.rejectedCount) || 0) + 1;
     cache.savedAt = Date.now();
     saveDashboardCache(cacheKey, cache);
+}
+
+function getNormalizedStatus(value) {
+    return String(value || "PENDING").toUpperCase();
+}
+
+function isExpiredPendingRequest(req) {
+    if (getNormalizedStatus(req?.status) === "EXPIRED") {
+        return true;
+    }
+
+    if (getNormalizedStatus(req?.status) !== "PENDING" || !req?.startDate) {
+        return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(req.startDate);
+    if (Number.isNaN(startDate.getTime())) {
+        return false;
+    }
+
+    startDate.setHours(0, 0, 0, 0);
+    return today > startDate;
+}
+
+function clearDashboardCachesForExpiredRows(requests) {
+    if (!Array.isArray(requests) || !requests.some(isExpiredPendingRequest)) {
+        return;
+    }
+
+    clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}HOD_`);
+    clearDashboardCachesByPrefix(`${DASHBOARD_CACHE_PREFIX}STUDENT_`);
 }
 
 window.addEventListener("keydown", function (event) {

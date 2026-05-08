@@ -8,7 +8,6 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    min-height: 100vh;
     background: linear-gradient(135deg, #eef4ff, #f8fbff);
     padding: 24px;
     color: #0f172a;
@@ -35,7 +34,6 @@ button:hover {
 
 #detailsContainer {
     width: 100%;
-    min-height: calc(100vh - 100px);
     background: rgba(255, 255, 255, 0.96);
     border-radius: 26px;
     padding: 36px;
@@ -274,4 +272,83 @@ button:hover {
         width: 120px;
         height: 120px;
     }
+}
+
+html,
+body {
+    height: auto;
+    min-height: 0;
+}
+
+body {
+    overflow-x: hidden;
+    padding-bottom: 16px;
+}
+
+#detailsContainer {
+    min-height: 0;
+    overflow: visible;
+}
+
+#detailsContainer:last-child,
+.student-card:last-child,
+.details-table:last-child {
+    margin-bottom: 0;
+}
+
+/* =========================================
+   FINAL WHITE SPACE FIX
+========================================= */
+
+html,
+body {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+body {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Main container should fit content only */
+#detailsContainer {
+    height: auto !important;
+    min-height: auto !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 24px !important;
+    overflow: hidden !important;
+}
+
+/* Prevent unnecessary bottom space */
+.student-card,
+.details-table {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Remove extra spacing from last row */
+.detail-row:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Important iframe/content fix */
+body > *:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Prevent flex stretching issues */
+.main-content,
+.page-shell,
+.content-wrapper,
+.student-wrapper {
+    min-height: auto !important;
+    height: auto !important;
+}
+
+/* Remove giant empty area */
+iframe {
+    min-height: auto !important;
 }

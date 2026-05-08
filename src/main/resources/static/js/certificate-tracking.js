@@ -12,6 +12,9 @@ const CERTIFICATE_REQUIRED_REASONS = [
 
 const STUDENT_PHOTO_BASE_URL = "https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS";
 const TRACKING_PAGE_SIZE = 20;
+const STUDENT_CARD_DEBUG = false;
+const STUDENT_HOVER_HIDE_DELAY = 140;
+const STUDENT_HOVER_GAP = 14;
 
 let currentTrackingItems = [];
 let currentRejectCertificateId = null;
@@ -21,6 +24,8 @@ let totalElements = 0;
 let isTrackingLoading = false;
 let searchDebounceTimer = null;
 let visibleTrackingItems = [];
+let studentHoverHideTimer = null;
+let activeStudentHoverAnchor = null;
 
 if (!user) {
     window.top.location.href = "index.html";
@@ -29,6 +34,7 @@ if (!user) {
 window.onload = function () {
     bindFilters();
     bindTrackingPagination();
+    bindStudentHoverCard();
     loadCertificateTracking();
 };
 
@@ -123,6 +129,8 @@ function renderTrackingLoadingState() {
     const noResultsMsg = document.getElementById("noResultsMsg");
     const status = document.getElementById("trackingStatus");
 
+    hideStudentHoverCard();
+
     if (noResultsMsg) {
         noResultsMsg.style.display = "none";
     }
@@ -144,6 +152,8 @@ function renderTrackingErrorState() {
     const table = document.getElementById("trackingTable");
     const noResultsMsg = document.getElementById("noResultsMsg");
     const status = document.getElementById("trackingStatus");
+
+    hideStudentHoverCard();
 
     if (noResultsMsg) {
         noResultsMsg.style.display = "none";
@@ -217,6 +227,7 @@ function renderTrackingTable(list) {
 
     if (!table) return;
 
+    hideStudentHoverCard();
     table.innerHTML = "";
     visibleTrackingItems = list;
 
@@ -273,7 +284,10 @@ function renderTrackingTable(list) {
         table.innerHTML += `
             <tr class="request-row">
                 <td data-label="Student Details">
-                    <div class="student-profile" onclick="openStudentDetailsModalByIndex(${index})">
+                    <div class="student-profile"
+                        onmouseenter="showStudentHoverCardByIndex(${index}, this)"
+                        onmouseleave="scheduleHideStudentHoverCard()"
+                        onclick="toggleStudentHoverCardByIndex(${index}, this, event)">
                         ${studentAvatar}
                         <div class="student-info">
                             <span class="name">${escapeHtml(studentData.name)}</span>
@@ -664,34 +678,169 @@ function sendReminder(requestId, studentName) {
         });
 }
 
-function openStudentDetailsModalByIndex(index) {
-    const student = buildTrackingStudentData(visibleTrackingItems[index] || {});
-    openStudentDetailsModal(student);
+/* Student hover card: keep this page-specific so other modals remain unchanged. */
+function bindStudentHoverCard() {
+    const hoverCard = document.getElementById("studentHoverCard");
+
+    if (!hoverCard) {
+        return;
+    }
+
+    hoverCard.addEventListener("mouseenter", function () {
+        clearStudentHoverHideTimer();
+    });
+
+    hoverCard.addEventListener("mouseleave", function () {
+        scheduleHideStudentHoverCard();
+    });
+
+    window.addEventListener("resize", function () {
+        if (isStudentHoverCardVisible() && activeStudentHoverAnchor) {
+            positionStudentHoverCard(activeStudentHoverAnchor);
+        }
+    });
+
+    window.addEventListener("scroll", function () {
+        if (isStudentHoverCardVisible() && activeStudentHoverAnchor) {
+            positionStudentHoverCard(activeStudentHoverAnchor);
+        }
+    }, true);
+
+    document.addEventListener("click", function (event) {
+        const clickedInsideProfile = event.target.closest(".student-profile");
+        const clickedInsideCard = event.target.closest("#studentHoverCard");
+
+        if (!clickedInsideProfile && !clickedInsideCard) {
+            hideStudentHoverCard();
+        }
+    });
 }
 
-function openStudentDetailsModal(student) {
-    document.getElementById("studentDetailsName").textContent = student.name || "-";
-    document.getElementById("studentDetailsRollNo").textContent = student.rollNo || "-";
-    document.getElementById("studentDetailsEmail").textContent = student.email || "-";
-    document.getElementById("studentDetailsBranch").textContent = student.branch || "-";
-    document.getElementById("studentDetailsSection").textContent = student.section || "-";
-    document.getElementById("studentDetailsSem").textContent = student.sem || "-";
-    document.getElementById("studentDetailsGender").textContent = student.gender || "-";
-    document.getElementById("studentDetailsDob").textContent = student.dob || "-";
-    document.getElementById("studentDetailsStudentPhone").textContent = student.studentPhone || "-";
-    document.getElementById("studentDetailsParentPhone").textContent = student.parentPhone || "-";
-    document.getElementById("studentDetailsFatherName").textContent = student.fatherName || "-";
-    document.getElementById("studentDetailsAdmissionType").textContent = student.admissionType || "-";
-    document.getElementById("studentDetailsCaste").textContent = student.caste || "-";
+function showStudentHoverCardByIndex(index, element) {
+    const student = buildTrackingStudentData(visibleTrackingItems[index] || {});
+    showStudentHoverCard(student, element);
+}
 
-    const photoEl = document.getElementById("studentDetailsPhoto");
+function toggleStudentHoverCardByIndex(index, element, event) {
+    if (!shouldUseTapForStudentHoverCard()) {
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (isStudentHoverCardVisible() && activeStudentHoverAnchor === element) {
+        hideStudentHoverCard();
+        return;
+    }
+
+    showStudentHoverCardByIndex(index, element);
+}
+
+function showStudentHoverCard(student, element) {
+    const hoverCard = document.getElementById("studentHoverCard");
+    if (!hoverCard || !element) {
+        return;
+    }
+
+    clearStudentHoverHideTimer();
+    activeStudentHoverAnchor = element;
+
+    document.getElementById("studentHoverName").textContent = student.name || "-";
+    document.getElementById("studentHoverRollNo").textContent = student.rollNo || "-";
+    document.getElementById("studentHoverEmail").textContent = student.email || "-";
+    document.getElementById("studentHoverBranch").textContent = student.branch || "-";
+    document.getElementById("studentHoverSection").textContent = student.section || "-";
+    document.getElementById("studentHoverSem").textContent = student.sem || "-";
+    document.getElementById("studentHoverGender").textContent = student.gender || "-";
+    document.getElementById("studentHoverDob").textContent = student.dob || "-";
+    document.getElementById("studentHoverStudentPhone").textContent = student.studentPhone || "-";
+    document.getElementById("studentHoverParentPhone").textContent = student.parentPhone || "-";
+    document.getElementById("studentHoverFatherName").textContent = student.fatherName || "-";
+    document.getElementById("studentHoverAdmissionType").textContent = student.admissionType || "-";
+    document.getElementById("studentHoverCaste").textContent = student.caste || "-";
+
+    const photoEl = document.getElementById("studentHoverPhoto");
     photoEl.src = student.photo || "";
     photoEl.alt = student.name || "Student Photo";
     photoEl.onerror = function () {
         this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.initial || "S")}&background=2563eb&color=ffffff&size=160`;
     };
 
-    openModal("studentDetailsModal");
+    if (!student.photo) {
+        photoEl.onerror();
+    }
+
+    hoverCard.classList.add("visible");
+    hoverCard.setAttribute("aria-hidden", "false");
+    positionStudentHoverCard(element);
+}
+
+function positionStudentHoverCard(element) {
+    const hoverCard = document.getElementById("studentHoverCard");
+    if (!hoverCard || !element) {
+        return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const cardWidth = hoverCard.offsetWidth;
+    const cardHeight = hoverCard.offsetHeight;
+
+    const spaceOnRight = viewportWidth - rect.right;
+    const shouldPlaceLeft = spaceOnRight < cardWidth + STUDENT_HOVER_GAP && rect.left > cardWidth + STUDENT_HOVER_GAP;
+
+    let left = shouldPlaceLeft
+        ? rect.left - cardWidth - STUDENT_HOVER_GAP
+        : rect.right + STUDENT_HOVER_GAP;
+    let top = rect.top + (rect.height / 2) - (cardHeight / 2);
+
+    const horizontalPadding = 8;
+    const verticalPadding = 8;
+
+    left = Math.max(horizontalPadding, Math.min(left, viewportWidth - cardWidth - horizontalPadding));
+    top = Math.max(verticalPadding, Math.min(top, viewportHeight - cardHeight - verticalPadding));
+
+    hoverCard.style.left = `${left}px`;
+    hoverCard.style.top = `${top}px`;
+
+    if (STUDENT_CARD_DEBUG) {
+        console.log("Student hover card positioned", { left, top, shouldPlaceLeft });
+    }
+}
+
+function scheduleHideStudentHoverCard() {
+    clearStudentHoverHideTimer();
+    studentHoverHideTimer = window.setTimeout(hideStudentHoverCard, STUDENT_HOVER_HIDE_DELAY);
+}
+
+function clearStudentHoverHideTimer() {
+    if (studentHoverHideTimer) {
+        window.clearTimeout(studentHoverHideTimer);
+        studentHoverHideTimer = null;
+    }
+}
+
+function hideStudentHoverCard() {
+    clearStudentHoverHideTimer();
+
+    const hoverCard = document.getElementById("studentHoverCard");
+    if (!hoverCard) {
+        return;
+    }
+
+    hoverCard.classList.remove("visible");
+    hoverCard.setAttribute("aria-hidden", "true");
+    activeStudentHoverAnchor = null;
+}
+
+function isStudentHoverCardVisible() {
+    return document.getElementById("studentHoverCard")?.classList.contains("visible");
+}
+
+function shouldUseTapForStudentHoverCard() {
+    return window.matchMedia("(hover: none), (pointer: coarse)").matches;
 }
 
 function openModal(modalId) {
@@ -718,6 +867,7 @@ window.addEventListener("click", function (event) {
 
 window.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
+        hideStudentHoverCard();
         document.querySelectorAll(".modal-overlay").forEach(modal => {
             if (modal.classList.contains("active")) {
                 closeModal(modal.id);

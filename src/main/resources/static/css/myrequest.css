@@ -1032,6 +1032,11 @@ body {
     color: #92400e;
 }
 
+.badge-expired {
+    background: #e2e8f0;
+    color: #334155;
+}
+
 .request-remark,
 .certificate-remark {
     margin-top: 6px;

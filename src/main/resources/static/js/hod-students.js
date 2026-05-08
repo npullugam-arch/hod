@@ -5,10 +5,12 @@ if (!user || user.role !== "HOD") {
     window.location.href = "index.html";
 }
 
-let studentsCache = [];
-let filteredStudentsCache = [];
+let currentPageStudents = [];
 let currentPage = 1;
 let pageSize = 24;
+let totalPages = 0;
+let totalElements = 0;
+let isLoadingStudents = false;
 
 const VALID_BRANCHES = [
     "CSE", "CSM", "CSD", "CSC", "CSI", "CSIT", "IT",
@@ -24,26 +26,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const nextPageBtn = document.getElementById("nextPageBtn");
     const pageSizeSelect = document.getElementById("pageSizeSelect");
 
-    if (searchInput) searchInput.addEventListener("input", () => applyClientFilters(true));
-    if (branchFilter) branchFilter.addEventListener("change", () => applyClientFilters(true));
-    if (sectionFilter) sectionFilter.addEventListener("change", () => applyClientFilters(true));
-    if (semFilter) semFilter.addEventListener("change", () => applyClientFilters(true));
+    populateFilters();
+
+    if (searchInput) searchInput.addEventListener("input", debounce(resetAndLoadStudents, 300));
+    if (branchFilter) branchFilter.addEventListener("change", resetAndLoadStudents);
+    if (sectionFilter) sectionFilter.addEventListener("change", resetAndLoadStudents);
+    if (semFilter) semFilter.addEventListener("change", resetAndLoadStudents);
 
     if (prevPageBtn) {
         prevPageBtn.addEventListener("click", () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderPaginatedStudents();
+            if (!isLoadingStudents && currentPage > 1) {
+                loadStudents(currentPage - 1);
             }
         });
     }
 
     if (nextPageBtn) {
         nextPageBtn.addEventListener("click", () => {
-            const totalPages = getTotalPages();
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderPaginatedStudents();
+            if (!isLoadingStudents && currentPage < totalPages) {
+                loadStudents(currentPage + 1);
             }
         });
     }
@@ -51,57 +52,111 @@ document.addEventListener("DOMContentLoaded", () => {
     if (pageSizeSelect) {
         pageSizeSelect.addEventListener("change", () => {
             pageSize = Number(pageSizeSelect.value) || 24;
-            currentPage = 1;
-            renderPaginatedStudents();
+            resetAndLoadStudents();
         });
     }
 
     showLoading();
-    loadStudents();
+    loadStudents(1);
 });
 
-async function loadStudents() {
+function populateFilters() {
+    const branchFilter = document.getElementById("branchFilter");
+    const sectionFilter = document.getElementById("sectionFilter");
+    const semFilter = document.getElementById("semFilter");
+
+    if (!branchFilter || !sectionFilter || !semFilter) return;
+
+    branchFilter.innerHTML = `<option value="">All Branches</option>`;
+    sectionFilter.innerHTML = `<option value="">All Sections</option>`;
+    semFilter.innerHTML = `<option value="">All Semesters</option>`;
+
+    VALID_BRANCHES.forEach(branch => {
+        branchFilter.innerHTML += `<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`;
+    });
+
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(section => {
+        sectionFilter.innerHTML += `<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`;
+    });
+
+    for (let sem = 1; sem <= 8; sem++) {
+        semFilter.innerHTML += `<option value="${sem}">${sem}</option>`;
+    }
+}
+
+async function loadStudents(targetPage = 1) {
+    if (isLoadingStudents) {
+        return;
+    }
+
     clearPageStatus();
+    isLoadingStudents = true;
+    currentPage = Math.max(Number(targetPage) || 1, 1);
+    setPaginationLoadingState(true);
     showLoading();
 
     try {
-        const students = await fetchHodStudents();
-        studentsCache = Array.isArray(students) ? students : [];
+        const result = await fetchHodStudentsPage(currentPage, pageSize);
 
-        populateFilters(studentsCache);
-        applyClientFilters(true);
+        currentPageStudents = Array.isArray(result.content) ? result.content : [];
+        currentPage = (Number(result.page) || 0) + 1;
+        totalPages = Number(result.totalPages) || 0;
+        totalElements = Number(result.totalElements) || 0;
 
-        if (studentsCache.length === 0) {
+        renderStudents(currentPageStudents);
+        renderPagination();
+
+        if (totalElements === 0) {
             setPageStatus("No students are assigned to this HOD.", "info");
         }
     } catch (error) {
         console.error("Failed to load students:", error);
-        studentsCache = [];
-        filteredStudentsCache = [];
-        populateFilters([]);
+        currentPageStudents = [];
+        currentPage = 1;
+        totalPages = 0;
+        totalElements = 0;
         renderStudents([]);
         renderPagination();
         setPageStatus(error.message || "Failed to load students", "error");
     } finally {
-        setTimeout(hideLoading, 700);
+        isLoadingStudents = false;
+        setPaginationLoadingState(false);
+        hideLoading();
     }
 }
 
-async function fetchHodStudents() {
+async function fetchHodStudentsPage(pageNumber, size) {
     const hodId = await resolveHodId();
 
-    if (hodId) {
-        const response = await fetch(`/hod/${hodId}/students`);
-
-        if (response.ok) {
-            const data = await response.json();
-            return Array.isArray(data) ? data : [];
-        }
-
-        throw new Error("Unable to load HOD students.");
+    if (!hodId) {
+        throw new Error("Unable to resolve HOD details.");
     }
 
-    return [];
+    const search = document.getElementById("searchInput")?.value.trim() || "";
+    const branch = document.getElementById("branchFilter")?.value.trim() || "";
+    const section = document.getElementById("sectionFilter")?.value.trim() || "";
+    const semValue = document.getElementById("semFilter")?.value.trim() || "";
+
+    const params = new URLSearchParams({
+        page: String(Math.max((Number(pageNumber) || 1) - 1, 0)),
+        size: String(Math.max(Number(size) || 24, 1)),
+        search,
+        branch,
+        sec: section
+    });
+
+    if (semValue) {
+        params.set("sem", semValue);
+    }
+
+    const response = await fetch(`/hod/${hodId}/students-page?${params.toString()}`);
+
+    if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || "Unable to load HOD students.");
+    }
+
+    return response.json();
 }
 
 async function resolveHodId() {
@@ -133,94 +188,8 @@ function getCurrentEmployeeId() {
     return String(user.employeeId || user.username || "").trim().toUpperCase();
 }
 
-function populateFilters(students) {
-    const branchFilter = document.getElementById("branchFilter");
-    const sectionFilter = document.getElementById("sectionFilter");
-    const semFilter = document.getElementById("semFilter");
-
-    if (!branchFilter || !sectionFilter || !semFilter) return;
-
-    const branches = [...new Set(
-        students.map(s => normalizeBranch(s.branch) || safeValue(s.branch)).filter(v => v !== "-")
-    )].sort();
-
-    const sections = [...new Set(
-        students.map(s => normalizeSection(s.section || s.sec) || safeValue(s.section || s.sec)).filter(v => v !== "-")
-    )].sort();
-
-    const semesters = [...new Set(
-        students.map(s => normalizeSemester(s.sem) || safeValue(s.sem)).filter(v => v !== "-")
-    )].sort((a, b) => Number(a) - Number(b));
-
-    branchFilter.innerHTML = `<option value="">All Branches</option>`;
-    sectionFilter.innerHTML = `<option value="">All Sections</option>`;
-    semFilter.innerHTML = `<option value="">All Semesters</option>`;
-
-    branches.forEach(branch => {
-        branchFilter.innerHTML += `<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`;
-    });
-
-    sections.forEach(section => {
-        sectionFilter.innerHTML += `<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`;
-    });
-
-    semesters.forEach(sem => {
-        semFilter.innerHTML += `<option value="${escapeHtml(sem)}">${escapeHtml(sem)}</option>`;
-    });
-}
-
-function applyClientFilters(resetPage = false) {
-    const search = document.getElementById("searchInput")?.value.trim().toLowerCase() || "";
-    const branch = document.getElementById("branchFilter")?.value.trim() || "";
-    const section = document.getElementById("sectionFilter")?.value.trim() || "";
-    const sem = document.getElementById("semFilter")?.value.trim() || "";
-
-    filteredStudentsCache = studentsCache.filter(student => {
-        const studentBranch = normalizeBranch(student.branch) || safeValue(student.branch);
-        const studentSection = normalizeSection(student.section || student.sec) || safeValue(student.section || student.sec);
-        const studentSem = normalizeSemester(student.sem) || safeValue(student.sem);
-
-        const searchable = [
-            student.name,
-            student.rollNo,
-            studentBranch,
-            studentSection,
-            studentSem,
-            student.studentPhoneNumber,
-            student.parentPhoneNumber,
-            student.email,
-            student.fatherName,
-            student.gender,
-            student.caste
-        ].join(" ").toLowerCase();
-
-        return (!search || searchable.includes(search)) &&
-            (!branch || studentBranch === branch) &&
-            (!section || studentSection === section) &&
-            (!sem || studentSem === sem);
-    });
-
-    if (resetPage) currentPage = 1;
-
-    renderPaginatedStudents();
-}
-
-function renderPaginatedStudents() {
-    const totalPages = getTotalPages();
-
-    if (currentPage > totalPages) currentPage = totalPages || 1;
-    if (currentPage < 1) currentPage = 1;
-
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const pageStudents = filteredStudentsCache.slice(startIndex, endIndex);
-
-    renderStudents(pageStudents);
-    renderPagination();
-}
-
-function getTotalPages() {
-    return Math.ceil(filteredStudentsCache.length / pageSize);
+function resetAndLoadStudents() {
+    loadStudents(1);
 }
 
 function renderPagination() {
@@ -232,23 +201,20 @@ function renderPagination() {
 
     if (!paginationWrapper || !paginationInfo || !pageNumbers) return;
 
-    const totalStudents = filteredStudentsCache.length;
-    const totalPages = getTotalPages();
-
-    if (totalStudents === 0) {
+    if (totalElements === 0) {
         paginationWrapper.style.display = "none";
         return;
     }
 
     paginationWrapper.style.display = "flex";
 
-    const start = (currentPage - 1) * pageSize + 1;
-    const end = Math.min(currentPage * pageSize, totalStudents);
+    const start = ((currentPage - 1) * pageSize) + 1;
+    const end = Math.min(currentPage * pageSize, totalElements);
 
-    paginationInfo.textContent = `Showing ${start}-${end} of ${totalStudents} students`;
+    paginationInfo.textContent = `Showing ${start}-${end} of ${totalElements} students`;
 
-    if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
-    if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
+    if (prevPageBtn) prevPageBtn.disabled = isLoadingStudents || currentPage <= 1;
+    if (nextPageBtn) nextPageBtn.disabled = isLoadingStudents || totalPages === 0 || currentPage >= totalPages;
 
     pageNumbers.innerHTML = "";
 
@@ -267,10 +233,12 @@ function renderPagination() {
         btn.type = "button";
         btn.className = `page-number-btn ${page === currentPage ? "active" : ""}`;
         btn.textContent = page;
+        btn.disabled = isLoadingStudents;
 
         btn.addEventListener("click", () => {
-            currentPage = page;
-            renderPaginatedStudents();
+            if (!isLoadingStudents && page !== currentPage) {
+                loadStudents(page);
+            }
         });
 
         pageNumbers.appendChild(btn);
@@ -376,6 +344,29 @@ function renderStudents(students) {
             window.location.href = `student-history.html?id=${student.id}`;
         });
     });
+}
+
+function setPaginationLoadingState(loading) {
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const pageSizeSelect = document.getElementById("pageSizeSelect");
+
+    if (prevPageBtn) prevPageBtn.disabled = loading || currentPage <= 1;
+    if (nextPageBtn) nextPageBtn.disabled = loading || totalPages === 0 || currentPage >= totalPages;
+    if (pageSizeSelect) pageSizeSelect.disabled = loading;
+
+    document.querySelectorAll("#pageNumbers .page-number-btn").forEach(btn => {
+        btn.disabled = loading;
+    });
+}
+
+function debounce(fn, delay) {
+    let timerId;
+
+    return (...args) => {
+        window.clearTimeout(timerId);
+        timerId = window.setTimeout(() => fn(...args), delay);
+    };
 }
 
 function normalizeBranch(value) {

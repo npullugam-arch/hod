@@ -1,5 +1,7 @@
 package com.college.hod.controller;
 
+import com.college.hod.dto.HodStudentListItem;
+import com.college.hod.dto.PaginatedResponse;
 import com.college.hod.dto.RequestSummaryResponse;
 import com.college.hod.entity.Hod;
 import com.college.hod.entity.Request;
@@ -39,6 +41,19 @@ public class HodController {
     @GetMapping("/{hodId}/students")
     public List<Student> getStudents(@PathVariable Long hodId) {
         return studentService.getStudentsByHod(hodId);
+    }
+
+    @GetMapping("/{hodId}/students-page")
+    public PaginatedResponse<HodStudentListItem> getStudentsPage(
+            @PathVariable Long hodId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "24") int size,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "") String branch,
+            @RequestParam(required = false) Integer sem,
+            @RequestParam(defaultValue = "") String sec
+    ) {
+        return studentService.getStudentsPageByHod(hodId, page, size, search, branch, sem, sec);
     }
 
     // ------------------- REQUESTS -------------------

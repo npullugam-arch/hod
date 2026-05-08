@@ -1,4 +1,5 @@
 const user = JSON.parse(localStorage.getItem("user"));
+const DASHBOARD_CACHE_PREFIX = "sanchara_dashboard_cache_";
 let resolvedStudentId = null;
 
 if (!user) {
@@ -17,6 +18,7 @@ async function loadRequests() {
         if (!res.ok) throw new Error("Failed to load requests");
 
         const data = await res.json();
+        clearStudentDashboardCacheIfExpired(data);
         const table = document.getElementById("requestTable");
 
         // Keep skeleton until final rows are ready
@@ -83,6 +85,23 @@ async function getStudentIdForRequests() {
     const student = await res.json();
     resolvedStudentId = student?.id || user.id;
     return resolvedStudentId;
+}
+
+function clearStudentDashboardCacheIfExpired(requests) {
+    if (!Array.isArray(requests)) {
+        return;
+    }
+
+    const hasExpiredRequest = requests.some(req => String(req?.status || "").toUpperCase() === "EXPIRED");
+    if (!hasExpiredRequest) {
+        return;
+    }
+
+    try {
+        localStorage.removeItem(`${DASHBOARD_CACHE_PREFIX}STUDENT_${String(user?.id || "anonymous")}`);
+    } catch (error) {
+        console.warn("Student dashboard cache clear failed:", error);
+    }
 }
 
 async function downloadRequestPdf(requestId, event) {
@@ -159,6 +178,17 @@ function getDocumentTypeText(req) {
 function getRequestStatusHtml(req) {
     const status = String(req.status || "").toUpperCase();
 
+    if (status === "EXPIRED") {
+        return `
+            <div class="request-status-wrap">
+                <span class="status-badge badge-expired">
+                    <i class="fa-solid fa-hourglass-end"></i> Expired
+                </span>
+                <div class="request-remark">This permission request expired because approval was not completed before the scheduled start date.</div>
+            </div>
+        `;
+    }
+
     if (status === "APPROVED") {
         return `
             <span class="status-badge badge-approved">
@@ -190,6 +220,10 @@ function getRequestStatusHtml(req) {
 }
 
 function getCertificateStatusHtml(req) {
+    if (String(req.status || "").toUpperCase() === "EXPIRED") {
+        return `<span class="not-uploaded-text">Not Applicable</span>`;
+    }
+
     if (!req.certificate) {
         return `<span class="not-uploaded-text">Not Uploaded</span>`;
     }
@@ -228,6 +262,10 @@ function getCertificateStatusHtml(req) {
 
 function getDocumentActionHtml(req) {
     const status = String(req.status || "").toUpperCase();
+
+    if (status === "EXPIRED") {
+        return `<span class="not-uploaded-text">This permission request expired because approval was not completed before the scheduled start date.</span>`;
+    }
 
     if (status !== "APPROVED") {
         return `<span class="not-uploaded-text">Available after approval</span>`;

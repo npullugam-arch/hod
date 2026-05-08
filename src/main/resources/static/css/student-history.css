@@ -245,6 +245,10 @@ body {
     background: #f59e0b;
 }
 
+.expired-dot {
+    background: #94a3b8;
+}
+
 .history-grid {
     display: flex;
     flex-direction: column;
@@ -283,6 +287,10 @@ body {
 
 .req-card.pending::before {
     background: #f59e0b;
+}
+
+.req-card.expired::before {
+    background: #64748b;
 }
 
 .req-card:hover {
@@ -343,6 +351,11 @@ body {
 .badge.pending {
     background: #fef3c7;
     color: #92400e;
+}
+
+.badge.expired {
+    background: #e2e8f0;
+    color: #334155;
 }
 
 .req-dates {
@@ -750,6 +763,7 @@ body {
 .chart-legend .legend-item:nth-child(1) { animation-delay: 0.25s; }
 .chart-legend .legend-item:nth-child(2) { animation-delay: 0.38s; }
 .chart-legend .legend-item:nth-child(3) { animation-delay: 0.51s; }
+.chart-legend .legend-item:nth-child(4) { animation-delay: 0.64s; }
 
 .legend-dot {
     animation: pulseDot 1.8s ease-in-out infinite;
@@ -996,6 +1010,12 @@ html {
     }
 }
 
+.expired-message {
+    background: #f8fafc;
+    color: #334155;
+    border-left-color: #64748b;
+}
+
 /* iframe height cleanup */
 html,
 body {
@@ -1012,4 +1032,141 @@ body {
 .profile-card:last-child,
 .stats:last-child {
     margin-bottom: 0 !important;
+}
+
+.profile-card,
+.chart-card,
+.history-card {
+    min-height: 0 !important;
+}
+
+.history-grid,
+#stats,
+#requests {
+    min-height: 0 !important;
+}
+
+#stats:empty,
+#requests:empty {
+    min-height: 72px !important;
+}
+
+.history-card {
+    padding-bottom: 18px;
+}
+
+.history-grid > *:last-child,
+.req-card:last-child {
+    margin-bottom: 0 !important;
+}
+/* =========================================
+   FINAL HISTORY PAGE WHITE SPACE FIX
+========================================= */
+
+html,
+body {
+    height: auto !important;
+    min-height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+/* Remove forced viewport stretching */
+body {
+    min-height: unset !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Main wrappers should fit content only */
+.profile-card,
+.chart-card,
+.history-card,
+.stats,
+.history-grid {
+    margin-bottom: 18px !important;
+    min-height: auto !important;
+    height: auto !important;
+}
+
+/* Remove extra bottom gap */
+.history-card:last-child,
+.req-card:last-child,
+.history-grid:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Prevent empty iframe stretch */
+body > *:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Remove giant blank area */
+iframe,
+.main-content,
+.page-shell,
+.content-wrapper {
+    min-height: auto !important;
+    height: auto !important;
+}
+
+/* Compact final spacing */
+.history-card {
+    padding-bottom: 16px !important;
+}
+
+/* =========================================
+   STRICT FINAL FIX: REMOVE HISTORY BOTTOM SPACE
+========================================= */
+
+html,
+body {
+    height: fit-content !important;
+    min-height: fit-content !important;
+    margin: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
+}
+
+body {
+    padding: 16px 24px 0 24px !important;
+    min-height: 0 !important;
+    background-size: auto !important;
+}
+
+/* Stop empty sections creating fake height */
+#stats:empty,
+#requests:empty {
+    min-height: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: none !important;
+    animation: none !important;
+}
+
+/* Remove last bottom gaps */
+.profile-card:last-child,
+.chart-card:last-child,
+.history-card:last-child,
+.stats:last-child,
+.history-grid:last-child,
+.req-card:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Fit content only */
+.profile-card,
+.chart-card,
+.history-card,
+.stats,
+.history-grid {
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+/* Reduce final history card padding */
+.history-card {
+    padding-bottom: 12px !important;
 }

@@ -43,6 +43,11 @@ public class RequestController {
         return requestService.rejectRequest(id, remark);
     }
 
+    @PostMapping("/clear-expired/{id}")
+    public Request clearExpiredRequest(@PathVariable Long id) {
+        return requestService.clearExpiredRequest(id);
+    }
+
     @GetMapping("/all")
     public List<Request> getAllRequests() {
         return requestService.getAllRequests();

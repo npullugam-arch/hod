@@ -34,6 +34,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const hodExcelFile = document.getElementById("hodExcelFile");
     const hodExcelStatus = document.getElementById("hodExcelStatus");
     const hodUploadSummary = document.getElementById("hodUploadSummary");
+    const promotionForm = document.getElementById("promotionForm");
+    const currentSemester = document.getElementById("currentSemester");
+    const newSemester = document.getElementById("newSemester");
+    const promotionStatus = document.getElementById("promotionStatus");
 
     adminName.textContent = user.username || "Admin";
     adminRole.textContent = user.role || "ADMIN";
@@ -125,6 +129,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 "HOD Excel Upload",
                 "Upload HOD Excel sheets for bulk HOD creation."
             );
+        } else if (sectionId === "promotionSection") {
+            showSection(
+                "promotionSection",
+                "Semester Promotion",
+                "Promote all students from one semester to the next with a single academic action."
+            );
         }
     };
 
@@ -167,6 +177,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.showAdminSection("excelSection");
             } else if (sectionKey === "hodExcelSection") {
                 window.showAdminSection("hodExcelSection");
+            } else if (sectionKey === "promotionSection") {
+                window.showAdminSection("promotionSection");
             } else if (sectionKey === "studentsPage") {
                 window.openStudentsPage();
             } else if (sectionKey === "hodPage") {
@@ -357,6 +369,67 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    if (promotionForm) {
+        promotionForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            clearStatus(promotionStatus);
+
+            const currentValue = Number(currentSemester?.value || 0);
+            const nextValue = Number(newSemester?.value || 0);
+
+            if (!currentValue || !nextValue) {
+                setStatus(promotionStatus, "Please select both Current Semester and Promote To Semester.", "error");
+                return;
+            }
+
+            const confirmed = window.confirm(
+                `Are you sure you want to promote all students from Semester ${currentValue} to Semester ${nextValue}?`
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                setStatus(promotionStatus, "Running semester promotion...", "info");
+
+                const response = await fetch("/admin/promote-semester", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        currentSemester: currentValue,
+                        newSemester: nextValue
+                    })
+                });
+
+                const responseText = await response.text();
+                let result = null;
+
+                try {
+                    result = responseText ? JSON.parse(responseText) : null;
+                } catch (parseError) {
+                    result = null;
+                }
+
+                if (!response.ok) {
+                    throw new Error(result?.message || responseText || "Semester promotion failed.");
+                }
+
+                clearAppDashboardCaches();
+                setStatus(
+                    promotionStatus,
+                    result?.message || `Semester promotion completed successfully. ${result?.updatedStudents || 0} students were updated.`,
+                    "success"
+                );
+                promotionForm.reset();
+            } catch (error) {
+                setStatus(promotionStatus, error.message || "Semester promotion failed.", "error");
+            }
+        });
+    }
+
     function renderUploadSummary(container, result) {
         let html = `
             <p><strong>Total Rows:</strong> ${result.totalRows ?? 0}</p>
@@ -383,6 +456,24 @@ document.addEventListener("DOMContentLoaded", () => {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    function clearAppDashboardCaches() {
+        try {
+            const prefixes = [
+                "sanchara_dashboard_cache_",
+                "sanchara_profile_cache_"
+            ];
+
+            for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+                const key = localStorage.key(index);
+                if (key && prefixes.some(prefix => key.startsWith(prefix))) {
+                    localStorage.removeItem(key);
+                }
+            }
+        } catch (error) {
+            console.warn("Dashboard cache clear failed after semester promotion:", error);
+        }
     }
 
     window.showAdminSection("dashboardSection");

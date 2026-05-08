@@ -1,4 +1,6 @@
 const user = JSON.parse(localStorage.getItem("user"));
+const DASHBOARD_CACHE_PREFIX = "sanchara_dashboard_cache_";
+const STUDENT_DASHBOARD_ROLE = "STUDENT";
 
 if (!user) {
     window.location.href = "index.html";
@@ -17,6 +19,8 @@ async function loadProfileData() {
             throw new Error("User ID not found. Please login again.");
         }
 
+        applyCachedProfilePreview();
+
         const response = await fetch(`/student/user/${userId}`);
 
         if (!response.ok) {
@@ -33,17 +37,14 @@ async function loadProfileData() {
         console.error("Profile load error:", error);
 
         const fallbackStudent = {
-            name: user?.name || user?.username || "Student",
-            username: user?.username || "-",
-            email: user?.email || "-",
-            id: "-",
-            rollNo: "-",
+            name: normalizeDisplayValue(user?.name || user?.username || "Student"),
+            email: normalizeDisplayValue(user?.email),
+            rollNo: normalizeDisplayValue(user?.rollNumber),
             fatherName: "-",
             gender: "-",
             branch: "-",
             sem: "-",
             section: "-",
-            caste: "-",
             studentPhoneNumber: "-",
             parentPhoneNumber: "-",
             dateOfBirth: "-"
@@ -61,40 +62,33 @@ function showProfileContent() {
 }
 
 function fillProfile(student, isFallback = false) {
-    const displayName = student?.name || user?.username || "Student";
-    const displayRole = formatRole(user?.role || "STUDENT");
-    const displayUserId = user?.id || "-";
-    const displayStudentId = student?.id || "-";
-    const displayUsername = student?.username || user?.username || "-";
-    const displayRollNo = student?.rollNo || student?.rollNumber || "-";
-    const displayEmail = student?.email || user?.email || "-";
-    const displayFatherName = student?.fatherName || "-";
+    const displayName = normalizeDisplayValue(student?.name || user?.name || "Student");
+    const displayRole = "Student Profile";
+    const displayRollNo = normalizeDisplayValue(student?.rollNo || student?.rollNumber);
+    const displayEmail = normalizeDisplayValue(student?.email || user?.email);
+    const displayFatherName = normalizeDisplayValue(student?.fatherName);
     const displayGender = formatGender(student?.gender);
     const displayBranch = formatBranch(student?.branch);
-    const displaySem = student?.sem || student?.semester || "-";
-    const displaySection = student?.section || student?.sec || "-";
-    const displayCaste = student?.caste || "-";
-    const displayStudentPhone = student?.studentPhoneNumber || "-";
-    const displayParentPhone = student?.parentPhoneNumber || "-";
+    const displaySem = normalizeDisplayValue(student?.sem || student?.semester);
+    const displaySection = normalizeDisplayValue(student?.section || student?.sec);
+    const displayStudentPhone = normalizeDisplayValue(student?.studentPhoneNumber);
+    const displayParentPhone = normalizeDisplayValue(student?.parentPhoneNumber);
     const displayDob = formatDateOfBirth(student?.dateOfBirth);
     const initial = String(displayName).charAt(0).toUpperCase();
 
     setText("profileName", displayName);
+    setText("profileNameDetail", displayName);
     setText("profileRole", displayRole);
-    setText("profileUserId", displayUserId);
-    setText("profileStudentId", displayStudentId);
-    setText("profileStudentIdTop", displayStudentId);
-    setText("profileUsername", displayUsername);
     setText("profileEmail", displayEmail);
     setText("profileRollNumber", displayRollNo);
     setText("profileFatherName", displayFatherName);
     setText("profileGender", displayGender);
     setText("profileBranch", displayBranch);
-    setText("profileBranchTop", `${student?.branch || "-"} - ${displaySection}`);
+    setText("profileBranchTop", displayBranch);
     setText("profileSem", displaySem);
     setText("profileSemTop", displaySem);
     setText("profileSection", displaySection);
-    setText("profileCaste", displayCaste);
+    setText("profileSectionTop", displaySection);
     setText("profileStudentPhone", displayStudentPhone);
     setText("profileParentPhone", displayParentPhone);
     setText("profileDob", displayDob);
@@ -154,7 +148,7 @@ function formatGender(gender) {
     if (value === "MALE") return "Male";
     if (value === "FEMALE") return "Female";
 
-    return gender;
+    return normalizeDisplayValue(gender);
 }
 
 function formatBranch(branch) {
@@ -172,12 +166,7 @@ function formatBranch(branch) {
         "IT": "Information Technology"
     };
 
-    return branchMap[value] || branch;
-}
-
-function formatRole(role) {
-    if (!role) return "-";
-    return String(role).toUpperCase();
+    return branchMap[value] || normalizeDisplayValue(branch);
 }
 
 function formatDateOfBirth(dob) {
@@ -237,6 +226,39 @@ function setStatus(message, isError) {
 function setText(id, value) {
     const el = document.getElementById(id);
     if (el) {
-        el.textContent = value || "-";
+        el.textContent = normalizeDisplayValue(value);
     }
+}
+
+function normalizeDisplayValue(value) {
+    if (value === null || value === undefined) {
+        return "-";
+    }
+
+    const text = String(value).trim();
+    return text ? text : "-";
+}
+
+function getStudentDashboardCacheKey() {
+    return `${DASHBOARD_CACHE_PREFIX}${STUDENT_DASHBOARD_ROLE}_${String(user?.id || "anonymous")}`;
+}
+
+function getDashboardCache(key) {
+    try {
+        const rawValue = localStorage.getItem(key);
+        return rawValue ? JSON.parse(rawValue) : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function applyCachedProfilePreview() {
+    const cache = getDashboardCache(getStudentDashboardCacheKey());
+    const cachedStudent = cache?.data?.student;
+
+    if (!cachedStudent?.name && !cachedStudent?.email && !cachedStudent?.rollNo) {
+        return;
+    }
+
+    fillProfile(cachedStudent, true);
 }

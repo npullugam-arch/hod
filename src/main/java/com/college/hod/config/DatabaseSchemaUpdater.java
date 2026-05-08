@@ -28,6 +28,13 @@ public class DatabaseSchemaUpdater {
         }
 
         try {
+            jdbcTemplate.execute("ALTER TABLE request MODIFY COLUMN status VARCHAR(32)");
+            log.info("Ensured request.status can store all request states.");
+        } catch (Exception ex) {
+            log.warn("Could not update request.status column automatically: {}", ex.getMessage());
+        }
+
+        try {
             Integer columnCount = jdbcTemplate.queryForObject(
                     """
                     SELECT COUNT(*)
@@ -45,6 +52,26 @@ public class DatabaseSchemaUpdater {
             }
         } catch (Exception ex) {
             log.warn("Could not update request.rejection_remark column automatically: {}", ex.getMessage());
+        }
+
+        try {
+            Integer columnCount = jdbcTemplate.queryForObject(
+                    """
+                    SELECT COUNT(*)
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'request'
+                      AND COLUMN_NAME = 'hidden_from_pending'
+                    """,
+                    Integer.class
+            );
+
+            if (columnCount == null || columnCount == 0) {
+                jdbcTemplate.execute("ALTER TABLE request ADD COLUMN hidden_from_pending BIT(1) NOT NULL DEFAULT b'0'");
+                log.info("Ensured request.hidden_from_pending exists for expired cleanup.");
+            }
+        } catch (Exception ex) {
+            log.warn("Could not update request.hidden_from_pending column automatically: {}", ex.getMessage());
         }
     }
 }

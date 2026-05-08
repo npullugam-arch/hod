@@ -245,6 +245,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
 }
 
 .student-info .name {
@@ -740,6 +741,49 @@ body {
     word-break: break-word;
 }
 
+/* Student hover details card */
+.student-hover-card {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(420px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    max-height: min(78vh, 560px);
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 18px;
+    box-shadow: 0 24px 55px rgba(15, 23, 42, 0.18);
+    padding: 18px;
+    z-index: 1250;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(8px) scale(0.98);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+}
+
+.student-hover-card.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+}
+
+.student-hover-card-body {
+    max-height: min(calc(78vh - 112px), 430px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.student-hover-card-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.student-hover-card-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+
 @media (max-width: 900px) {
     html,
     body {
@@ -824,6 +868,17 @@ body {
 
     .student-details-grid {
         grid-template-columns: 1fr;
+    }
+
+    .student-hover-card {
+        width: min(360px, calc(100vw - 20px));
+        max-width: calc(100vw - 20px);
+        max-height: min(72vh, 500px);
+        padding: 16px;
+    }
+
+    .student-hover-card-body {
+        max-height: min(calc(72vh - 104px), 380px);
     }
 
     .standalone-wrapper,
@@ -996,5 +1051,11 @@ body {
     .table-card,
     .requests-table tbody tr {
         animation-delay: 0.2s !important;
+    }
+
+    .student-hover-card {
+        width: min(340px, calc(100vw - 16px));
+        max-width: calc(100vw - 16px);
+        border-radius: 16px;
     }
 }

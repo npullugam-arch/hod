@@ -163,18 +163,19 @@ function renderChart(requests) {
     chartInstance = new Chart(ctx, {
         type: "bar",
         data: {
-            labels: ["Approved", "Rejected", "Pending"],
+            labels: ["Approved", "Rejected", "Pending", "Expired"],
             datasets: [{
                 label: "Requests",
-                data: [summary.approved, summary.rejected, summary.pending],
+                data: [summary.approved, summary.rejected, summary.pending, summary.expired],
                 backgroundColor: [
                     gradient("#34d399", "#059669"),
                     gradient("#f87171", "#dc2626"),
-                    gradient("#fbbf24", "#d97706")
+                    gradient("#fbbf24", "#d97706"),
+                    gradient("#cbd5e1", "#94a3b8")
                 ],
                 borderRadius: 10,
                 borderSkipped: false,
-                barThickness: 50
+                barThickness: 42
             }]
         },
         options: {
@@ -225,9 +226,12 @@ function renderRequests(requests) {
 
     container.innerHTML = requests.map(r => {
         const status = safeValue(r.status).toLowerCase();
-        const statusClass = ["approved", "rejected", "pending"].includes(status) ? status : "pending";
+        const statusClass = ["approved", "rejected", "pending", "expired"].includes(status) ? status : "pending";
         const certificate = r.certificate;
         const certStatus = getCertificateStatus(r);
+        const expiredMessage = String(r.status || "").toUpperCase() === "EXPIRED"
+            ? `<div class="remark-box expired-message">This permission request expired because approval was not completed before the scheduled start date.</div>`
+            : "";
 
         const certLink = certificate?.filePath
             ? `<a class="btn-view" href="${escapeHtml(certificate.filePath)}" target="_blank">👁 View Certificate</a>`
@@ -286,6 +290,7 @@ function renderRequests(requests) {
                         ${escapeHtml(remark)}
                     </div>
                 ` : ""}
+                ${expiredMessage}
             </div>
         `;
     }).join("");
@@ -554,6 +559,7 @@ function buildSummary(requests) {
     const approved = countByStatus(requests, "APPROVED");
     const rejected = countByStatus(requests, "REJECTED");
     const pending = countByStatus(requests, "PENDING");
+    const expired = countByStatus(requests, "EXPIRED");
     const certificateSubmitted = requests.filter(r => r.certificate).length;
     const certificatePending = requests.filter(r => r.certificateDueDate && !r.certificate).length;
 
@@ -562,6 +568,7 @@ function buildSummary(requests) {
         approved,
         rejected,
         pending,
+        expired,
         certificateSubmitted,
         certificatePending
     };

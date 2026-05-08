@@ -42,6 +42,9 @@ public class Request {
     @Enumerated(EnumType.STRING)
     private RequestStatus status;
 
+    @Column(name = "hidden_from_pending")
+    private Boolean hiddenFromPending;
+
     @ManyToOne
     @JoinColumn(name = "student_id")
     @JsonIgnoreProperties({"user", "hod"})

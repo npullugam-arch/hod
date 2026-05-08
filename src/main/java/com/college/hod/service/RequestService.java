@@ -18,6 +18,8 @@ public interface RequestService {
 
     Request rejectRequest(Long requestId, String remark);
 
+    Request clearExpiredRequest(Long requestId);
+
     List<Request> getAllRequests();
 
     List<Request> getRequestsByStudent(Long studentId);

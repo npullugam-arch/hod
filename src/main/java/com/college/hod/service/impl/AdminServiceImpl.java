@@ -7,6 +7,8 @@ import com.college.hod.dto.AdminStudentPasswordUpdateRequest;
 import com.college.hod.dto.AdminStudentUpdateRequest;
 import com.college.hod.dto.ExcelUploadResponse;
 import com.college.hod.dto.PaginatedResponse;
+import com.college.hod.dto.SemesterPromotionRequest;
+import com.college.hod.dto.SemesterPromotionResponse;
 import com.college.hod.entity.Hod;
 import com.college.hod.entity.Student;
 import com.college.hod.entity.User;
@@ -717,6 +719,45 @@ public class AdminServiceImpl implements AdminService {
         user.setPassword(newPassword);
         user.setPasswordChanged(true);
         userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public SemesterPromotionResponse promoteSemester(SemesterPromotionRequest request) {
+        Integer currentSemester = request != null ? request.getCurrentSemester() : null;
+        Integer newSemester = request != null ? request.getNewSemester() : null;
+
+        if (currentSemester == null || newSemester == null) {
+            throw new RuntimeException("Current semester and promote-to semester are required.");
+        }
+
+        if (currentSemester <= 0 || newSemester <= 0) {
+            throw new RuntimeException("Semester values must be valid positive numbers.");
+        }
+
+        if (newSemester <= currentSemester) {
+            throw new RuntimeException("Promote To Semester must be greater than Current Semester.");
+        }
+
+        long matchingStudents = studentRepository.countBySem(currentSemester);
+
+        if (matchingStudents == 0) {
+            return new SemesterPromotionResponse(
+                    currentSemester,
+                    newSemester,
+                    0,
+                    "No students were found in Semester " + currentSemester + "."
+            );
+        }
+
+        int updatedCount = studentRepository.promoteStudentsToSemester(currentSemester, newSemester);
+
+        return new SemesterPromotionResponse(
+                currentSemester,
+                newSemester,
+                updatedCount,
+                "Semester promotion completed successfully. " + updatedCount + " students were updated."
+        );
     }
 
 

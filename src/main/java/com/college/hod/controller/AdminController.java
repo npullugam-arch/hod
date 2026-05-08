@@ -6,6 +6,7 @@ import com.college.hod.dto.AdminStudentPasswordUpdateRequest;
 import com.college.hod.dto.AdminStudentUpdateRequest;
 import com.college.hod.dto.ExcelUploadResponse;
 import com.college.hod.dto.HodAssignmentRequest;
+import com.college.hod.dto.SemesterPromotionRequest;
 import com.college.hod.entity.Hod;
 import com.college.hod.entity.Student;
 import com.college.hod.service.AdminService;
@@ -177,6 +178,15 @@ public class AdminController {
         try {
             adminService.updateStudentPassword(studentId, request);
             return ResponseEntity.ok("Student password updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/promote-semester")
+    public ResponseEntity<?> promoteSemester(@RequestBody SemesterPromotionRequest request) {
+        try {
+            return ResponseEntity.ok(adminService.promoteSemester(request));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

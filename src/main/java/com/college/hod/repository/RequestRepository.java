@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -31,6 +32,12 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
     List<Request> findByHodId(Long hodId);
 
     List<Request> findByHodIdAndStatus(Long hodId, RequestStatus status);
+
+    List<Request> findByHodIdAndStatusAndStartDateBefore(Long hodId, RequestStatus status, LocalDate date);
+
+    List<Request> findByStudentIdAndStatusAndStartDateBefore(Long studentId, RequestStatus status, LocalDate date);
+
+    List<Request> findByHodIdAndStatusAndHiddenFromPendingFalse(Long hodId, RequestStatus status);
 
     long countByHodId(Long hodId);
 
@@ -76,6 +83,7 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
             r.startDate,
             r.endDate,
             r.requestDate,
+            r.status,
             s.id,
             s.name,
             s.rollNo,
@@ -105,7 +113,11 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
         FROM Request r
         JOIN r.student s
         WHERE r.hod.id = :hodId
-          AND r.status = com.college.hod.enums.RequestStatus.PENDING
+          AND COALESCE(r.hiddenFromPending, false) = false
+          AND r.status IN (
+              com.college.hod.enums.RequestStatus.PENDING,
+              com.college.hod.enums.RequestStatus.EXPIRED
+          )
     """)
     Page<PendingRequestListItem> findPendingRequestPageByHodId(
             @Param("hodId") Long hodId,

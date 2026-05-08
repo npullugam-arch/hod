@@ -280,6 +280,10 @@ tbody tr:last-child td {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
 }
 
+.btn-clear-expired {
+    background: linear-gradient(135deg, #64748b, #475569);
+}
+
 .btn:disabled,
 .btn.disabled {
     opacity: 0.5;
@@ -292,6 +296,45 @@ tbody tr:last-child td {
     color: #64748b;
     font-weight: 700;
     padding: 34px 18px;
+}
+
+.expired-inline-note {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #dbe3ee;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.55;
+}
+
+.expired-action-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 260px;
+}
+
+.expired-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #334155;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+}
+
+.expired-message {
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.55;
+    font-weight: 600;
 }
 
 .overlay {
@@ -1051,5 +1094,147 @@ tbody tr {
     #studentModalBody .details-grid,
     #studentModalBody .info-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* final student overlay viewport fix */
+html,
+body {
+    min-height: 100vh !important;
+}
+
+body,
+.page {
+    min-height: 100vh !important;
+}
+
+#studentOverlay {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    z-index: 10000 !important;
+}
+
+#studentOverlay .modal {
+    width: min(1180px, 94vw) !important;
+    max-width: 1180px !important;
+    max-height: 88vh !important;
+    max-height: 88dvh !important;
+    overflow: hidden !important;
+}
+
+#studentOverlay .student-modal-body {
+    max-height: calc(88vh - 78px) !important;
+    max-height: calc(88dvh - 78px) !important;
+    overflow-y: auto !important;
+}
+
+
+/* =====================================================
+   FIX: Student Details popup should cover full iframe/page
+   ===================================================== */
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+}
+
+/* Force page area to full screen even when only 1 or 2 requests exist */
+.page {
+    min-height: 100vh !important;
+}
+
+/* Full-screen student details overlay */
+#studentOverlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+
+    width: 100vw !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+
+    z-index: 99999 !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding: 28px !important;
+    background: rgba(15, 23, 42, 0.58) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+/* If JS adds active/show class */
+#studentOverlay.active,
+#studentOverlay.show {
+    display: flex !important;
+}
+
+/* If JS directly changes display:block/flex, still force correct layout */
+#studentOverlay[style*="display: block"],
+#studentOverlay[style*="display:block"],
+#studentOverlay[style*="display: flex"],
+#studentOverlay[style*="display:flex"] {
+    display: flex !important;
+}
+
+/* Modal box */
+#studentOverlay .modal {
+    width: min(1180px, 94vw) !important;
+    max-width: 1180px !important;
+    height: auto !important;
+    max-height: 88vh !important;
+
+    overflow: hidden !important;
+    border-radius: 24px !important;
+    background: #ffffff !important;
+    box-shadow: 0 35px 100px rgba(15, 23, 42, 0.38) !important;
+}
+
+/* Fixed modal header */
+#studentOverlay .modal-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 5 !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    padding: 20px 26px !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25) !important;
+}
+
+/* Scroll only inside modal body */
+#studentOverlay .student-modal-body {
+    max-height: calc(88vh - 76px) !important;
+    overflow-y: auto !important;
+    padding: 24px 26px !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    #studentOverlay {
+        padding: 12px !important;
+    }
+
+    #studentOverlay .modal {
+        width: 100% !important;
+        max-height: 92vh !important;
+        border-radius: 18px !important;
+    }
+
+    #studentOverlay .student-modal-body {
+        max-height: calc(92vh - 70px) !important;
+        padding: 16px !important;
     }
 }

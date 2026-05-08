@@ -7,6 +7,8 @@ import com.college.hod.dto.AdminStudentPasswordUpdateRequest;
 import com.college.hod.dto.AdminStudentUpdateRequest;
 import com.college.hod.dto.ExcelUploadResponse;
 import com.college.hod.dto.PaginatedResponse;
+import com.college.hod.dto.SemesterPromotionRequest;
+import com.college.hod.dto.SemesterPromotionResponse;
 import com.college.hod.entity.Hod;
 import com.college.hod.entity.Student;
 import org.springframework.web.multipart.MultipartFile;
@@ -50,4 +52,6 @@ public interface AdminService {
     Map<String, Object> getStudentPassword(Long studentId);
 
     void updateStudentPassword(Long studentId, AdminStudentPasswordUpdateRequest request);
+
+    SemesterPromotionResponse promoteSemester(SemesterPromotionRequest request);
 }

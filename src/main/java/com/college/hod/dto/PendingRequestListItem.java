@@ -3,6 +3,7 @@ package com.college.hod.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.college.hod.enums.RequestStatus;
 
 import java.time.LocalDate;
 
@@ -16,6 +17,7 @@ public class PendingRequestListItem {
     private LocalDate startDate;
     private LocalDate endDate;
     private LocalDate requestDate;
+    private RequestStatus status;
     private Long studentId;
     private String studentName;
     private String studentRollNo;

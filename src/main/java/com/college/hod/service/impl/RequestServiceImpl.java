@@ -20,8 +20,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -78,6 +80,7 @@ public class RequestServiceImpl implements RequestService {
         request.setApprovalDate(null);
         request.setCertificateDueDate(null);
         request.setRejectionRemark(null);
+        request.setHiddenFromPending(false);
 
         return requestRepository.save(request);
     }
@@ -87,9 +90,11 @@ public class RequestServiceImpl implements RequestService {
         Request req = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
+        validatePendingActionAllowed(req);
         req.setStatus(RequestStatus.APPROVED);
         req.setApprovalDate(LocalDate.now());
         req.setRejectionRemark(null);
+        req.setHiddenFromPending(false);
 
         if (req.getEndDate() != null && isCertificateRequired(req.getReason())) {
             req.setCertificateDueDate(req.getEndDate().plusDays(3));
@@ -109,16 +114,35 @@ public class RequestServiceImpl implements RequestService {
             throw new RuntimeException("Rejection remark is required");
         }
 
+        validatePendingActionAllowed(req);
         req.setStatus(RequestStatus.REJECTED);
         req.setRejectionRemark(remark.trim());
         req.setCertificateDueDate(null);
+        req.setHiddenFromPending(false);
 
         return requestRepository.save(req);
     }
 
     @Override
+    public Request clearExpiredRequest(Long requestId) {
+        Request req = requestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        expirePendingRequestIfNeeded(req);
+
+        if (req.getStatus() != RequestStatus.EXPIRED) {
+            throw new RuntimeException("Only expired requests can be removed from pending view.");
+        }
+
+        req.setHiddenFromPending(true);
+        return requestRepository.saveAndFlush(req);
+    }
+
+    @Override
     public List<Request> getAllRequests() {
-        return requestRepository.findAllWithDetails();
+        List<Request> requests = requestRepository.findAllWithDetails();
+        expirePendingRequestsIfNeeded(requests);
+        return requests;
     }
 
     @Override
@@ -130,26 +154,36 @@ public class RequestServiceImpl implements RequestService {
         String rollNo = clean(student.getRollNo());
         String email = clean(student.getEmail());
 
-        return requestRepository.findCompleteHistoryByStudent(
+        List<Request> requests = requestRepository.findCompleteHistoryByStudent(
                 actualStudentId,
                 userId,
                 rollNo,
                 email
         );
+
+        expirePendingRequestsIfNeeded(requests);
+        return requests;
     }
 
     @Override
     public List<Request> getRequestsByHod(Long hodId) {
-        return requestRepository.findByHodId(hodId);
+        List<Request> requests = requestRepository.findByHodId(hodId);
+        expirePendingRequestsIfNeeded(requests);
+        return requests;
     }
 
     @Override
     public List<Request> getPendingRequests(Long hodId) {
-        return requestRepository.findByHodIdAndStatus(hodId, RequestStatus.PENDING);
+        expirePendingRequestsForHod(hodId);
+        List<Request> pendingRequests = new ArrayList<>(requestRepository.findByHodIdAndStatusAndHiddenFromPendingFalse(hodId, RequestStatus.PENDING));
+        pendingRequests.addAll(requestRepository.findByHodIdAndStatusAndHiddenFromPendingFalse(hodId, RequestStatus.EXPIRED));
+        return pendingRequests;
     }
 
     @Override
     public PaginatedResponse<PendingRequestListItem> getPendingRequestsPage(Long hodId, int page, int size) {
+        expirePendingRequestsForHod(hodId);
+
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.min(Math.max(size, 1), 100),
@@ -169,6 +203,8 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public PaginatedResponse<CertificateTrackingListItem> getCertificateTrackingPage(Long hodId, int page, int size, String search) {
+        expirePendingRequestsForHod(hodId);
+
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.min(Math.max(size, 1), 100),
@@ -194,6 +230,7 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public RequestSummaryResponse getHodDashboardSummary(Long hodId, long assignedStudentsCount) {
+        expirePendingRequestsForHod(hodId);
         long total = requestRepository.countByHodId(hodId);
         long pending = requestRepository.countByHodIdAndStatus(hodId, RequestStatus.PENDING);
         long approved = requestRepository.countByHodIdAndStatus(hodId, RequestStatus.APPROVED);
@@ -206,6 +243,7 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public RequestSummaryResponse getStudentDashboardSummary(Long studentId) {
         Student student = resolveStudentForHistory(studentId);
+        expirePendingRequestsForStudent(student.getId());
         long total = requestRepository.countByStudentId(student.getId());
         long pending = requestRepository.countByStudentIdAndStatus(student.getId(), RequestStatus.PENDING);
         long approved = requestRepository.countByStudentIdAndStatus(student.getId(), RequestStatus.APPROVED);
@@ -268,6 +306,72 @@ public class RequestServiceImpl implements RequestService {
         student.setUser(user);
 
         return studentRepository.save(student);
+    }
+
+    private void validatePendingActionAllowed(Request request) {
+        expirePendingRequestIfNeeded(request);
+
+        if (request.getStatus() == RequestStatus.EXPIRED) {
+            throw new RuntimeException("This permission request expired because approval was not completed before the scheduled start date.");
+        }
+
+        if (request.getStatus() != RequestStatus.PENDING) {
+            throw new RuntimeException("Only pending requests can be updated.");
+        }
+    }
+
+    private void expirePendingRequestsForHod(Long hodId) {
+        List<Request> expirableRequests = requestRepository.findByHodIdAndStatusAndStartDateBefore(
+                hodId,
+                RequestStatus.PENDING,
+                LocalDate.now()
+        );
+        expirePendingRequestsIfNeeded(expirableRequests);
+    }
+
+    private void expirePendingRequestsForStudent(Long studentId) {
+        List<Request> expirableRequests = requestRepository.findByStudentIdAndStatusAndStartDateBefore(
+                studentId,
+                RequestStatus.PENDING,
+                LocalDate.now()
+        );
+        expirePendingRequestsIfNeeded(expirableRequests);
+    }
+
+    private void expirePendingRequestIfNeeded(Request request) {
+        if (!shouldExpirePendingRequest(request)) {
+            return;
+        }
+
+        request.setStatus(RequestStatus.EXPIRED);
+        request.setHiddenFromPending(false);
+        requestRepository.save(request);
+    }
+
+    @Transactional
+    protected void expirePendingRequestsIfNeeded(List<Request> requests) {
+        if (requests == null || requests.isEmpty()) {
+            return;
+        }
+
+        List<Request> expiredRequests = requests.stream()
+                .filter(this::shouldExpirePendingRequest)
+                .peek(request -> {
+                    request.setStatus(RequestStatus.EXPIRED);
+                    request.setHiddenFromPending(false);
+                })
+                .toList();
+
+        if (!expiredRequests.isEmpty()) {
+            requestRepository.saveAll(expiredRequests);
+        }
+    }
+
+    private boolean shouldExpirePendingRequest(Request request) {
+        return request != null
+                && request.getStatus() == RequestStatus.PENDING
+                && request.getStartDate() != null
+                && LocalDate.now().isAfter(request.getStartDate());
     }
 
     private boolean isCertificateRequired(String reason) {
