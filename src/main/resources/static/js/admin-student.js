@@ -251,7 +251,7 @@ function renderStudents(students) {
         card.innerHTML = `
             <div class="student-top">
                 <div class="student-avatar" id="avatar-${student.id}">${escapeHtml(initial)}</div>
-                <img class="student-photo" id="photo-${student.id}" alt="${escapeHtml(displayName)}" loading="lazy" />
+                <img class="student-photo" id="photo-${student.id}" alt="${escapeHtml(displayName)}" />
                 <div>
                     <div class="student-name">${escapeHtml(displayName)}</div>
                     <div class="student-meta">Roll No: ${escapeHtml(displayRollNo)}</div>
@@ -272,7 +272,7 @@ function renderStudents(students) {
         const photoEl = card.querySelector(`#photo-${student.id}`);
         const avatarEl = card.querySelector(`#avatar-${student.id}`);
 
-        if (imageUrl) {
+        if (imageUrl && photoEl && avatarEl) {
             photoEl.onload = () => {
                 photoEl.style.display = "block";
                 avatarEl.style.display = "none";
