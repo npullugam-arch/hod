@@ -1,6 +1,7 @@
 package com.college.hod.service.impl;
 
 import com.college.hod.dto.AdminHodUpdateRequest;
+import com.college.hod.dto.AdminPasswordUpdateRequest;
 import com.college.hod.dto.AdminStudentCreateRequest;
 import com.college.hod.dto.AdminStudentListItem;
 import com.college.hod.dto.AdminStudentPasswordUpdateRequest;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +35,8 @@ import java.util.*;
 
 @Service
 public class AdminServiceImpl implements AdminService {
+
+    private static final String ADMIN_SECRET_CODE = "MINNU";
 
     private static final String STUDENT_PHOTO_BASE_URL =
             "https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/";
@@ -45,6 +49,9 @@ public class AdminServiceImpl implements AdminService {
 
     @Autowired
     private HodRepository hodRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -82,6 +89,54 @@ public class AdminServiceImpl implements AdminService {
         student.setHod(hod);
 
         return studentRepository.save(student);
+    }
+
+    @Override
+    @Transactional
+    public void updateAdminPassword(AdminPasswordUpdateRequest request) {
+        if (request == null || request.getAdminUserId() == null) {
+            throw new RuntimeException("Admin user is required");
+        }
+
+        User adminUser = userRepository.findById(request.getAdminUserId())
+                .orElseThrow(() -> new RuntimeException("Logged-in admin user not found"));
+
+        if (adminUser.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Only admin accounts can update this password");
+        }
+
+        String currentPassword = trimValue(request.getCurrentPassword());
+        String secretCode = trimValue(request.getSecretCode());
+        String newPassword = trimValue(request.getNewPassword());
+        String confirmPassword = trimValue(request.getConfirmPassword());
+
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new RuntimeException("Current password is required");
+        }
+
+        if (!matchesPassword(currentPassword, adminUser.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        if (secretCode == null || !ADMIN_SECRET_CODE.equals(secretCode)) {
+            throw new RuntimeException("Secret code is incorrect");
+        }
+
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new RuntimeException("New password is required");
+        }
+
+        if (confirmPassword == null || confirmPassword.isBlank()) {
+            throw new RuntimeException("Confirm password is required");
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            throw new RuntimeException("New password and confirm password do not match");
+        }
+
+        adminUser.setPassword(passwordEncoder.encode(newPassword));
+        adminUser.setPasswordChanged(true);
+        userRepository.save(adminUser);
     }
 
     @Override
@@ -537,7 +592,7 @@ public class AdminServiceImpl implements AdminService {
         response.put("hodId", hod.getId());
         response.put("userId", user.getId());
         response.put("username", user.getUsername());
-        response.put("currentPassword", user.getPassword());
+        response.put("currentPassword", displayPasswordValue(user.getPassword()));
 
         return response;
     }
@@ -568,7 +623,7 @@ public class AdminServiceImpl implements AdminService {
             throw new RuntimeException("New password and confirm password do not match");
         }
 
-        user.setPassword(newPassword);
+        user.setPassword(passwordEncoder.encode(newPassword));
         user.setPasswordChanged(true);
         userRepository.save(user);
     }
@@ -685,7 +740,7 @@ public class AdminServiceImpl implements AdminService {
         response.put("studentId", student.getId());
         response.put("userId", user.getId());
         response.put("username", user.getUsername());
-        response.put("currentPassword", user.getPassword());
+        response.put("currentPassword", displayPasswordValue(user.getPassword()));
 
         return response;
     }
@@ -716,7 +771,7 @@ public class AdminServiceImpl implements AdminService {
             throw new RuntimeException("New password and confirm password do not match");
         }
 
-        user.setPassword(newPassword);
+        user.setPassword(passwordEncoder.encode(newPassword));
         user.setPasswordChanged(true);
         userRepository.save(user);
     }
@@ -1081,6 +1136,29 @@ public class AdminServiceImpl implements AdminService {
 
     private String trimValue(String value) {
         return value == null ? null : value.trim();
+    }
+
+    private boolean matchesPassword(String rawPassword, String storedPassword) {
+        if (rawPassword == null || storedPassword == null) {
+            return false;
+        }
+
+        if (isEncodedPassword(storedPassword)) {
+            return passwordEncoder.matches(rawPassword, storedPassword);
+        }
+
+        return storedPassword.equals(rawPassword);
+    }
+
+    private boolean isEncodedPassword(String password) {
+        return password != null && password.startsWith("$2");
+    }
+
+    private String displayPasswordValue(String password) {
+        if (isEncodedPassword(password)) {
+            return "Stored securely. Set a new password to replace it.";
+        }
+        return password;
     }
 
     private String safeValue(String value) {

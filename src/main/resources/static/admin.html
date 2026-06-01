@@ -30,6 +30,7 @@
                 <button class="menu-btn" data-section="excelSection">Student Excel Upload</button>
                 <button class="menu-btn" data-section="hodExcelSection">HOD Excel Upload</button>
                 <button class="menu-btn" data-section="promotionSection">Semester Promotion</button>
+                <button class="menu-btn" data-section="updatePasswordSection">Update Password</button>
                 <button class="menu-btn" data-section="studentsPage">Students</button>
             </nav>
 
@@ -205,6 +206,43 @@
                 </form>
 
                 <div id="promotionStatus" class="status-box"></div>
+            </section>
+
+            <section id="updatePasswordSection" class="content-card">
+                <h2>Update Password</h2>
+
+                <div class="upload-info password-update-info">
+                    <p>Use this form to change the currently logged-in admin password.</p>
+                    <p>Secret code validation is checked on the server as well, and the old password will stop working immediately after a successful update.</p>
+                </div>
+
+                <form id="adminPasswordForm" class="password-update-form">
+                    <div class="password-update-grid">
+                        <div class="password-field">
+                            <label for="adminCurrentPassword">Current Password</label>
+                            <input type="password" id="adminCurrentPassword" placeholder="Enter current password" required />
+                        </div>
+
+                        <div class="password-field">
+                            <label for="adminSecretCode">Secret Code</label>
+                            <input type="password" id="adminSecretCode" placeholder="Enter secret code" required />
+                        </div>
+
+                        <div class="password-field">
+                            <label for="adminNewPassword">New Password</label>
+                            <input type="password" id="adminNewPassword" placeholder="Enter new password" required />
+                        </div>
+
+                        <div class="password-field">
+                            <label for="adminConfirmPassword">Confirm Password</label>
+                            <input type="password" id="adminConfirmPassword" placeholder="Confirm new password" required />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="primary-btn password-update-btn">Update Password</button>
+                </form>
+
+                <div id="adminPasswordStatus" class="status-box"></div>
             </section>
 
             <section id="iframeSection" class="content-card iframe-card">

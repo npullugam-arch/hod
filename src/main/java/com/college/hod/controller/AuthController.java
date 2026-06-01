@@ -8,6 +8,7 @@ import com.college.hod.service.AuthService;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -25,6 +26,9 @@ public class AuthController {
 
     @Autowired
     private HodRepository hodRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
@@ -119,7 +123,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Password already updated. You cannot change it again.");
         }
 
-        user.setPassword(newPassword);
+        user.setPassword(passwordEncoder.encode(newPassword));
         user.setPasswordChanged(true);
         userRepository.save(user);
 

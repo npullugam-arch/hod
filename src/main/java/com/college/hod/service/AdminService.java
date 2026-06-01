@@ -1,6 +1,7 @@
 package com.college.hod.service;
 
 import com.college.hod.dto.AdminHodUpdateRequest;
+import com.college.hod.dto.AdminPasswordUpdateRequest;
 import com.college.hod.dto.AdminStudentCreateRequest;
 import com.college.hod.dto.AdminStudentListItem;
 import com.college.hod.dto.AdminStudentPasswordUpdateRequest;
@@ -25,6 +26,8 @@ public interface AdminService {
     ExcelUploadResponse uploadHodsExcel(MultipartFile file);
 
     List<Hod> getAllHods();
+
+    void updateAdminPassword(AdminPasswordUpdateRequest request);
 
     Hod getHodById(Long hodId);
 

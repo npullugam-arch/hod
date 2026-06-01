@@ -38,6 +38,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const currentSemester = document.getElementById("currentSemester");
     const newSemester = document.getElementById("newSemester");
     const promotionStatus = document.getElementById("promotionStatus");
+    const adminPasswordForm = document.getElementById("adminPasswordForm");
+    const adminPasswordStatus = document.getElementById("adminPasswordStatus");
+    const adminCurrentPassword = document.getElementById("adminCurrentPassword");
+    const adminSecretCode = document.getElementById("adminSecretCode");
+    const adminNewPassword = document.getElementById("adminNewPassword");
+    const adminConfirmPassword = document.getElementById("adminConfirmPassword");
 
     adminName.textContent = user.username || "Admin";
     adminRole.textContent = user.role || "ADMIN";
@@ -135,6 +141,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 "Semester Promotion",
                 "Promote all students from one semester to the next with a single academic action."
             );
+        } else if (sectionId === "updatePasswordSection") {
+            showSection(
+                "updatePasswordSection",
+                "Update Password",
+                "Change the logged-in admin password with current password and secret code verification."
+            );
         }
     };
 
@@ -179,6 +191,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.showAdminSection("hodExcelSection");
             } else if (sectionKey === "promotionSection") {
                 window.showAdminSection("promotionSection");
+            } else if (sectionKey === "updatePasswordSection") {
+                window.showAdminSection("updatePasswordSection");
             } else if (sectionKey === "studentsPage") {
                 window.openStudentsPage();
             } else if (sectionKey === "hodPage") {
@@ -426,6 +440,72 @@ document.addEventListener("DOMContentLoaded", () => {
                 promotionForm.reset();
             } catch (error) {
                 setStatus(promotionStatus, error.message || "Semester promotion failed.", "error");
+            }
+        });
+    }
+
+    if (adminPasswordForm) {
+        adminPasswordForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            clearStatus(adminPasswordStatus);
+
+            const currentPasswordValue = adminCurrentPassword?.value.trim() || "";
+            const secretCodeValue = adminSecretCode?.value.trim() || "";
+            const newPasswordValue = adminNewPassword?.value.trim() || "";
+            const confirmPasswordValue = adminConfirmPassword?.value.trim() || "";
+
+            if (!currentPasswordValue) {
+                setStatus(adminPasswordStatus, "Please enter your current password.", "error");
+                return;
+            }
+
+            if (!secretCodeValue) {
+                setStatus(adminPasswordStatus, "Please enter the secret code.", "error");
+                return;
+            }
+
+            if (!newPasswordValue) {
+                setStatus(adminPasswordStatus, "New password should not be empty.", "error");
+                return;
+            }
+
+            if (!confirmPasswordValue) {
+                setStatus(adminPasswordStatus, "Please confirm your new password.", "error");
+                return;
+            }
+
+            if (newPasswordValue !== confirmPasswordValue) {
+                setStatus(adminPasswordStatus, "New password and confirm password do not match.", "error");
+                return;
+            }
+
+            try {
+                setStatus(adminPasswordStatus, "Updating admin password...", "info");
+
+                const response = await fetch("/admin/update-password", {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        adminUserId: user.id,
+                        currentPassword: currentPasswordValue,
+                        secretCode: secretCodeValue,
+                        newPassword: newPasswordValue,
+                        confirmPassword: confirmPasswordValue
+                    })
+                });
+
+                const message = await response.text();
+
+                if (!response.ok) {
+                    throw new Error(message || "Failed to update admin password.");
+                }
+
+                setStatus(adminPasswordStatus, message || "Admin password updated successfully.", "success");
+                adminPasswordForm.reset();
+            } catch (error) {
+                setStatus(adminPasswordStatus, error.message || "Server/API error while updating password.", "error");
             }
         });
     }

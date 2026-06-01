@@ -1,6 +1,7 @@
 package com.college.hod.controller;
 
 import com.college.hod.dto.AdminHodUpdateRequest;
+import com.college.hod.dto.AdminPasswordUpdateRequest;
 import com.college.hod.dto.AdminStudentCreateRequest;
 import com.college.hod.dto.AdminStudentPasswordUpdateRequest;
 import com.college.hod.dto.AdminStudentUpdateRequest;
@@ -31,6 +32,16 @@ public class AdminController {
     @GetMapping("/hods")
     public ResponseEntity<?> getAllHods() {
         return ResponseEntity.ok(adminService.getAllHods());
+    }
+
+    @PutMapping("/update-password")
+    public ResponseEntity<?> updateAdminPassword(@RequestBody AdminPasswordUpdateRequest request) {
+        try {
+            adminService.updateAdminPassword(request);
+            return ResponseEntity.ok("Admin password updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/hod/{hodId}")
